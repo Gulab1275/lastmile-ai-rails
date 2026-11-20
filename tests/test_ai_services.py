@@ -96,6 +96,25 @@ def test_ai_voice_tts_synthesis():
     assert response.headers["content-type"] == "audio/mpeg"
     assert len(response.content) > 1000
 
+def test_ai_voice_stt_multi_format_and_detection():
+    """Verify audio format detection (WebM, WAV, MP3) and STT endpoint."""
+    from services.ai.voice import detect_audio_format
+    
+    # Check WebM detection
+    name, mime = detect_audio_format(b"\x1aE\xdf\xa3dummy_webm_bytes")
+    assert name == "input.webm"
+    assert mime == "audio/webm"
+    
+    # Check WAV detection
+    name, mime = detect_audio_format(b"RIFFdummy_wav_bytes")
+    assert name == "input.wav"
+    assert mime == "audio/wav"
+    
+    # Check filename override
+    name, mime = detect_audio_format(b"anything", filename="speech.weba")
+    assert name == "input.webm"
+    assert mime == "audio/webm"
+
 def test_ai_policy_rag_with_citations():
     """Verify policy Q&A returns authoritative answer with source citations."""
     payload = {

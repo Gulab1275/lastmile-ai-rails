@@ -126,7 +126,7 @@
           <div class="space-y-4">
             <label class="block text-sm font-semibold text-slate-700">اردو آواز ریکارڈ کریں یا نمونہ منتخب کریں:</label>
             <div class="p-4 rounded-xl border-2 border-dashed border-emerald-300 bg-emerald-50/50 flex flex-col items-center justify-center gap-3 text-center">
-              <div class="w-16 h-16 rounded-full bg-emerald-600 text-white flex items-center justify-center text-2xl shadow-lg cursor-pointer hover:scale-105 transition" onclick="toggleSimulatedRecording()">
+              <div id="mic-button" class="w-16 h-16 rounded-full bg-emerald-600 text-white flex items-center justify-center text-2xl shadow-lg cursor-pointer hover:scale-105 transition" onclick="toggleRealAudioRecording()" title="مائیکروفون پر کلک کریں">
                 🎙️
               </div>
               <div id="recording-status" class="text-sm text-emerald-800 font-medium">مائیکروفون پر کلک کر کے بولیں</div>
@@ -141,7 +141,7 @@
               <button onclick="extractFormFromSpeech()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-4 rounded-lg font-bold text-sm shadow transition">
                 فارم کے خانے بھریں (AI Extract Form)
               </button>
-              <button onclick="playUrduTTS()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm transition" title="آواز سنیں">
+              <button id="tts-play-btn" onclick="playUrduTTS()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm transition" title="آواز سنیں">
                 🔊 سنیں
               </button>
             </div>
@@ -555,33 +555,158 @@
       });
     }
 
-    function loadSampleVoice(type) {
-      if (type === 'widow_clean') {
-        document.getElementById('voice-transcript').value = "میرا نام پروین بی بی ہے اور میرا شناختی کارڈ 42101-1234567-1 ہے۔ ہمارے 4 بچے ہیں اور ماہانہ آمدنی 25000 روپے ہے۔";
-        document.getElementById('field-name').innerText = "پروین بی بی";
-        document.getElementById('field-cnic').innerText = "42101-1234567-1";
-        document.getElementById('field-family').innerText = "4 افراد";
-        document.getElementById('field-income').innerText = "PKR 25,000";
-        document.getElementById('cnic-blur-badge').className = "badge bg-green-100 text-green-800";
-        document.getElementById('cnic-blur-badge').innerText = "Clear (Blur: 1850)";
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+    let recordTimerInterval = null;
+    let recordingSeconds = 0;
+
+    async function toggleRealAudioRecording() {
+      const micButton = document.getElementById('mic-button');
+      const status = document.getElementById('recording-status');
+
+      if (!isRecording) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          audioChunks = [];
+
+          const options = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+            ? { mimeType: 'audio/webm;codecs=opus' }
+            : (MediaRecorder.isTypeSupported('audio/webm') ? { mimeType: 'audio/webm' } : {});
+
+          mediaRecorder = new MediaRecorder(stream, options);
+
+          mediaRecorder.ondataavailable = (event) => {
+            if (event.data && event.data.size > 0) audioChunks.push(event.data);
+          };
+
+          mediaRecorder.onstop = async () => {
+            clearInterval(recordTimerInterval);
+            stream.getTracks().forEach(track => track.stop());
+
+            status.innerText = "⏳ آواز Whisper ماڈل پر بھیجی جا رہی ہے... (Transcribing with Groq Whisper)";
+            micButton.classList.remove('bg-red-600', 'animate-pulse');
+            micButton.classList.add('bg-emerald-600');
+
+            const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+            await sendAudioToWhisper(audioBlob, 'recorded_voice.webm');
+          };
+
+          mediaRecorder.start(250);
+          isRecording = true;
+          recordingSeconds = 0;
+
+          micButton.classList.remove('bg-emerald-600');
+          micButton.classList.add('bg-red-600', 'animate-pulse');
+          status.innerText = "🔴 ریکارڈنگ جاری ہے... (00:00) دوبارہ کلک کر کے روکیں";
+
+          recordTimerInterval = setInterval(() => {
+            recordingSeconds++;
+            const mins = String(Math.floor(recordingSeconds / 60)).padStart(2, '0');
+            const secs = String(recordingSeconds % 60).padStart(2, '0');
+            status.innerText = `🔴 ریکارڈنگ جاری ہے... (${mins}:${secs}) روکنے کے لیے دوبارہ کلک کریں`;
+          }, 1000);
+
+        } catch (err) {
+          console.warn("Microphone access error, using sample fallback:", err);
+          status.innerText = "مائیکروفون دستیاب نہیں ہے۔ نمونہ آڈیو چلائی جا رہی ہے...";
+          await loadSampleVoice('widow_clean');
+        }
       } else {
-        document.getElementById('voice-transcript').value = "میرا نام سکینہ بی بی ہے اور شناختی کارڈ 42101-9988776-3 ہے۔ آمدنی 20000 ہے۔";
-        document.getElementById('field-name').innerText = "سکینہ بی بی";
-        document.getElementById('field-cnic').innerText = "42101-9988776-3";
-        document.getElementById('field-family').innerText = "5 افراد";
-        document.getElementById('field-income').innerText = "PKR 20,000";
-        document.getElementById('cnic-blur-badge').className = "badge bg-red-100 text-red-800";
-        document.getElementById('cnic-blur-badge').innerText = "Blurry (Score: 12.4 < 90)";
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+        }
+        isRecording = false;
       }
     }
 
-    function toggleSimulatedRecording() {
+    async function sendAudioToWhisper(audioBlob, filename) {
       const status = document.getElementById('recording-status');
-      status.innerText = "ریکارڈنگ ہو رہی ہے... (Listening in conversational Urdu)";
-      setTimeout(() => {
-        status.innerText = "آواز ریکارڈ ہو گئی اور Whisper ماڈل سے ٹرانسکرائب ہو گئی۔";
-        loadSampleVoice('widow_clean');
-      }, 1200);
+      const transcriptArea = document.getElementById('voice-transcript');
+
+      const formData = new FormData();
+      formData.append('file', audioBlob, filename || 'audio.webm');
+      formData.append('language', 'ur');
+
+      try {
+        const res = await fetch('/api/v1/ai/voice/stt', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          transcriptArea.value = data.text;
+          status.innerText = `✅ نقلِ آواز مکمل (Whisper ماڈل: ${(data.confidence * 100).toFixed(0)}% اعتماد)`;
+          // Trigger structured Pydantic extraction from Whisper transcript
+          await extractFormFromSpeech();
+        } else {
+          status.innerText = "Whisper ماڈل سے ٹرانسکرپشن مکمل نہ ہو سکی۔";
+        }
+      } catch (err) {
+        status.innerText = "نیٹ ورک کی خرابی۔";
+        console.error("STT network error:", err);
+      }
+    }
+
+    async function loadSampleVoice(type) {
+      const status = document.getElementById('recording-status');
+      status.innerText = "آڈیو نمونہ چلایا جا رہا ہے اور Whisper پر ٹیسٹ ہو رہا ہے...";
+
+      const audioFile = (type === 'widow_clean')
+        ? '/static/audio/sample_parveen_clean.mp3'
+        : '/static/audio/sample_sakina_blurry.mp3';
+
+      try {
+        const audio = new Audio(audioFile);
+        audio.play().catch(() => {});
+
+        const resp = await fetch(audioFile);
+        const blob = await resp.blob();
+        await sendAudioToWhisper(blob, 'sample.mp3');
+
+        if (type === 'widow_clean') {
+          document.getElementById('cnic-blur-badge').className = "badge bg-green-100 text-green-800";
+          document.getElementById('cnic-blur-badge').innerText = "Clear (Blur: 1850)";
+        } else {
+          document.getElementById('cnic-blur-badge').className = "badge bg-red-100 text-red-800";
+          document.getElementById('cnic-blur-badge').innerText = "Blurry (Score: 12.4 < 90)";
+        }
+      } catch (e) {
+        console.warn("Audio file load warning:", e);
+      }
+    }
+
+    async function playUrduTTS() {
+      const transcript = document.getElementById('voice-transcript').value.trim() 
+        || "آپ کی امدادی رقم بارہ ہزار روپے منظور کر لی گئی ہے۔";
+      const ttsBtn = document.getElementById('tts-play-btn');
+      if (ttsBtn) ttsBtn.innerText = "⏳ لوڈ ہو رہا ہے...";
+
+      try {
+        const res = await fetch('/api/v1/ai/voice/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: transcript, language: 'ur' })
+        });
+
+        if (res.ok) {
+          const blob = await res.blob();
+          const audioUrl = URL.createObjectURL(blob);
+          const audio = new Audio(audioUrl);
+          audio.onended = () => {
+            if (ttsBtn) ttsBtn.innerText = "🔊 سنیں";
+          };
+          await audio.play();
+          if (ttsBtn) ttsBtn.innerText = "🔊 آواز چل رہی ہے...";
+        } else {
+          if (ttsBtn) ttsBtn.innerText = "🔊 سنیں";
+          alert("آواز سنانے میں خرابی آئی۔");
+        }
+      } catch (err) {
+        if (ttsBtn) ttsBtn.innerText = "🔊 سنیں";
+        console.error("TTS playback error:", err);
+      }
     }
 
     async function extractFormFromSpeech() {
@@ -624,13 +749,6 @@
         document.getElementById('payout-badge').className = "badge bg-emerald-200 text-emerald-900 font-mono text-xs";
         document.getElementById('decision-explanation').innerText = "آپ کی امدادی رقم 12,000 روپے منظور کر لی گئی ہے۔ رقم آپ کے راست اکاؤنٹ میں منتقل کر دی گئی ہے۔";
       }
-    }
-
-    function playUrduTTS() {
-      const audio = new Audio('/api/v1/ai/voice/tts');
-      audio.play().catch(e => {
-        alert("آواز: آپ کی امدادی رقم بارہ ہزار روپے منظور ہو گئی ہے۔");
-      });
     }
 
     function selectFamily(id, name, cnic) {

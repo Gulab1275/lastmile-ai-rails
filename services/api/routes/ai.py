@@ -80,7 +80,12 @@ async def speech_to_text(
     Transcribes spoken Urdu or English audio into text using Groq Whisper-large-v3.
     """
     audio_data = await file.read()
-    res = transcribe(audio_data, language=language)
+    res = transcribe(
+        audio_data,
+        language=language,
+        filename=file.filename,
+        content_type=file.content_type
+    )
     return TranscribeResponse(
         text=res["text"],
         language=res["language"],

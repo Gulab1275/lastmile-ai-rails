@@ -24,9 +24,43 @@ CACHE_DIR.mkdir(exist_ok=True)
 URDU_VOICE = "ur-PK-UzmaNeural"
 ENGLISH_VOICE = "en-US-JennyNeural"
 
-def transcribe(audio_bytes: bytes, language: str = "ur") -> Dict[str, Any]:
+def detect_audio_format(audio_bytes: bytes, filename: Optional[str] = None) -> tuple[str, str]:
+    """Detects audio file extension and MIME type from header magic bytes or filename."""
+    if filename:
+        ext = filename.lower().split(".")[-1]
+        if ext in ("webm", "weba"):
+            return "input.webm", "audio/webm"
+        elif ext == "wav":
+            return "input.wav", "audio/wav"
+        elif ext == "ogg":
+            return "input.ogg", "audio/ogg"
+        elif ext in ("m4a", "mp4"):
+            return "input.m4a", "audio/m4a"
+        elif ext == "mp3":
+            return "input.mp3", "audio/mp3"
+
+    # Magic byte sniffing
+    if audio_bytes.startswith(b"\x1aE\xdf\xa3"):
+        return "input.webm", "audio/webm"
+    elif audio_bytes.startswith(b"RIFF"):
+        return "input.wav", "audio/wav"
+    elif audio_bytes.startswith(b"OggS"):
+        return "input.ogg", "audio/ogg"
+    elif b"ftyp" in audio_bytes[:16]:
+        return "input.m4a", "audio/m4a"
+    
+    # Default to MP3
+    return "input.mp3", "audio/mp3"
+
+def transcribe(
+    audio_bytes: bytes,
+    language: str = "ur",
+    filename: Optional[str] = None,
+    content_type: Optional[str] = None
+) -> Dict[str, Any]:
     """
     Transcribes Urdu / English speech to text using Groq Whisper-large-v3.
+    Supports WebM (from browser MediaRecorder), WAV, MP3, OGG, and M4A.
     """
     if not audio_bytes:
         return {"text": "", "language": language, "confidence": 0.0}
@@ -37,8 +71,9 @@ def transcribe(audio_bytes: bytes, language: str = "ur") -> Dict[str, Any]:
 
     client = Groq(api_key=GROQ_API_KEY)
     
-    # Send audio bytes as in-memory file tuple
-    file_tuple = ("input.mp3", io.BytesIO(audio_bytes), "audio/mp3")
+    # Auto-detect audio format
+    detected_name, detected_mime = detect_audio_format(audio_bytes, filename)
+    file_tuple = (detected_name, io.BytesIO(audio_bytes), content_type or detected_mime)
     
     try:
         transcription = client.audio.transcriptions.create(
@@ -52,7 +87,8 @@ def transcribe(audio_bytes: bytes, language: str = "ur") -> Dict[str, Any]:
         return {
             "text": text,
             "language": language,
-            "confidence": confidence
+            "confidence": confidence,
+            "format": detected_name.split(".")[-1]
         }
     except Exception as e:
         return {

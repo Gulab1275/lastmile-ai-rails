@@ -37,3 +37,14 @@ def test_manifest_and_sw_accessible(client: TestClient):
     sw_resp = client.get("/static/sw.js")
     assert sw_resp.status_code == 200
     assert "CACHE_NAME" in sw_resp.text
+
+
+def test_sample_audio_assets_accessible(client: TestClient):
+    """Test that pre-generated demo audio files are accessible via /static/audio."""
+    audio_clean_resp = client.get("/static/audio/sample_parveen_clean.mp3")
+    assert audio_clean_resp.status_code == 200
+    assert len(audio_clean_resp.content) > 10000
+
+    audio_blurry_resp = client.get("/static/audio/sample_sakina_blurry.mp3")
+    assert audio_blurry_resp.status_code == 200
+    assert len(audio_blurry_resp.content) > 10000

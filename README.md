@@ -136,7 +136,7 @@ python seed/run_seed.py
 # 5. Verify Supabase Heartbeat & Connection Pool
 python scripts/keepalive_ping.py
 
-# 6. Run automated test suite (40 tests, 100% passing)
+# 6. Run automated test suite (42 tests, 100% passing)
 python -m pytest tests/ -v
 
 # 7. Run the 12-Step Live Hackathon Presentation Script
@@ -242,8 +242,8 @@ curl http://localhost:8000/api/v1/health
 ## 8. Automated Test Suite
 
 The test suite covers 100% of the platform and backend deliverables:
-- `tests/test_web_app.py`: 3 tests verifying `/app` single-page dashboard serving, root redirects, PWA `manifest.json`, and offline service worker `sw.js`.
-- `tests/test_ai_services.py`: 12 automated tests for STT/TTS, OCR blur gate, scam detection, RAG policy Q&A, form extraction, LangGraph agent, IsolationForest anomalies, scam map clusters, eval metrics, and offline batch deduplication.
+- `tests/test_web_app.py`: 4 tests verifying `/app` single-page dashboard serving, root redirects, PWA `manifest.json`, offline service worker `sw.js`, and demo audio sample assets.
+- `tests/test_ai_services.py`: 13 automated tests for STT/TTS with WebM/WAV detection, OCR blur gate, scam detection, RAG policy Q&A, form extraction, LangGraph agent, IsolationForest anomalies, scam map clusters, eval metrics, and offline batch deduplication.
 - `tests/test_auth_rbac.py`: JWT login, refresh tokens, and server-side RBAC enforcement (HTTP 403).
 - `tests/test_rules_engine.py`: Versioned eligibility rules, condition firing traces, dynamic publishing.
 - `tests/test_decision_engine.py`: Weakest-link confidence calculation ($\min(\text{components})$), cost-matrix thresholds, no auto-rejection guarantee.
@@ -257,7 +257,7 @@ The test suite covers 100% of the platform and backend deliverables:
 To run:
 ```bash
 python -m pytest tests/ -v
-# Output: 40 passed in 9.14s (100% passing)
+# Output: 42 passed in 9.78s (100% passing)
 ```
 
 ### 8.1 Official Hackathon Judging Walkthrough
