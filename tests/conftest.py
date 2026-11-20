@@ -7,6 +7,12 @@ Provides test client and pre-authenticated authorization headers for all 5 roles
 - Admin
 - Auditor
 """
+import os
+import sys
+
+# Ensure repository root is on sys.path for test discovery in CI
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 import pytest
 from fastapi.testclient import TestClient
 
