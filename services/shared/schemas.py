@@ -144,6 +144,8 @@ class TranscribeResponse(BaseModel):
     text: str = Field(..., description="Urdu or English transcribed text")
     language: str = Field(default="ur")
     confidence: float = Field(..., ge=0.0, le=1.0)
+    is_silent: bool = Field(default=False, description="True if no speech or background noise was detected")
+    message: Optional[str] = Field(default=None, description="Status or guidance message in Urdu")
 
 
 class SynthesizeRequest(BaseModel):

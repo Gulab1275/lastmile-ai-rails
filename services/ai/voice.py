@@ -5,6 +5,7 @@ Text-to-Speech: edge-tts (Urdu: ur-PK-UzmaNeural / ur-PK-AsadNeural) with MD5 au
 """
 import os
 import io
+import re
 import asyncio
 import hashlib
 from pathlib import Path
@@ -23,6 +24,16 @@ CACHE_DIR.mkdir(exist_ok=True)
 # Default Urdu voice in edge-tts
 URDU_VOICE = "ur-PK-UzmaNeural"
 ENGLISH_VOICE = "en-US-JennyNeural"
+
+# Whisper Context Priming Prompt (biases away from music/ambient noise)
+URDU_WHISPER_PROMPT = "پاکستانی شہری کی آواز، احساس و بے نظیر پروگرام، نام، شناختی کارڈ، آمدنی، بیوہ کا امدادی فارم۔"
+
+# Hallucination tokens emitted by Whisper on silence or background room noise
+SILENCE_HALLUCINATIONS = {
+    "موسیقا", "موسیقی", "موسیقی۔", "موسیقی!", "موسیقا۔", "موسیقی؟",
+    "[موسیقی]", "(موسیقی)", "[music]", "(music)", "music",
+    "thank you", "subtitles", "subtitle", "...", "۔۔۔", "آپ"
+}
 
 def detect_audio_format(audio_bytes: bytes, filename: Optional[str] = None) -> tuple[str, str]:
     """Detects audio file extension and MIME type from header magic bytes or filename."""
@@ -80,21 +91,45 @@ def transcribe(
             file=file_tuple,
             model="whisper-large-v3",
             language=language if language != "auto" else None,
+            prompt=URDU_WHISPER_PROMPT if language == "ur" else None,
             temperature=0.0
         )
-        text = transcription.text.strip()
-        confidence = 0.95 if len(text) > 5 else 0.70
+        raw_text = transcription.text.strip()
+        
+        # Check for silence or Whisper hallucinations on low/ambient room sound
+        clean_norm = re.sub(r"[^\w\s]", "", raw_text).strip()
+        is_silence = (
+            not raw_text
+            or raw_text.lower() in SILENCE_HALLUCINATIONS
+            or clean_norm in ("موسیقا", "موسیقی", "music")
+            or len(clean_norm) <= 1
+        )
+        
+        if is_silence:
+            return {
+                "text": "",
+                "language": language,
+                "confidence": 0.0,
+                "format": detected_name.split(".")[-1],
+                "is_silent": True,
+                "message": "کوئی واضح آواز سنائی نہیں دی (No speech detected)"
+            }
+
+        confidence = 0.95 if len(raw_text) > 5 else 0.75
         return {
-            "text": text,
+            "text": raw_text,
             "language": language,
             "confidence": confidence,
-            "format": detected_name.split(".")[-1]
+            "format": detected_name.split(".")[-1],
+            "is_silent": False,
+            "message": "کامیابی سے ٹرانسکرائب ہو گیا"
         }
     except Exception as e:
         return {
             "text": "",
             "language": language,
             "confidence": 0.0,
+            "is_silent": True,
             "error": str(e)
         }
 

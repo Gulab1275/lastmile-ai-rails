@@ -124,12 +124,32 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
           <!-- Voice Recorder & Transcript -->
           <div class="space-y-4">
-            <label class="block text-sm font-semibold text-slate-700">اردو آواز ریکارڈ کریں یا نمونہ منتخب کریں:</label>
-            <div class="p-4 rounded-xl border-2 border-dashed border-emerald-300 bg-emerald-50/50 flex flex-col items-center justify-center gap-3 text-center">
+            <div class="flex items-center justify-between">
+              <label class="block text-sm font-semibold text-slate-700">اردو آواز ریکارڈ کریں یا نمونہ منتخب کریں:</label>
+              <label class="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer">
+                <input type="checkbox" id="auto-speak-toggle" checked class="w-3.5 h-3.5 text-emerald-600 rounded">
+                <span>🔊 AI آواز میں بولے (Voice Reply)</span>
+              </label>
+            </div>
+
+            <div class="p-4 rounded-xl border-2 border-dashed border-emerald-300 bg-emerald-50/50 flex flex-col items-center justify-center gap-2 text-center">
               <div id="mic-button" class="w-16 h-16 rounded-full bg-emerald-600 text-white flex items-center justify-center text-2xl shadow-lg cursor-pointer hover:scale-105 transition" onclick="toggleRealAudioRecording()" title="مائیکروفون پر کلک کریں">
                 🎙️
               </div>
-              <div id="recording-status" class="text-sm text-emerald-800 font-medium">مائیکروفون پر کلک کر کے بولیں</div>
+              <!-- Real-time Audio Level Bar -->
+              <div id="visualizer-container" class="w-48 h-2.5 bg-slate-200 rounded-full overflow-hidden hidden border border-emerald-200">
+                <div id="visualizer-bar" class="h-full bg-emerald-500 rounded-full transition-all duration-75" style="width: 0%"></div>
+              </div>
+              <div id="recording-status" class="text-xs text-emerald-800 font-medium">مائیکروفون پر کلک کر کے بولیں، یا اوپر نمونہ منتخب کریں</div>
+            </div>
+
+            <!-- Agent Speaking Banner -->
+            <div id="agent-speech-banner" class="hidden p-3 rounded-xl bg-emerald-100/90 border border-emerald-300 text-emerald-950 text-xs flex items-center gap-2 shadow-sm">
+              <span class="text-xl">🗣️</span>
+              <div class="flex-1">
+                <strong class="block text-[11px] text-emerald-900 font-bold uppercase tracking-wider">رہبر AI ایجنٹ جواب دے رہا ہے:</strong>
+                <span id="agent-speech-text" class="urdu-text font-medium text-emerald-900 text-xs"></span>
+              </div>
             </div>
 
             <div>
@@ -138,7 +158,7 @@
             </div>
 
             <div class="flex gap-2">
-              <button onclick="extractFormFromSpeech()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-4 rounded-lg font-bold text-sm shadow transition">
+              <button onclick="extractFormFromSpeech(true)" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-4 rounded-lg font-bold text-sm shadow transition">
                 فارم کے خانے بھریں (AI Extract Form)
               </button>
               <button id="tts-play-btn" onclick="playUrduTTS()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm transition" title="آواز سنیں">
@@ -560,29 +580,120 @@
     let isRecording = false;
     let recordTimerInterval = null;
     let recordingSeconds = 0;
+    let audioContext = null;
+    let analyserNode = null;
+    let animationFrameId = null;
+    let currentAgentAudio = null;
+    let micStream = null;
+
+    // Speak aloud with edge-tts and display interactive banner
+    async function speakAgentUrdu(text) {
+      if (!text || !text.trim()) return;
+      const toggle = document.getElementById('auto-speak-toggle');
+      if (toggle && !toggle.checked) return;
+
+      const banner = document.getElementById('agent-speech-banner');
+      const bannerText = document.getElementById('agent-speech-text');
+      if (banner && bannerText) {
+        bannerText.innerText = text;
+        banner.classList.remove('hidden');
+      }
+
+      try {
+        if (currentAgentAudio) {
+          currentAgentAudio.pause();
+          currentAgentAudio = null;
+        }
+
+        const res = await fetch('/api/v1/ai/voice/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text, language: 'ur' })
+        });
+
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          currentAgentAudio = new Audio(url);
+          currentAgentAudio.onended = () => {
+            if (banner) banner.classList.add('hidden');
+          };
+          currentAgentAudio.onerror = () => {
+            if (banner) banner.classList.add('hidden');
+          };
+          await currentAgentAudio.play();
+        } else {
+          if (banner) banner.classList.add('hidden');
+        }
+      } catch (err) {
+        console.warn("Agent voice playback error:", err);
+        if (banner) banner.classList.add('hidden');
+      }
+    }
 
     async function toggleRealAudioRecording() {
       const micButton = document.getElementById('mic-button');
       const status = document.getElementById('recording-status');
+      const vizContainer = document.getElementById('visualizer-container');
+      const vizBar = document.getElementById('visualizer-bar');
 
       if (!isRecording) {
         try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          audioChunks = [];
+          // Explicit constraints for clean, high-gain vocal capture
+          micStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+              channelCount: 1
+            }
+          });
 
+          audioChunks = [];
           const options = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
             ? { mimeType: 'audio/webm;codecs=opus' }
             : (MediaRecorder.isTypeSupported('audio/webm') ? { mimeType: 'audio/webm' } : {});
 
-          mediaRecorder = new MediaRecorder(stream, options);
+          mediaRecorder = new MediaRecorder(micStream, options);
 
           mediaRecorder.ondataavailable = (event) => {
             if (event.data && event.data.size > 0) audioChunks.push(event.data);
           };
 
+          // Setup real-time AudioContext volume visualizer
+          try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const source = audioContext.createMediaStreamSource(micStream);
+            analyserNode = audioContext.createAnalyser();
+            analyserNode.fftSize = 256;
+            source.connect(analyserNode);
+
+            const pcmData = new Uint8Array(analyserNode.frequencyBinCount);
+            if (vizContainer) vizContainer.classList.remove('hidden');
+
+            function updateLevel() {
+              if (!isRecording) return;
+              analyserNode.getByteFrequencyData(pcmData);
+              let sum = 0;
+              for (let i = 0; i < pcmData.length; i++) sum += pcmData[i];
+              const avg = sum / pcmData.length;
+              const pct = Math.min(100, Math.round((avg / 100) * 100));
+              if (vizBar) vizBar.style.width = pct + '%';
+              animationFrameId = requestAnimationFrame(updateLevel);
+            }
+            updateLevel();
+          } catch (e) {
+            console.warn("Visualizer init notice:", e);
+          }
+
           mediaRecorder.onstop = async () => {
             clearInterval(recordTimerInterval);
-            stream.getTracks().forEach(track => track.stop());
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            if (vizContainer) vizContainer.classList.add('hidden');
+            if (audioContext && audioContext.state !== 'closed') {
+              audioContext.close().catch(() => {});
+            }
+            micStream.getTracks().forEach(track => track.stop());
 
             status.innerText = "⏳ آواز Whisper ماڈل پر بھیجی جا رہی ہے... (Transcribing with Groq Whisper)";
             micButton.classList.remove('bg-red-600', 'animate-pulse');
@@ -598,18 +709,18 @@
 
           micButton.classList.remove('bg-emerald-600');
           micButton.classList.add('bg-red-600', 'animate-pulse');
-          status.innerText = "🔴 ریکارڈنگ جاری ہے... (00:00) دوبارہ کلک کر کے روکیں";
+          status.innerText = "🔴 بولیں... آواز ریکارڈ ہو رہی ہے (00:00) - روکنے کے لیے دوبارہ کلک کریں";
 
           recordTimerInterval = setInterval(() => {
             recordingSeconds++;
             const mins = String(Math.floor(recordingSeconds / 60)).padStart(2, '0');
             const secs = String(recordingSeconds % 60).padStart(2, '0');
-            status.innerText = `🔴 ریکارڈنگ جاری ہے... (${mins}:${secs}) روکنے کے لیے دوبارہ کلک کریں`;
+            status.innerText = `🔴 بولیں... آواز ریکارڈ ہو رہی ہے (${mins}:${secs}) - روکنے کے لیے دوبارہ کلک کریں`;
           }, 1000);
 
         } catch (err) {
           console.warn("Microphone access error, using sample fallback:", err);
-          status.innerText = "مائیکروفون دستیاب نہیں ہے۔ نمونہ آڈیو چلائی جا رہی ہے...";
+          status.innerText = "⚠️ مائیکروفون دستیاب نہیں ہے۔ نمونہ آڈیو چلائی جا رہی ہے...";
           await loadSampleVoice('widow_clean');
         }
       } else {
@@ -636,10 +747,17 @@
 
         if (res.ok) {
           const data = await res.json();
+          if (data.is_silent || !data.text || data.text.trim() === '') {
+            transcriptArea.value = '';
+            status.innerText = "⚠️ کوئی واضح آواز سنائی نہیں دی (No voice detected). براہ کرم مائیک کے قریب آ کر بولیں یا اوپر 'نمونہ 1' منتخب کریں۔";
+            await speakAgentUrdu("معاف کیجئے گا، کوئی واضح آواز سنائی نہیں دی۔ براہ کرم دوبارہ مائیک کے قریب آ کر بولیں، یا نمونہ بٹن پر کلک کریں۔");
+            return;
+          }
+
           transcriptArea.value = data.text;
-          status.innerText = `✅ نقلِ آواز مکمل (Whisper ماڈل: ${(data.confidence * 100).toFixed(0)}% اعتماد)`;
-          // Trigger structured Pydantic extraction from Whisper transcript
-          await extractFormFromSpeech();
+          status.innerText = `✅ نقلِ آواز موصول ہو گئی (Whisper ماڈل: ${(data.confidence * 100).toFixed(0)}% اعتماد)`;
+          // Trigger structured Pydantic extraction from Whisper transcript and speak back
+          await extractFormFromSpeech(true);
         } else {
           status.innerText = "Whisper ماڈل سے ٹرانسکرپشن مکمل نہ ہو سکی۔";
         }
@@ -684,33 +802,18 @@
       if (ttsBtn) ttsBtn.innerText = "⏳ لوڈ ہو رہا ہے...";
 
       try {
-        const res = await fetch('/api/v1/ai/voice/tts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: transcript, language: 'ur' })
-        });
-
-        if (res.ok) {
-          const blob = await res.blob();
-          const audioUrl = URL.createObjectURL(blob);
-          const audio = new Audio(audioUrl);
-          audio.onended = () => {
-            if (ttsBtn) ttsBtn.innerText = "🔊 سنیں";
-          };
-          await audio.play();
-          if (ttsBtn) ttsBtn.innerText = "🔊 آواز چل رہی ہے...";
-        } else {
-          if (ttsBtn) ttsBtn.innerText = "🔊 سنیں";
-          alert("آواز سنانے میں خرابی آئی۔");
-        }
+        await speakAgentUrdu(transcript);
+        if (ttsBtn) ttsBtn.innerText = "🔊 سنیں";
       } catch (err) {
         if (ttsBtn) ttsBtn.innerText = "🔊 سنیں";
         console.error("TTS playback error:", err);
       }
     }
 
-    async function extractFormFromSpeech() {
+    async function extractFormFromSpeech(autoSpeak = false) {
       const text = document.getElementById('voice-transcript').value;
+      if (!text || !text.trim()) return;
+
       try {
         const resp = await fetch('/api/v1/ai/extract-form', {
           method: 'POST',
@@ -719,10 +822,20 @@
         });
         if (resp.ok) {
           const data = await resp.json();
-          document.getElementById('field-name').innerText = data.full_name || "پروین بی بی";
-          document.getElementById('field-cnic').innerText = data.cnic || "42101-1234567-1";
-          document.getElementById('field-family').innerText = (data.household_size || 4) + " افراد";
-          document.getElementById('field-income').innerText = "PKR " + (data.monthly_income || 25000).toLocaleString();
+          const fullName = data.full_name || "پروین بی بی";
+          const cnic = data.cnic || "42101-1234567-1";
+          const family = data.household_size || 4;
+          const income = data.monthly_income || 25000;
+
+          document.getElementById('field-name').innerText = fullName;
+          document.getElementById('field-cnic').innerText = cnic;
+          document.getElementById('field-family').innerText = family + " افراد";
+          document.getElementById('field-income').innerText = "PKR " + income.toLocaleString();
+
+          if (autoSpeak) {
+            const spokenConfirmation = `جی ${fullName}، آپ کا فارم موصول ہو گیا ہے۔ شناختی کارڈ نمبر ${cnic} اور ماہانہ آمدنی ${income.toLocaleString()} روپے درج کر لی گئی ہے۔ کیا آپ یہ امدادی درخواست جمع کرانا چاہتی ہیں؟`;
+            await speakAgentUrdu(spokenConfirmation);
+          }
         }
       } catch (err) {
         console.warn("API extraction fallback to simulated response.");
@@ -740,14 +853,19 @@
         document.getElementById('decision-subtitle').innerText = "کمزور ترین کڑی: دستاویز دھندلی ہے (Score: 12.4 < 90)";
         document.getElementById('payout-badge').innerText = "WAITING_PROOF";
         document.getElementById('payout-badge').className = "badge bg-amber-200 text-amber-900 font-mono text-xs";
-        document.getElementById('decision-explanation').innerText = "براہ کرم اپنے شناختی کارڈ کی واضح اور روشن تصویر دوبارہ کھینچ کر اپ لوڈ کریں۔";
+        const explanation = "آپ کے شناختی کارڈ کی تصویر دھندلی ہے۔ براہ کرم اپنے شناختی کارڈ کی صاف تصویر دوبارہ فراہم کریں۔";
+        document.getElementById('decision-explanation').innerText = explanation;
+        await speakAgentUrdu(explanation);
       } else {
+        const txRef = "RAAST-TX-" + Math.random().toString(36).substring(2, 10).toUpperCase();
         document.getElementById('decision-icon').innerText = "✅";
         document.getElementById('decision-title').innerText = "درخواست فوری منظور کر لی گئی (Auto-Approved)";
         document.getElementById('decision-subtitle').innerText = "کمزور ترین کڑی کا اسکور: 95.0% | غلطی کا امکان: p_wrong <= 0.05";
-        document.getElementById('payout-badge').innerText = "RAAST-TX-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+        document.getElementById('payout-badge').innerText = txRef;
         document.getElementById('payout-badge').className = "badge bg-emerald-200 text-emerald-900 font-mono text-xs";
-        document.getElementById('decision-explanation').innerText = "آپ کی امدادی رقم 12,000 روپے منظور کر لی گئی ہے۔ رقم آپ کے راست اکاؤنٹ میں منتقل کر دی گئی ہے۔";
+        const explanation = "مبارک ہو! آپ کی امدادی رقم 12,000 روپے منظور کر لی گئی ہے۔ رقم آپ کے راست اکاؤنٹ میں منتقل کر دی گئی ہے۔";
+        document.getElementById('decision-explanation').innerText = explanation;
+        await speakAgentUrdu(explanation);
       }
     }
 

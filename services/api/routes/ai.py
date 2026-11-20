@@ -89,7 +89,9 @@ async def speech_to_text(
     return TranscribeResponse(
         text=res["text"],
         language=res["language"],
-        confidence=res["confidence"]
+        confidence=res["confidence"],
+        is_silent=res.get("is_silent", False),
+        message=res.get("message")
     )
 
 @router.post("/voice/tts")
