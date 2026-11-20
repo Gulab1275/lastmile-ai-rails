@@ -62,13 +62,6 @@ apps/web/.turbo/
 uploads/
 audio_cache/
 
-# Private context and memory files
-context.md
-memory.md
-CONTEXT.md
-MEMORY.md
-*.local.md
-
 # Logs & Temporary Files
 *.log
 problem_statement.txt
