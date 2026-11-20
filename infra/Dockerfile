@@ -27,15 +27,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy installed Python packages from builder
-COPY --from=builder /root/.local /root/.local
-ENV PATH=/root/.local/bin:$PATH
-ENV PYTHONPATH=/app
-ENV PYTHONUNBUFFERED=1
-
-# Create non-root application user
+# Create non-root application user first
 RUN groupadd -g 1001 rahbar && \
     useradd -u 1001 -g rahbar -s /bin/bash -m rahbar
+
+# Copy installed Python packages from builder into the rahbar user's home
+COPY --from=builder --chown=rahbar:rahbar /root/.local /home/rahbar/.local
+ENV PATH=/home/rahbar/.local/bin:$PATH
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
 
 # Copy application code
 COPY --chown=rahbar:rahbar services/ /app/services/
