@@ -59,3 +59,7 @@ Thumbs.db
 *.db
 uploads/
 audio_cache/
+
+# Private context and memory files
+context.md
+memory.md
