@@ -19,6 +19,7 @@ from services.api.routes.mock_routes import router as mock_router
 from services.api.routes.review import router as review_router
 from services.api.routes.rules import router as rules_router
 from services.api.routes.webhooks import router as webhooks_router
+from services.api.routes.ai import router as ai_router
 from services.api.security.rate_limit import limiter, rate_limit_custom_handler
 
 app = FastAPI(
@@ -62,6 +63,7 @@ app.include_router(audit_router, prefix=api_prefix)
 app.include_router(mock_router, prefix=api_prefix)
 app.include_router(digital_twin_router, prefix=api_prefix)
 app.include_router(webhooks_router, prefix=api_prefix)
+app.include_router(ai_router, prefix=api_prefix)
 
 # Root convenience redirect or status
 @app.get("/")

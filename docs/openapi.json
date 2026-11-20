@@ -122,6 +122,7 @@
           "content": {
             "application/json": {
               "schema": {
+                "additionalProperties": true,
                 "type": "object",
                 "title": "Token Payload"
               }
@@ -1251,6 +1252,7 @@
           "content": {
             "application/json": {
               "schema": {
+                "additionalProperties": true,
                 "type": "object",
                 "title": "Sub In"
               }
@@ -1318,6 +1320,466 @@
         ]
       }
     },
+    "/api/v1/ai/scam-check": {
+      "post": {
+        "tags": [
+          "AI & Agents"
+        ],
+        "summary": "Check Scam Message",
+        "description": "Detects whether an SMS / WhatsApp message is fraudulent, legitimate, or uncertain.\nProvides calibrated confidence and explainable trigger reasons.",
+        "operationId": "check_scam_message_api_v1_ai_scam_check_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScamCheckRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScamCheckResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ai/ocr": {
+      "post": {
+        "tags": [
+          "AI & Agents"
+        ],
+        "summary": "Analyze Document Ocr",
+        "description": "Analyzes uploaded document images (CNIC, utility bills).\nPerforms Laplacian blur detection, Error Level Analysis (ELA) tamper check,\nand regex field extraction.",
+        "operationId": "analyze_document_ocr_api_v1_ai_ocr_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_analyze_document_ocr_api_v1_ai_ocr_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentExtractionResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ai/voice/stt": {
+      "post": {
+        "tags": [
+          "AI & Agents"
+        ],
+        "summary": "Speech To Text",
+        "description": "Transcribes spoken Urdu or English audio into text using Groq Whisper-large-v3.",
+        "operationId": "speech_to_text_api_v1_ai_voice_stt_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_speech_to_text_api_v1_ai_voice_stt_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscribeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ai/voice/tts": {
+      "post": {
+        "tags": [
+          "AI & Agents"
+        ],
+        "summary": "Text To Speech",
+        "description": "Synthesizes Urdu or English text into natural voice audio (MP3).\nCached by text hash for fast repeated delivery.",
+        "operationId": "text_to_speech_api_v1_ai_voice_tts_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SynthesizeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ai/ask": {
+      "post": {
+        "tags": [
+          "AI & Agents"
+        ],
+        "summary": "Ask Policy Question",
+        "description": "Answers relief eligibility and policy questions directly from official guidelines.\nReturns plain answer with exact document and page citations.",
+        "operationId": "ask_policy_question_api_v1_ai_ask_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolicyAskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyAskResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ai/extract-form": {
+      "post": {
+        "tags": [
+          "AI & Agents"
+        ],
+        "summary": "Extract Form From Text",
+        "description": "Converts unstructured conversational Urdu or English input into a validated Pydantic claim form.",
+        "operationId": "extract_form_from_text_api_v1_ai_extract_form_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractedClaimForm"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ai/agent/run": {
+      "post": {
+        "tags": [
+          "AI & Agents"
+        ],
+        "summary": "Run Autonomous Agent",
+        "description": "Executes the checkpointed LangGraph relief claim workflow.\nEvaluates documents, identity, rules, risk, and executes gated payment if approved.",
+        "operationId": "run_autonomous_agent_api_v1_ai_agent_run_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ai/health": {
+      "get": {
+        "tags": [
+          "AI & Agents"
+        ],
+        "summary": "Get Ai Services Health",
+        "description": "Telemetry on AI providers (Groq, Gemini) latency and availability.",
+        "operationId": "get_ai_services_health_api_v1_ai_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ai/anomaly-check": {
+      "post": {
+        "tags": [
+          "AI & Agents"
+        ],
+        "summary": "Check Claim Anomalies",
+        "description": "Evaluates a claim using IsolationForest and heuristic rules to detect repeat claims,\nhelper velocity spikes, and demographic/income statistical anomalies.",
+        "operationId": "check_claim_anomalies_api_v1_ai_anomaly_check_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnomalyCheckRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnomalyCheckResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ai/scam-map": {
+      "get": {
+        "tags": [
+          "AI & Agents"
+        ],
+        "summary": "Get Scam Map",
+        "description": "Returns live threat intelligence feed, regional cluster coordinates,\ncategory distribution, and temporal scam trends across Sindh & Karachi districts.",
+        "operationId": "get_scam_map_api_v1_ai_scam_map_get",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 7,
+              "title": "Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ai/eval-summary": {
+      "get": {
+        "tags": [
+          "AI & Agents"
+        ],
+        "summary": "Get Eval Summary",
+        "description": "Returns aggregated evaluation metrics, accuracy scores, confusion matrix,\nsubsystem latency benchmarks, and threshold sweep expected cost curves.",
+        "operationId": "get_eval_summary_api_v1_ai_eval_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ai/sync-offline-batch": {
+      "post": {
+        "tags": [
+          "AI & Agents"
+        ],
+        "summary": "Sync Offline Batch",
+        "description": "Synchronizes cases queued locally on a helper's phone when connectivity restores.\nProvides idempotency deduplication, offline intake extraction, and pipeline routing.",
+        "operationId": "sync_offline_batch_api_v1_ai_sync_offline_batch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfflineSyncBatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "summary": "Root",
@@ -1337,6 +1799,84 @@
   },
   "components": {
     "schemas": {
+      "AnomalyCheckRequest": {
+        "properties": {
+          "claim_data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Claim Data"
+          },
+          "historical_claims": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Historical Claims"
+          }
+        },
+        "type": "object",
+        "required": [
+          "claim_data"
+        ],
+        "title": "AnomalyCheckRequest"
+      },
+      "AnomalyCheckResponse": {
+        "properties": {
+          "is_anomaly": {
+            "type": "boolean",
+            "title": "Is Anomaly"
+          },
+          "anomaly_score": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Anomaly Score"
+          },
+          "flags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Flags"
+          },
+          "reasons_en": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons En"
+          },
+          "reasons_ur": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons Ur"
+          },
+          "metrics": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metrics"
+          }
+        },
+        "type": "object",
+        "required": [
+          "is_anomaly",
+          "anomaly_score",
+          "reasons_en",
+          "reasons_ur",
+          "metrics"
+        ],
+        "title": "AnomalyCheckResponse"
+      },
       "AuditChainVerificationResponse": {
         "properties": {
           "is_valid": {
@@ -1385,12 +1925,23 @@
       "AuditLogEntry": {
         "properties": {
           "id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Id"
           },
           "prev_hash": {
             "type": "string",
             "title": "Prev Hash"
+          },
+          "current_hash": {
+            "type": "string",
+            "title": "Current Hash"
           },
           "timestamp": {
             "type": "string",
@@ -1398,38 +1949,96 @@
             "title": "Timestamp"
           },
           "actor_id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Actor Id"
           },
           "actor_role": {
-            "$ref": "#/components/schemas/RoleEnum"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoleEnum"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor"
           },
           "action": {
             "type": "string",
             "title": "Action"
           },
           "resource_id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Resource Id"
           },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
           "details": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Details"
-          },
-          "current_hash": {
-            "type": "string",
-            "title": "Current Hash"
           }
         },
         "type": "object",
         "required": [
-          "id",
           "prev_hash",
-          "actor_id",
-          "actor_role",
-          "action",
-          "resource_id",
-          "current_hash"
+          "current_hash",
+          "action"
         ],
         "title": "AuditLogEntry"
       },
@@ -1441,6 +2050,42 @@
           "utility_relief"
         ],
         "title": "BenefitType"
+      },
+      "Body_analyze_document_ocr_api_v1_ai_ocr_post": {
+        "properties": {
+          "files": {
+            "items": {
+              "type": "string",
+              "contentMediaType": "application/octet-stream"
+            },
+            "type": "array",
+            "title": "Files"
+          }
+        },
+        "type": "object",
+        "required": [
+          "files"
+        ],
+        "title": "Body_analyze_document_ocr_api_v1_ai_ocr_post"
+      },
+      "Body_speech_to_text_api_v1_ai_voice_stt_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "default": "ur"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_speech_to_text_api_v1_ai_voice_stt_post"
       },
       "CaseCreate": {
         "properties": {
@@ -1647,7 +2292,10 @@
           "in_review",
           "approved",
           "rejected",
-          "need_more_info"
+          "need_more_info",
+          "processing",
+          "need_proof",
+          "disbursed"
         ],
         "title": "CaseStatus"
       },
@@ -1718,6 +2366,18 @@
               }
             ],
             "title": "Helper Id"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "default": "Citizen authorized Relief Support claim processing"
           }
         },
         "type": "object",
@@ -1755,6 +2415,27 @@
             ],
             "title": "Granted To Helper Id"
           },
+          "grantee": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grantee"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConsentStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "granted_at": {
             "type": "string",
             "format": "date-time",
@@ -1773,7 +2454,14 @@
             "title": "Revoked At"
           },
           "audit_hash": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Audit Hash"
           }
         },
@@ -1783,8 +2471,7 @@
           "citizen_id",
           "scope",
           "granted",
-          "granted_at",
-          "audit_hash"
+          "granted_at"
         ],
         "title": "ConsentRecord"
       },
@@ -1794,9 +2481,20 @@
           "identity",
           "income",
           "bills",
-          "helper_acting"
+          "helper_acting",
+          "documents",
+          "phone",
+          "helper_action"
         ],
         "title": "ConsentScope"
+      },
+      "ConsentStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "revoked"
+        ],
+        "title": "ConsentStatus"
       },
       "ConsentWithdrawRequest": {
         "properties": {
@@ -1806,6 +2504,18 @@
           },
           "scope": {
             "$ref": "#/components/schemas/ConsentScope"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "default": "Citizen requested data revocation"
           }
         },
         "type": "object",
@@ -1913,6 +2623,7 @@
             "default": false
           },
           "extracted_data": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Extracted Data"
           },
@@ -1930,6 +2641,146 @@
           "file_url"
         ],
         "title": "DocumentAttachment"
+      },
+      "DocumentExtractionResult": {
+        "properties": {
+          "fields": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Fields",
+            "description": "Extracted key-value pairs (name, cnic, dob, etc.)"
+          },
+          "field_confidences": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Field Confidences"
+          },
+          "blur_score": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Blur Score",
+            "description": "Laplacian variance (low score means blurry)"
+          },
+          "is_blurry": {
+            "type": "boolean",
+            "title": "Is Blurry"
+          },
+          "tamper_score": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Tamper Score",
+            "description": "Probability of digital editing or tampering"
+          },
+          "qr_verified": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qr Verified"
+          }
+        },
+        "type": "object",
+        "required": [
+          "blur_score",
+          "is_blurry",
+          "tamper_score"
+        ],
+        "title": "DocumentExtractionResult"
+      },
+      "ExtractedClaimForm": {
+        "properties": {
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name",
+            "description": "Citizen full name"
+          },
+          "cnic": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cnic",
+            "description": "13-digit CNIC in 42101-1234567-1 format"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone",
+            "description": "Pakistani mobile number"
+          },
+          "household_size": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Household Size",
+            "description": "Total family members in household"
+          },
+          "monthly_income": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Monthly Income",
+            "description": "Monthly household income in PKR"
+          },
+          "benefit_requested": {
+            "type": "string",
+            "title": "Benefit Requested",
+            "default": "relief_cash_grant"
+          },
+          "missing_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Fields",
+            "description": "Fields required by rules but not yet provided"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "default": 1.0
+          }
+        },
+        "type": "object",
+        "title": "ExtractedClaimForm"
       },
       "HTTPValidationError": {
         "properties": {
@@ -1978,6 +2829,7 @@
             "title": "Suggested Action"
           },
           "citizen_summary": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Citizen Summary"
           }
@@ -2238,6 +3090,100 @@
         ],
         "title": "MockRaastResponse"
       },
+      "OfflineSyncBatchRequest": {
+        "properties": {
+          "batch_id": {
+            "type": "string",
+            "title": "Batch Id"
+          },
+          "helper_id": {
+            "type": "string",
+            "title": "Helper Id"
+          },
+          "queued_cases": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Queued Cases"
+          },
+          "client_timestamp": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "batch_id",
+          "helper_id",
+          "queued_cases"
+        ],
+        "title": "OfflineSyncBatchRequest"
+      },
+      "PolicyAskRequest": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "title": "Question"
+          }
+        },
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "title": "PolicyAskRequest"
+      },
+      "PolicyAskResponse": {
+        "properties": {
+          "answer": {
+            "type": "string",
+            "title": "Answer"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/PolicySource"
+            },
+            "type": "array",
+            "title": "Sources"
+          }
+        },
+        "type": "object",
+        "required": [
+          "answer"
+        ],
+        "title": "PolicyAskResponse"
+      },
+      "PolicySource": {
+        "properties": {
+          "document_name": {
+            "type": "string",
+            "title": "Document Name"
+          },
+          "page_number": {
+            "type": "integer",
+            "title": "Page Number"
+          },
+          "excerpt": {
+            "type": "string",
+            "title": "Excerpt"
+          }
+        },
+        "type": "object",
+        "required": [
+          "document_name",
+          "page_number",
+          "excerpt"
+        ],
+        "title": "PolicySource"
+      },
       "ReasonSimple": {
         "properties": {
           "en": {
@@ -2378,27 +3324,29 @@
           "operator": {
             "type": "string",
             "title": "Operator",
-            "description": "lte, gte, eq, ne, in, not_in"
+            "description": "lte, gte, eq, ne, in, not_in, <=, >="
           },
           "value": {
             "title": "Value"
           },
           "description_en": {
             "type": "string",
-            "title": "Description En"
+            "title": "Description En",
+            "description": "Condition explanation in English",
+            "default": ""
           },
           "description_ur": {
             "type": "string",
-            "title": "Description Ur"
+            "title": "Description Ur",
+            "description": "Condition explanation in Urdu",
+            "default": ""
           }
         },
         "type": "object",
         "required": [
           "field",
           "operator",
-          "value",
-          "description_en",
-          "description_ur"
+          "value"
         ],
         "title": "RuleCondition"
       },
@@ -2414,6 +3362,7 @@
           },
           "condition_results": {
             "items": {
+              "additionalProperties": true,
               "type": "object"
             },
             "type": "array",
@@ -2444,11 +3393,13 @@
         "properties": {
           "version": {
             "type": "integer",
-            "title": "Version"
+            "title": "Version",
+            "default": 1
           },
           "name": {
             "type": "string",
-            "title": "Name"
+            "title": "Name",
+            "default": "Standard Relief Policy"
           },
           "max_monthly_income": {
             "type": "number",
@@ -2509,10 +3460,6 @@
           }
         },
         "type": "object",
-        "required": [
-          "version",
-          "name"
-        ],
         "title": "RuleSet"
       },
       "RuleSimulationRequest": {
@@ -2615,6 +3562,75 @@
         ],
         "title": "RuleVersionResponse"
       },
+      "ScamCheckRequest": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Text",
+            "description": "Raw message text to inspect"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "ScamCheckRequest"
+      },
+      "ScamCheckResponse": {
+        "properties": {
+          "label": {
+            "$ref": "#/components/schemas/ScamLabel"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons",
+            "description": "Explainable features that triggered the label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "confidence"
+        ],
+        "title": "ScamCheckResponse"
+      },
+      "ScamLabel": {
+        "type": "string",
+        "enum": [
+          "scam",
+          "legit",
+          "unsure"
+        ],
+        "title": "ScamLabel"
+      },
+      "SynthesizeRequest": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "default": "ur"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "SynthesizeRequest"
+      },
       "TokenResponse": {
         "properties": {
           "access_token": {
@@ -2656,6 +3672,32 @@
           "username"
         ],
         "title": "TokenResponse"
+      },
+      "TranscribeResponse": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "Urdu or English transcribed text"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "default": "ur"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text",
+          "confidence"
+        ],
+        "title": "TranscribeResponse"
       },
       "UserCreate": {
         "properties": {
@@ -2807,6 +3849,13 @@
           "type": {
             "type": "string",
             "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
           }
         },
         "type": "object",
@@ -2833,6 +3882,7 @@
             "title": "Timestamp"
           },
           "payload": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Payload"
           }
