@@ -33,14 +33,16 @@ RUN groupadd -g 1001 rahbar && \
 
 # Copy installed Python packages from builder into the rahbar user's home
 COPY --from=builder --chown=rahbar:rahbar /root/.local /home/rahbar/.local
-ENV PATH=/home/rahbar/.local/bin:$PATH
+# **Set PATH to the user’s home before switching to the user**
+ENV PATH="/home/rahbar/.local/bin:${PATH}"
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 
-# Copy application code
+# Copy application code (owned by rahbar)
 COPY --chown=rahbar:rahbar services/ /app/services/
 COPY --chown=rahbar:rahbar mock/ /app/mock/
 
+# Drop privileges
 USER rahbar
 
 EXPOSE 8000
