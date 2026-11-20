@@ -32,7 +32,7 @@ if command -v apt-get &> /dev/null; then
 elif command -v dnf &> /dev/null; then
     echo "Detected Amazon Linux 2023 / Fedora (dnf)..."
     sudo dnf update -y
-    sudo dnf install -y docker git curl
+    sudo dnf install -y docker git --allowerasing
     sudo systemctl enable --now docker
     sudo usermod -aG docker "$USER"
 
