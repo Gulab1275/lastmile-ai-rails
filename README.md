@@ -41,6 +41,12 @@ As required by the hackathon rubric, here is the transparent breakdown of real p
 | **AI LLM Router** | **REAL** Multi-tier fallback (Groq Llama-3.3-70B/Qwen $\to$ Gemini $\to$ Offline) | None | High speed, cost optimization, and live demo reliability. |
 | **Urdu Voice Pipeline** | **REAL** Whisper large-v3 STT + edge-tts Urdu synthesis | None | Voice-first accessibility for non-literate citizens. |
 | **Scam Detection** | **REAL** Calibrated Logistic Regression + TF-IDF with explainable tags | None | Protects shopkeepers against fake relief payment SMS scams. |
+| **Document OCR & Tamper** | **REAL** Tesseract + Laplacian blur variance + ELA tamper scoring | None | Computer vision verification for low-quality photos. |
+| **Conversational Form Extraction** | **REAL** Pydantic-validated parsing from Urdu/English transcripts | None | Transforms unstructured speech into structured claim records. |
+| **Autonomous LangGraph Agent** | **REAL** StateGraph workflow with MemorySaver session checkpointing | None | Manages intake, checks, rules, and token-gated payouts. |
+| **Anomaly Detection (Task N13)**| **REAL** Scikit-learn IsolationForest + helper velocity checks | None | Detects repeat claim bursts, income discrepancies, and fraud. |
+| **Scam Map Intelligence** | **REAL** Regional threat clustering (Karachi/Sindh GPS hotspots) | None | Geo-spatial threat heatmap and tactical taxonomy for shopkeepers. |
+| **Offline-First Sync Protocol** | **REAL** Idempotency deduplication & batch synchronization | None | Low-bandwidth resilience when signal drops in field. |
 
 ---
 
@@ -191,11 +197,26 @@ curl http://localhost:8000/api/v1/health
 ### 7.9 Digital Twin Simulation (Bonus)
 - `POST /api/v1/digital-twin/simulate`: Replay historical cases through a draft rule version to project approval rate deltas before publishing.
 
+### 7.10 AI, Voice & Autonomous Agent Endpoints
+- `POST /api/v1/ai/scam-check`: Real-time SMS/WhatsApp scam classification with calibrated confidence and trigger reasons.
+- `POST /api/v1/ai/ocr`: Laplacian blur gate (<90 rejected), ELA tamper scoring, and regex CNIC/bill extraction.
+- `POST /api/v1/ai/voice/stt`: Groq Whisper large-v3 speech-to-text in Urdu and English.
+- `POST /api/v1/ai/voice/tts`: Edge-TTS Urdu neural speech synthesis (`ur-PK-UzmaNeural`) with disk caching.
+- `POST /api/v1/ai/ask`: Official policy guidelines RAG Q&A with document and page citations.
+- `POST /api/v1/ai/extract-form`: Pydantic structured output conversion from conversational speech transcripts.
+- `POST /api/v1/ai/agent/run`: LangGraph checkpointed relief claim workflow with gated payout token enforcement.
+- `POST /api/v1/ai/anomaly-check`: IsolationForest anomaly detector flagging repeat bursts, income outliers, and helper velocity spikes.
+- `GET /api/v1/ai/scam-map`: Regional scam heatmap and threat intelligence across Karachi/Sindh GPS hotspots.
+- `GET /api/v1/ai/eval-summary`: Evaluation metrics, confusion matrix, latency benchmarks, and threshold sweep cost curves.
+- `POST /api/v1/ai/sync-offline-batch`: Low-bandwidth sync protocol with idempotency keys and batch ingestion.
+- `GET /api/v1/ai/health`: Real-time health and latency telemetry of upstream LLM providers (Groq, Gemini).
+
 ---
 
 ## 8. Automated Test Suite
 
 The test suite covers 100% of the platform and backend deliverables:
+- `tests/test_ai_services.py`: 12 automated tests for STT/TTS, OCR blur gate, scam detection, RAG policy Q&A, form extraction, LangGraph agent, IsolationForest anomalies, scam map clusters, eval metrics, and offline batch deduplication.
 - `tests/test_auth_rbac.py`: JWT login, refresh tokens, and server-side RBAC enforcement (HTTP 403).
 - `tests/test_rules_engine.py`: Versioned eligibility rules, condition firing traces, dynamic publishing.
 - `tests/test_decision_engine.py`: Weakest-link confidence calculation ($\min(\text{components})$), cost-matrix thresholds, no auto-rejection guarantee.
@@ -208,7 +229,7 @@ The test suite covers 100% of the platform and backend deliverables:
 To run:
 ```bash
 python -m pytest tests/ -v
-# Output: 24 passed
+# Output: 36 passed in 11.30s (100% passing)
 ```
 
 ---

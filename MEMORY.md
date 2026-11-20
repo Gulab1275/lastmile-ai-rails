@@ -1,6 +1,6 @@
 # Rahbar — Project Memory (MEMORY.md)
 *Persistent architectural memory, key decisions, team conventions, and project history.*
-*Last updated: 2026-11-20 (Post-Merge: Backend + AI Unified)*
+*Last updated: 2026-11-20 (Phase 3 Complete: Full Platform, AI, Anomaly Detection & Creative Rails)*
 
 ---
 
@@ -17,9 +17,9 @@
 | Engineer | Primary Role | Dedicated Folders | Responsibilities |
 | :--- | :--- | :--- | :--- |
 | **Mahandar** | Backend & AWS Lead | `services/api/`<br/>`mock/`<br/>`infra/`<br/>`.github/` | AWS EC2 (t3.small), Docker Compose, Caddy (HTTPS + DuckDNS), FastAPI gateway, 5-role RBAC, JWT auth, Rules Engine, Decision Router, Consent Gateway, Mock services (NADRA, Raast). |
-| **Naresh** | AI Core & Supabase Lead | `db/`<br/>`seed/`<br/>`services/ai/` | Supabase Postgres + `pgvector` provisioning, SQLAlchemy models, Alembic migrations, synthetic seed script (200 citizens, scam SMS, mock IDs), LiteLLM router, OCR, Urdu voice (STT/TTS), RAG, LangGraph agent, evaluation harness. |
+| **Naresh** | AI Core & Supabase Lead | `db/`<br/>`seed/`<br/>`services/ai/` | Supabase Postgres + `pgvector` provisioning, SQLAlchemy models, Alembic migrations, synthetic seed script (200 citizens, scam SMS, mock IDs), LiteLLM router, OCR, Urdu voice (STT/TTS), RAG, LangGraph agent, evaluation harness, anomaly detector, scam map aggregator, offline sync engine. |
 | **Gulab** | Frontend & PWA Lead | `apps/web/` | Next.js PWA, Urdu RTL layout (Noto Nastaliq), voice-first touch UI, 40-family switcher, offline IndexedDB queue, MSW mock fixtures, Vercel deployment. |
-| **Shared** | Frozen Contract | `services/shared/` | `schemas.py` — Pydantic models for claims, decisions, components, errors, and AI function signatures. |
+| **Shared** | Frozen Contract | `services/shared/` | `schemas.py` — Pydantic models for claims, decisions, components, errors, AI function signatures, anomaly checks, and offline sync. |
 
 ---
 
@@ -36,7 +36,8 @@
 ---
 
 ## 4. Test Suite & Quality Status
-* **Automated Pytest Suite:** **24/24 tests passing (100%)**
+* **Automated Pytest Suite:** **36/36 tests passing (100%)**
+  * `test_ai_services.py`: 12 automated tests for STT/TTS, OCR blur gate, scam classifier, RAG policy Q&A, form extraction, LangGraph agent, IsolationForest anomalies, scam map clusters, eval metrics, and offline batch deduplication.
   * `test_audit_hash_chain.py`: Tamper-evident SHA-256 blockchain ledger.
   * `test_auth_rbac.py`: 5-role JWT server-side RBAC enforcement.
   * `test_consent_gateway.py`: Instant revocation blocking and helper delegation.
@@ -55,6 +56,14 @@
   * 13 Supabase tables provisioned + `pgvector` enabled via `db/init_db.py`.
   * AI pipeline, Urdu STT/TTS, scam detector, and OCR blur/tamper scoring built in `services/ai/`.
   * Seed data populated in Supabase (200 citizens, 6 demo role accounts).
-  * Remote changes from `origin/main` (15 commits by Mahandar: FastAPI, RBAC, Caddy, Docker, 24 tests) fetched and merged.
-  * Conflicts in `services/shared/schemas.py`, `README.md`, `requirements.txt` resolved.
-  * All 24 automated tests verified passing (100%).
+  * Remote changes from `origin/main` merged.
+* **2026-11-20 (Phase 2 & 3):**
+  * Built `services/ai/forms.py`: Structured Pydantic extraction from conversational Urdu.
+  * Built `services/ai/agent.py`: LangGraph StateGraph claim workflow with session checkpointing and token-gated disbursements.
+  * Built `services/ai/anomaly.py` (Task N13): Scikit-learn `IsolationForest` outlier detection + helper velocity spikes + duplicate burst screening.
+  * Built `services/ai/scam_map.py`: Threat intelligence aggregator with Karachi/Sindh GPS hotspot clusters and tactical taxonomy.
+  * Built `services/ai/eval_dashboard.py`: Observability metrics, confusion matrices, latency benchmarks, and cost sweep curves.
+  * Built `services/ai/sync.py`: Offline-first batch synchronization protocol with idempotency keys.
+  * Built `services/api/routes/ai.py`: 12 REST endpoints for all AI and agent capabilities.
+  * Exported updated OpenAPI specification: 40 endpoints documented in [`docs/openapi.json`](file:///e:/lastmile-ai-rails/docs/openapi.json).
+  * Implemented 12 comprehensive tests in `tests/test_ai_services.py`. All 36 automated tests passing in 11.30s (100%).
