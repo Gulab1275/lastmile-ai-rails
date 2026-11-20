@@ -1,6 +1,6 @@
 # Rahbar — Project Memory (MEMORY.md)
 *Persistent architectural memory, key decisions, team conventions, and project history.*
-*Last updated: 2026-11-20 (Phase 3 Complete: Full Platform, AI, Anomaly Detection & Creative Rails)*
+*Last updated: 2026-11-20 (Phase 4 Complete: Demo Runner, Keep-Alive, Judging Guide & E2E Suite)*
 
 ---
 
@@ -17,7 +17,7 @@
 | Engineer | Primary Role | Dedicated Folders | Responsibilities |
 | :--- | :--- | :--- | :--- |
 | **Mahandar** | Backend & AWS Lead | `services/api/`<br/>`mock/`<br/>`infra/`<br/>`.github/` | AWS EC2 (t3.small), Docker Compose, Caddy (HTTPS + DuckDNS), FastAPI gateway, 5-role RBAC, JWT auth, Rules Engine, Decision Router, Consent Gateway, Mock services (NADRA, Raast). |
-| **Naresh** | AI Core & Supabase Lead | `db/`<br/>`seed/`<br/>`services/ai/` | Supabase Postgres + `pgvector` provisioning, SQLAlchemy models, Alembic migrations, synthetic seed script (200 citizens, scam SMS, mock IDs), LiteLLM router, OCR, Urdu voice (STT/TTS), RAG, LangGraph agent, evaluation harness, anomaly detector, scam map aggregator, offline sync engine. |
+| **Naresh** | AI Core & Supabase Lead | `db/`<br/>`seed/`<br/>`services/ai/`<br/>`scripts/` | Supabase Postgres + `pgvector` provisioning, SQLAlchemy models, Alembic migrations, synthetic seed script (200 citizens, scam SMS, mock IDs), LiteLLM router, OCR, Urdu voice (STT/TTS), RAG, LangGraph agent, evaluation harness, anomaly detector, scam map aggregator, offline sync engine, demo runner, keep-alive heartbeat. |
 | **Gulab** | Frontend & PWA Lead | `apps/web/` | Next.js PWA, Urdu RTL layout (Noto Nastaliq), voice-first touch UI, 40-family switcher, offline IndexedDB queue, MSW mock fixtures, Vercel deployment. |
 | **Shared** | Frozen Contract | `services/shared/` | `schemas.py` — Pydantic models for claims, decisions, components, errors, AI function signatures, anomaly checks, and offline sync. |
 
@@ -36,7 +36,8 @@
 ---
 
 ## 4. Test Suite & Quality Status
-* **Automated Pytest Suite:** **36/36 tests passing (100%)**
+* **Automated Pytest Suite:** **37/37 tests passing (100%)**
+  * `test_demo_e2e.py`: Complete 12-step hackathon presentation & challenge verification.
   * `test_ai_services.py`: 12 automated tests for STT/TTS, OCR blur gate, scam classifier, RAG policy Q&A, form extraction, LangGraph agent, IsolationForest anomalies, scam map clusters, eval metrics, and offline batch deduplication.
   * `test_audit_hash_chain.py`: Tamper-evident SHA-256 blockchain ledger.
   * `test_auth_rbac.py`: 5-role JWT server-side RBAC enforcement.
@@ -56,7 +57,6 @@
   * 13 Supabase tables provisioned + `pgvector` enabled via `db/init_db.py`.
   * AI pipeline, Urdu STT/TTS, scam detector, and OCR blur/tamper scoring built in `services/ai/`.
   * Seed data populated in Supabase (200 citizens, 6 demo role accounts).
-  * Remote changes from `origin/main` merged.
 * **2026-11-20 (Phase 2 & 3):**
   * Built `services/ai/forms.py`: Structured Pydantic extraction from conversational Urdu.
   * Built `services/ai/agent.py`: LangGraph StateGraph claim workflow with session checkpointing and token-gated disbursements.
@@ -66,5 +66,9 @@
   * Built `services/ai/sync.py`: Offline-first batch synchronization protocol with idempotency keys.
   * Built `services/api/routes/ai.py`: 12 REST endpoints for all AI and agent capabilities.
   * Exported updated OpenAPI specification: 40 endpoints documented in [`docs/openapi.json`](file:///e:/lastmile-ai-rails/docs/openapi.json).
-  * Implemented 12 comprehensive tests in `tests/test_ai_services.py`. All 36 automated tests passing in 11.30s (100%).
-  * Pushed Phase 3 changes (5 atomic commits: `4abf9a3..fc669f6`) to GitHub `origin/main`.
+  * Pushed Phase 3 changes (5 atomic commits: `4abf9a3..77d17a9`) to GitHub `origin/main`.
+* **2026-11-20 (Phase 4):**
+  * Built `scripts/demo_runner.py`: Interactive 12-step presentation script covering all 8 hackathon challenges.
+  * Built `scripts/keepalive_ping.py`: Supabase heartbeat ping and connection pool monitor.
+  * Built `tests/test_demo_e2e.py`: Automated Pytest verification for the full 12-step presentation lifecycle (37/37 tests pass).
+  * Authored [`docs/JUDGING_WALKTHROUGH.md`](file:///e:/lastmile-ai-rails/docs/JUDGING_WALKTHROUGH.md): Official judging rubric mapping all 8 challenges to code, endpoints, and verification steps.

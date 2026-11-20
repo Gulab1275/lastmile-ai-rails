@@ -1,18 +1,20 @@
 # Rahbar — Runtime Context (CONTEXT.md)
 *Current operational status, active sprint/block, immediate priorities, and integration states.*
-*Last updated: 2026-11-20 (Phase 3 Complete: AI Services, Anomaly Detection & Creative Rails Unified)*
+*Last updated: 2026-11-20 (Phase 4 Complete: Demo Runner, Keep-Alive Heartbeat, Judging Guide & E2E Suite)*
 
 ---
 
-## 1. Current Phase: Phase 3 (AI, Observability & Creative Rails) Complete
+## 1. Current Phase: Phase 4 (Judging Verification & E2E Test Suite) Complete
 * **Status:** **100% OPERATIONAL & VERIFIED**
-* **Test Suite:** **36 / 36 PASSED** (11.30s execution time)
-* **API Endpoints:** **40 documented endpoints** in [`docs/openapi.json`](file:///e:/lastmile-ai-rails/docs/openapi.json) (now including 12 dedicated `/api/v1/ai/` endpoints).
-* **Cross-Team Alignment:** Full backward compatibility maintained with Mahandar's FastAPI backend and Gulab's frontend PWA contract.
+* **Test Suite:** **37 / 37 PASSED** (10.51s execution time)
+* **Presentation Runner:** [`scripts/demo_runner.py`](file:///e:/lastmile-ai-rails/scripts/demo_runner.py) executes all 12 demo steps across all 8 challenges with 100% assertions passing.
+* **Keep-Alive Script:** [`scripts/keepalive_ping.py`](file:///e:/lastmile-ai-rails/scripts/keepalive_ping.py) keeps Supabase Postgres warm and monitors pool connections.
+* **Judging Documentation:** [`docs/JUDGING_WALKTHROUGH.md`](file:///e:/lastmile-ai-rails/docs/JUDGING_WALKTHROUGH.md) provides an executive challenge-to-code mapping for evaluators.
+* **API Endpoints:** 40 documented endpoints in [`docs/openapi.json`](file:///e:/lastmile-ai-rails/docs/openapi.json).
 
 ---
 
-## 2. Integrated Architecture & AI Capabilities Status
+## 2. Integrated Architecture & Verification Status
 
 | Area | Component | Implementation Status | Test Status |
 | :--- | :--- | :--- | :--- |
@@ -34,31 +36,12 @@
 | **Scam Map Threat Feed**| `services/ai/scam_map.py` | Karachi/Sindh GPS hotspot clusters + category taxonomy. | **PASSED** |
 | **Evaluation Dashboard**| `services/ai/eval_dashboard.py`| Precision/recall, latency benchmarks, cost curve sweeps. | **PASSED** |
 | **Offline Sync Batch** | `services/ai/sync.py` | Low-bandwidth idempotency deduplication & batch intake. | **PASSED** |
-| **Seed Generator** | `seed/run_seed.py` | 200 citizens, 6 demo role accounts, intentional edge cases. | **PASSED** |
+| **Demo Runner** | `scripts/demo_runner.py` | 12-step presentation script covering all 8 challenges. | **PASSED** |
+| **Keep-Alive Ping** | `scripts/keepalive_ping.py` | Supabase heartbeat & connection pool monitor. | **PASSED** |
 
 ---
 
-## 3. Dedicated AI & Agent REST Endpoints
-
-All accessible under `/api/v1/ai/`:
-1. `POST /scam-check`: Real-time phishing and fake relief message detection.
-2. `POST /ocr`: Laplacian blur gate and tamper scoring for document uploads.
-3. `POST /voice/stt`: Groq Whisper large-v3 Urdu and English transcription.
-4. `POST /voice/tts`: Edge-TTS natural Urdu speech audio synthesis with caching.
-5. `POST /ask`: RAG policy question answering with official page citations.
-6. `POST /extract-form`: Conversational speech extraction into Pydantic schema.
-7. `POST /agent/run`: LangGraph state machine orchestrating claim decisions.
-8. `POST /anomaly-check`: IsolationForest outlier detection and repeat burst flags.
-9. `GET /scam-map`: Threat intelligence feed with regional GPS coordinates.
-10. `GET /eval-summary`: Observability metrics, confusion matrix, and cost sweeps.
-11. `POST /sync-offline-batch`: Offline-first queue sync with duplicate prevention.
-12. `GET /health`: Upstream LLM provider latency and status telemetry.
-
----
-
-## 4. Git Status & Deployment Readiness
+## 3. Git Status & Deployment Readiness
 * **Branch:** `main`
-* **Remote State:** Successfully synchronized with `origin/main` (`6d8c29f..fc669f6`).
-* **OpenAPI Contract:** [`docs/openapi.json`](file:///e:/lastmile-ai-rails/docs/openapi.json) published with 40 routes for frontend consumption.
-* **Test Verification:** 36 / 36 tests passing (100%).
-* **Current Status:** Working tree clean. Ready for next phase / UI integration with Gulab.
+* **Local State:** Phase 4 completed; 37 tests passing.
+* **Directives:** Awaiting explicit instruction from Naresh before running `git push origin main`.

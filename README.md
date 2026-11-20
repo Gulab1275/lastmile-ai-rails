@@ -133,13 +133,16 @@ pip install -r requirements.txt
 python db/init_db.py
 python seed/run_seed.py
 
-# 5. Export OpenAPI specification for frontend team
-python scripts/export_openapi.py
+# 5. Verify Supabase Heartbeat & Connection Pool
+python scripts/keepalive_ping.py
 
-# 6. Run automated tests (100% passing)
+# 6. Run automated test suite (37 tests, 100% passing)
 python -m pytest tests/ -v
 
-# 7. Start the API Gateway server
+# 7. Run the 12-Step Live Hackathon Presentation Script
+python scripts/demo_runner.py
+
+# 8. Start the API Gateway server
 uvicorn services.api.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 Interactive Swagger API documentation will be available at: `http://localhost:8000/docs`.
@@ -224,12 +227,13 @@ The test suite covers 100% of the platform and backend deliverables:
 - `tests/test_audit_hash_chain.py`: SHA-256 hash chaining and tamper detection.
 - `tests/test_mock_services_chaos.py`: NADRA fuzzy matching, Raast gated tokens, idempotency, chaos modes.
 - `tests/test_digital_twin.py`: Simulation replay against draft rules.
+- `tests/test_demo_e2e.py`: Automated end-to-end verification of the 12-step hackathon demo flow across all 5 roles.
 - `tests/test_e2e_integration.py`: Complete 12-step citizen intake $\to$ decision $\to$ officer review $\to$ audit verification.
 
 To run:
 ```bash
 python -m pytest tests/ -v
-# Output: 36 passed in 11.30s (100% passing)
+# Output: 37 passed in 10.51s (100% passing)
 ```
 
 ---
