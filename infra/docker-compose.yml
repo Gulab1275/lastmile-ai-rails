@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # ----------------------------------------------------------------------------
+  # FastAPI API Gateway & Core Platform (Mahandar)
+  # ----------------------------------------------------------------------------
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    container_name: rahbar-api
+    restart: always
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - SECRET_KEY=${SECRET_KEY:-rahbar-super-secret-development-key-change-in-production-min32chars}
+      - DOMAIN=${DOMAIN:-rahbar.duckdns.org}
+      - MOCK_CHAOS_MODE=${MOCK_CHAOS_MODE:-none}
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+    networks:
+      - rahbar-net
+
+  # ----------------------------------------------------------------------------
+  # Caddy Reverse Proxy & Automatic Let's Encrypt HTTPS (Mahandar)
+  # ----------------------------------------------------------------------------
+  caddy:
+    image: caddy:2-alpine
+    container_name: rahbar-caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - rahbar-net
+
+networks:
+  rahbar-net:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:
