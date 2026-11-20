@@ -57,20 +57,20 @@ To ensure **zero Git merge conflicts**, the repository ownership is strictly par
 rahbar/
 ├── services/
 │   ├── api/                 # [MAHANDAR] FastAPI gateway, routes, RBAC, rules engine, consent gateway, decision engine
+│   │   └── static/          # [GULAB & NARESH] Single-Page PWA Dashboard (/app) with Urdu RTL, Tailwind, and sw.js
 │   ├── ai/                  # [NARESH] LiteLLM router, scam classifier, OCR pipeline, voice STT/TTS, RAG, LangGraph
 │   └── shared/              # [SHARED CONTRACT] Frozen Pydantic schemas (case, decision, error, AI signatures)
 ├── mock/                    # [MAHANDAR] Mock external services (NADRA, Raast, Complaints) with chaos switches
 ├── infra/                   # [MAHANDAR] AWS EC2 Dockerfile, docker-compose.yml, Caddyfile, deploy scripts, systemd
 ├── db/                      # [NARESH] Supabase Postgres setup, Alembic migrations, database models
 ├── seed/                    # [NARESH] Synthetic citizens, scam messages, mock ID/bill images, policy PDFs
+├── scripts/                 # [NARESH] Live 12-step demo runner (demo_runner.py) & Supabase keepalive (keepalive_ping.py)
 ├── apps/
-│   └── web/                 # [GULAB] Next.js PWA, Tailwind, shadcn, Urdu RTL, PWA service worker
-├── docs/                    # [SHARED] PRD, openapi.json, slides, architecture notes
-├── tests/                   # [MAHANDAR & SHARED] Automated unit and integration test suite
+│   └── web/                 # [GULAB] Next.js PWA client, TypeScript API library (src/lib/api.ts), manifest.json
+├── docs/                    # [SHARED] PRD, openapi.json, JUDGING_WALKTHROUGH.md, architecture notes
+├── tests/                   # [MAHANDAR & SHARED] Automated unit and integration test suite (40 tests, 100% passing)
 ├── .github/workflows/ci.yml # [MAHANDAR] Automated GitHub Actions CI (Ruff + Pytest)
-├── MEMORY.md                # [SHARED] Shared team memory & conflict resolution log
-├── CONTEXT.md               # [SHARED] Active sprint context & immediate steps
-└── README.md                # [SHARED] System documentation & guide
+└── README.md                # [SHARED] System documentation & judging guide
 ```
 
 ---
@@ -79,7 +79,7 @@ rahbar/
 
 ```mermaid
 flowchart TD
-    User["Citizen (Widow) / Helper"] --> PWA["Gulab: Next.js PWA (Vercel)"]
+    User["Citizen (Widow) / Helper"] --> PWA["Interactive PWA (/app) or Next.js Client"]
     PWA -->|"HTTPS / JWT"| API["Mahandar: FastAPI Gateway (AWS EC2)"]
 
     subgraph "Mahandar: Core API & Rails Platform"
@@ -136,18 +136,29 @@ python seed/run_seed.py
 # 5. Verify Supabase Heartbeat & Connection Pool
 python scripts/keepalive_ping.py
 
-# 6. Run automated test suite (37 tests, 100% passing)
+# 6. Run automated test suite (40 tests, 100% passing)
 python -m pytest tests/ -v
 
 # 7. Run the 12-Step Live Hackathon Presentation Script
 python scripts/demo_runner.py
 
-# 8. Start the API Gateway server
+# 8. Start the API Gateway server & PWA Dashboard
 uvicorn services.api.main:app --host 0.0.0.0 --port 8000 --reload
 ```
-Interactive Swagger API documentation will be available at: `http://localhost:8000/docs`.
+- Interactive Swagger API docs: `http://localhost:8000/docs`
+- Interactive Single-Page PWA Dashboard: `http://localhost:8000/app`
 
-### 6.2 Docker Deployment (Local or AWS EC2)
+### 6.2 Instant In-Browser PWA Demo (`/app`)
+Once the FastAPI server is running (`http://localhost:8000`), open `http://localhost:8000/app` in any modern desktop or mobile browser:
+1. **🌸 Widow Voice Intake:** Test microphone simulation, Whisper transcription, blur checks, and auto-approval output.
+2. **🤝 Community Helper (40 Families):** Switch between 40 pre-seeded families with 2 taps and toggle granular consent scopes (`identity`, `income`, `bills`, `helper_acting`).
+3. **🛡️ Shopkeeper Scam Filter & Map:** Classify fake BISP messages and explore Karachi/Sindh threat clusters.
+4. **⚖️ Officer Review Queue:** Triage borderline cases with one-click approve/reject actions and handoff notes.
+5. **⚙️ Admin Digital Twin:** Move policy sliders to simulate impact on historical cases before publishing.
+6. **📜 Auditor Ledger Explorer:** Inspect cryptographic SHA-256 blocks from genesis to head.
+7. **📊 Model Observability Dashboard:** Live empirical cost curves, optimal auto-approval threshold ($p \le 0.05$), and ultra-low latency benchmarks.
+
+### 6.3 Docker Deployment (Local or AWS EC2)
 ```bash
 # Build and run containers with Docker Compose
 docker compose -f infra/docker-compose.yml up -d --build
@@ -248,6 +259,12 @@ To run:
 python -m pytest tests/ -v
 # Output: 40 passed in 9.14s (100% passing)
 ```
+
+### 8.1 Official Hackathon Judging Walkthrough
+For judges evaluating each rubric challenge against code and live demonstrations:
+- **Judging Walkthrough Guide:** Read [`docs/JUDGING_WALKTHROUGH.md`](file:///e:/lastmile-ai-rails/docs/JUDGING_WALKTHROUGH.md) for a comprehensive mapping of all 8 hackathon challenges to specific codebase locations, API routes, and live test commands.
+- **Interactive 12-Step Live Demo:** Run `python scripts/demo_runner.py` to see all 5 roles and all 8 challenges executed and verified automatically.
+- **Interactive PWA Dashboard:** Visit `http://localhost:8000/app` to experience the user flows in Urdu RTL.
 
 ---
 
