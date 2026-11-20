@@ -3,8 +3,11 @@ Main FastAPI Application for Rahbar.
 The Last Mile: AI on Public Rails (Coder's Cup '26).
 Team: Mahandar (Backend Lead & AWS Infra), Naresh (Agents & DB), Gulab (Frontend & PWA).
 """
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from slowapi.errors import RateLimitExceeded
 
 from services.api.config import settings
@@ -65,11 +68,25 @@ app.include_router(digital_twin_router, prefix=api_prefix)
 app.include_router(webhooks_router, prefix=api_prefix)
 app.include_router(ai_router, prefix=api_prefix)
 
+# 4. Mount Static Directory & Serve Web App
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+@app.get("/app", include_in_schema=False)
+async def serve_app():
+    """Serves the interactive single-page PWA web dashboard."""
+    index_path = STATIC_DIR / "index.html"
+    if index_path.exists():
+        return FileResponse(str(index_path))
+    return {"error": "PWA Web App not found"}
+
 # Root convenience redirect or status
 @app.get("/")
 async def root():
     return {
         "message": "Rahbar API Gateway is running.",
+        "app": "/app",
         "docs": "/docs",
         "health": f"{api_prefix}/health",
         "version": "1.0.0"

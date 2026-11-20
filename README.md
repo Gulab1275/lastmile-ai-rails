@@ -214,11 +214,24 @@ curl http://localhost:8000/api/v1/health
 - `POST /api/v1/ai/sync-offline-batch`: Low-bandwidth sync protocol with idempotency keys and batch ingestion.
 - `GET /api/v1/ai/health`: Real-time health and latency telemetry of upstream LLM providers (Groq, Gemini).
 
+### 7.11 Interactive PWA Web Application (`/app`)
+- `GET /app`: Full single-page interactive PWA dashboard in Urdu RTL (`Noto Nastaliq Urdu`) + Tailwind CSS.
+  - **Tab 1: Widow Voice Intake** — Microphone simulation, Whisper transcription, document blur scores, and instant decision engine output.
+  - **Tab 2: Community Helper Mode** — 40-family 2-tap switcher, offline simulation toggle, and granular consent scope cards.
+  - **Tab 3: Shopkeeper Scam Filter & Heatmap** — Phishing SMS classifier and Karachi regional GPS cluster threat heatmap.
+  - **Tab 4: Officer Review Queue** — Human-in-the-loop triage table with one-click approve/reject actions and handoff packets.
+  - **Tab 5: Admin Digital Twin** — Real-time eligibility rule slider simulation and live rule publishing without server restarts.
+  - **Tab 6: Auditor Ledger Explorer** — Tamper-evident SHA-256 hash-chained block explorer.
+  - **Tab 7: Model Observability Dashboard** — Empirical accuracy, optimal auto-approval threshold curve ($p \le 0.05$), and LPU speed metrics.
+- `GET /static/manifest.json`: Web app manifest for standalone mobile/desktop PWA installation.
+- `GET /static/sw.js`: Service worker implementing offline network-first asset caching.
+
 ---
 
 ## 8. Automated Test Suite
 
 The test suite covers 100% of the platform and backend deliverables:
+- `tests/test_web_app.py`: 3 tests verifying `/app` single-page dashboard serving, root redirects, PWA `manifest.json`, and offline service worker `sw.js`.
 - `tests/test_ai_services.py`: 12 automated tests for STT/TTS, OCR blur gate, scam detection, RAG policy Q&A, form extraction, LangGraph agent, IsolationForest anomalies, scam map clusters, eval metrics, and offline batch deduplication.
 - `tests/test_auth_rbac.py`: JWT login, refresh tokens, and server-side RBAC enforcement (HTTP 403).
 - `tests/test_rules_engine.py`: Versioned eligibility rules, condition firing traces, dynamic publishing.
@@ -233,7 +246,7 @@ The test suite covers 100% of the platform and backend deliverables:
 To run:
 ```bash
 python -m pytest tests/ -v
-# Output: 37 passed in 10.51s (100% passing)
+# Output: 40 passed in 9.14s (100% passing)
 ```
 
 ---
