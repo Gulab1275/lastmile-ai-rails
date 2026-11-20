@@ -5,7 +5,6 @@ Contract between Mahandar (API/Backend), Naresh (AI/DB), and Gulab (Frontend).
 from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
-
 from pydantic import BaseModel, Field
 
 # ==========================================
@@ -18,6 +17,9 @@ class RoleEnum(str, Enum):
     OFFICER = "officer"
     ADMIN = "admin"
     AUDITOR = "auditor"
+
+# Backward compatibility alias
+UserRole = RoleEnum
 
 
 class RouteDecision(str, Enum):
@@ -33,6 +35,9 @@ class CaseStatus(str, Enum):
     APPROVED = "approved"
     REJECTED = "rejected"
     NEED_MORE_INFO = "need_more_info"
+    PROCESSING = "processing"
+    NEED_PROOF = "need_proof"
+    DISBURSED = "disbursed"
 
 
 class BenefitType(str, Enum):
@@ -46,6 +51,14 @@ class ConsentScope(str, Enum):
     INCOME = "income"
     BILLS = "bills"
     HELPER_ACTING = "helper_acting"
+    DOCUMENTS = "documents"
+    PHONE = "phone"
+    HELPER_ACTION = "helper_action"
+
+
+class ConsentStatus(str, Enum):
+    ACTIVE = "active"
+    REVOKED = "revoked"
 
 
 class ConsentAction(str, Enum):
@@ -60,6 +73,12 @@ class ChaosMode(str, Enum):
     STATUS_500 = "500"
     SLOW = "slow"
     BAD_DATA = "bad_data"
+
+
+class ScamLabel(str, Enum):
+    SCAM = "scam"
+    LEGIT = "legit"
+    UNSURE = "unsure"
 
 
 # ==========================================
@@ -99,7 +118,93 @@ class ErrorResponse(BaseModel):
 
 
 # ==========================================
-# 3. Authentication & User Schemas
+# 3. AI Services Schemas (Naresh -> API)
+# ==========================================
+
+class ScamCheckRequest(BaseModel):
+    text: str = Field(..., min_length=1, description="Raw message text to inspect")
+
+
+class ScamCheckResponse(BaseModel):
+    label: ScamLabel
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    reasons: List[str] = Field(default_factory=list, description="Explainable features that triggered the label")
+
+
+class DocumentExtractionResult(BaseModel):
+    fields: Dict[str, Any] = Field(default_factory=dict, description="Extracted key-value pairs (name, cnic, dob, etc.)")
+    field_confidences: Dict[str, float] = Field(default_factory=dict)
+    blur_score: float = Field(..., ge=0.0, description="Laplacian variance (low score means blurry)")
+    is_blurry: bool
+    tamper_score: float = Field(..., ge=0.0, le=1.0, description="Probability of digital editing or tampering")
+    qr_verified: Optional[bool] = None
+
+
+class TranscribeResponse(BaseModel):
+    text: str = Field(..., description="Urdu or English transcribed text")
+    language: str = Field(default="ur")
+    confidence: float = Field(..., ge=0.0, le=1.0)
+
+
+class SynthesizeRequest(BaseModel):
+    text: str
+    language: str = Field(default="ur")
+
+
+class PolicyAskRequest(BaseModel):
+    question: str
+
+
+class PolicySource(BaseModel):
+    document_name: str
+    page_number: int
+    excerpt: str
+
+
+class PolicyAskResponse(BaseModel):
+    answer: str
+    sources: List[PolicySource] = Field(default_factory=list)
+
+
+class ClaimAgentStep(BaseModel):
+    step_name: str
+    status: str
+    details: Dict[str, Any] = Field(default_factory=dict)
+
+
+class ClaimAgentResult(BaseModel):
+    case_id: str
+    steps_taken: List[ClaimAgentStep] = Field(default_factory=list)
+    proposed_decision: Optional[DecisionResponse] = None
+
+
+class CitizenProfile(BaseModel):
+    cnic: str = Field(..., pattern=r"^\d{5}-\d{7}-\d{1}$", description="Standard 13-digit CNIC format")
+    full_name: str
+    phone: Optional[str] = None
+    dob: Optional[str] = None
+    household_size: int = Field(default=1, ge=1)
+    monthly_income: float = Field(default=0.0, ge=0.0)
+    address: Optional[str] = None
+
+
+class ClaimCreate(BaseModel):
+    citizen_cnic: str
+    claim_amount: float = Field(..., gt=0.0, description="Requested cash support amount (PKR)")
+    household_size: int = Field(default=1, ge=1)
+    monthly_income: float = Field(default=0.0, ge=0.0)
+    helper_id: Optional[str] = None
+
+
+class ConsentCreate(BaseModel):
+    citizen_id: str
+    grantee: str
+    scope: ConsentScope
+    granted: bool = True
+
+
+# ==========================================
+# 4. Authentication & User Schemas
 # ==========================================
 
 class UserBase(BaseModel):
@@ -143,7 +248,7 @@ class UserResponse(UserBase):
 
 
 # ==========================================
-# 4. Case & Intake Schemas
+# 5. Case & Intake Schemas
 # ==========================================
 
 class DocumentAttachment(BaseModel):
@@ -200,7 +305,7 @@ class CaseResponse(BaseModel):
 
 
 # ==========================================
-# 5. Granular Consent Schemas
+# 6. Granular Consent Schemas
 # ==========================================
 
 class ConsentRecord(BaseModel):
@@ -209,45 +314,49 @@ class ConsentRecord(BaseModel):
     scope: ConsentScope
     granted: bool
     granted_to_helper_id: Optional[str] = None
+    grantee: Optional[str] = None
+    status: Optional[ConsentStatus] = None
     granted_at: datetime
     revoked_at: Optional[datetime] = None
-    audit_hash: str
+    audit_hash: Optional[str] = None
 
 
 class ConsentGrantRequest(BaseModel):
     citizen_id: str
     scope: ConsentScope
     helper_id: Optional[str] = None
+    reason: Optional[str] = "Citizen authorized Relief Support claim processing"
 
 
 class ConsentWithdrawRequest(BaseModel):
     citizen_id: str
     scope: ConsentScope
+    reason: Optional[str] = "Citizen requested data revocation"
 
 
-class ConsentCheckResponse(BaseModel):
+class ConsentStatusResponse(BaseModel):
     citizen_id: str
-    scope: ConsentScope
-    allowed: bool
-    granted_at: Optional[datetime] = None
-    active_helper_id: Optional[str] = None
+    active_scopes: List[ConsentScope]
+    revoked_scopes: List[ConsentScope]
+    all_consents: List[ConsentRecord]
+    can_helper_act: bool
 
 
 # ==========================================
-# 6. Versioned Rules Engine Schemas
+# 7. Rules Engine Schemas (Dynamic Versioning)
 # ==========================================
 
 class RuleCondition(BaseModel):
     field: str
-    operator: str = Field(..., description="lte, gte, eq, ne, in, not_in")
+    operator: str = Field(..., description="lte, gte, eq, ne, in, not_in, <=, >=")
     value: Any
-    description_en: str
-    description_ur: str
+    description_en: str = Field(default="", description="Condition explanation in English")
+    description_ur: str = Field(default="", description="Condition explanation in Urdu")
 
 
 class RuleSet(BaseModel):
-    version: int
-    name: str
+    version: int = 1
+    name: str = "Standard Relief Policy"
     max_monthly_income: float = 35000.0
     min_household_size: int = 1
     max_auto_approve_amount: float = 15000.0
@@ -261,12 +370,30 @@ class RuleSet(BaseModel):
     is_active: bool = True
 
 
+class RuleVersionCreate(BaseModel):
+    name: str
+    rule_set: RuleSet
+    author_id: str = "admin"
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    is_active: bool = True
+
+
 class RuleVersionResponse(BaseModel):
     version: int
     name: str
     is_active: bool
     rule_set: RuleSet
     created_at: datetime
+
+
+class RuleVersionSchema(BaseModel):
+    id: Optional[int] = None
+    version: int
+    rule_name: str
+    conditions: List[RuleCondition]
+    status: str = "active"
+    author: str = "admin"
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class RuleEvaluationTrace(BaseModel):
@@ -278,7 +405,7 @@ class RuleEvaluationTrace(BaseModel):
 
 
 # ==========================================
-# 7. Officer Review & Handoff Schemas
+# 8. Officer Review & Handoff Schemas
 # ==========================================
 
 class HandoffPacket(BaseModel):
@@ -313,7 +440,7 @@ class ReviewDecisionRequest(BaseModel):
 
 
 # ==========================================
-# 8. Mock DPI Rail Schemas
+# 9. Mock DPI Rail Schemas
 # ==========================================
 
 class MockNADRARequest(BaseModel):
@@ -370,19 +497,23 @@ class MockComplaintResponse(BaseModel):
 
 
 # ==========================================
-# 9. Cryptographic Audit Log Schemas
+# 10. Cryptographic Audit Log Schemas
 # ==========================================
 
 class AuditLogEntry(BaseModel):
-    id: str
+    id: Optional[str] = None
     prev_hash: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
-    actor_id: str
-    actor_role: RoleEnum
-    action: str
-    resource_id: str
-    details: Dict[str, Any] = Field(default_factory=dict)
     current_hash: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    actor_id: Optional[str] = None
+    actor_role: Optional[RoleEnum] = None
+    actor: Optional[str] = None
+    action: str
+    resource_id: Optional[str] = None
+    target: Optional[str] = None
+    result: Optional[str] = None
+    request_id: Optional[str] = None
+    details: Dict[str, Any] = Field(default_factory=dict)
 
 
 class AuditChainVerificationResponse(BaseModel):
@@ -394,7 +525,7 @@ class AuditChainVerificationResponse(BaseModel):
 
 
 # ==========================================
-# 10. Digital Twin & Webhook Schemas
+# 11. Digital Twin & Webhook Schemas
 # ==========================================
 
 class RuleSimulationRequest(BaseModel):
