@@ -142,7 +142,11 @@ def run_autonomous_agent(payload: Dict[str, Any]):
         "reasons": res["reasons"],
         "disbursed": res["disbursed"],
         "disbursement_ref": res["disbursement_ref"],
-        "current_step": res["current_step"]
+        "current_step": res["current_step"],
+        "thought_chain": res.get("thought_chain", []),
+        "tools_executed": res.get("tools_executed", []),
+        "components": res.get("components", {}),
+        "handoff_packet": res.get("handoff_packet")
     }
 
 @router.get("/health")

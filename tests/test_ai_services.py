@@ -162,6 +162,53 @@ def test_ai_langgraph_agent_clean_approval():
     assert data["disbursed"] is True
     assert data["disbursement_ref"] is not None
     assert data["disbursement_ref"].startswith("RAAST-TX-")
+    assert "thought_chain" in data
+    assert len(data["thought_chain"]) >= 4
+    assert "verify_identity" in data["tools_executed"]
+    assert "disburse_payment" in data["tools_executed"]
+
+def test_ai_langgraph_agent_blurry_requests_more_proof():
+    """Verify LangGraph agent flags blurry document and requests proof without auto-rejecting."""
+    payload = {
+        "case_id": "case_test_agent_blurry",
+        "cnic": "42101-9988776-3",
+        "citizen_name": "Sakina Bibi",
+        "monthly_income": 20000.0,
+        "household_size": 4,
+        "claim_amount": 10000.0,
+        "documents": [
+            {"doc_type": "cnic_front", "blur_score": 25.0, "tamper_score": 0.02}
+        ]
+    }
+    response = client.post("/api/v1/ai/agent/run", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["route"] == "ask_more_proof"
+    assert data["disbursed"] is False
+    assert "thought_chain" in data
+    assert any("blur detected" in step.get("thought", "").lower() for step in data["thought_chain"])
+
+def test_ai_langgraph_agent_high_claim_hands_off_to_officer():
+    """Verify LangGraph agent hands off high-risk claim to human officer with triage packet."""
+    payload = {
+        "case_id": "case_test_agent_high",
+        "cnic": "42101-5544332-1",
+        "citizen_name": "Ghulam Rasool",
+        "monthly_income": 50000.0,  # exceeds poverty cap
+        "household_size": 2,
+        "claim_amount": 35000.0,    # exceeds auto threshold
+        "documents": [
+            {"doc_type": "cnic_front", "blur_score": 1200.0, "tamper_score": 0.01},
+            {"doc_type": "utility_bill", "blur_score": 1400.0, "tamper_score": 0.01}
+        ]
+    }
+    response = client.post("/api/v1/ai/agent/run", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["route"] == "human_review"
+    assert data["disbursed"] is False
+    assert data["handoff_packet"] is not None
+    assert data["handoff_packet"]["tool"] == "handoff_to_officer"
 
 
 def test_ai_anomaly_detection_flags_outlier_and_velocity():
