@@ -558,3 +558,29 @@ class WebhookEvent(BaseModel):
     event_type: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     payload: Dict[str, Any]
+
+
+# ==========================================
+# 12. Advanced AI & Creative Rails Schemas
+# ==========================================
+
+class AnomalyCheckRequest(BaseModel):
+    claim_data: Dict[str, Any]
+    historical_claims: Optional[List[Dict[str, Any]]] = None
+
+
+class AnomalyCheckResponse(BaseModel):
+    is_anomaly: bool
+    anomaly_score: float = Field(..., ge=0.0, le=1.0)
+    flags: List[str] = Field(default_factory=list)
+    reasons_en: List[str]
+    reasons_ur: List[str]
+    metrics: Dict[str, Any]
+
+
+class OfflineSyncBatchRequest(BaseModel):
+    batch_id: str
+    helper_id: str
+    queued_cases: List[Dict[str, Any]]
+    client_timestamp: Optional[str] = None
+
