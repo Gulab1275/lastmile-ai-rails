@@ -68,3 +68,10 @@ problem_statement.txt
 problem_statement_extracted.txt
 scratch/
 tmp/
+
+# Local Agent Context & Memory (Keep local, do not push to GitHub)
+MEMORY.md
+CONTEXT.md
+memory.md
+context.md
+
