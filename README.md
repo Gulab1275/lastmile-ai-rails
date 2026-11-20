@@ -2,7 +2,7 @@
 **Digital Public Infrastructure (DPI) Prototype for The Last Mile**  
 **Event:** Coder's Cup '26 · Hagrid's Hackathon · FAST-NUCES Karachi  
 **Team:** 
-- **Mahandar Khatri** (Backend Lead & AWS Infra)
+- **Mahandar Khatri** (Backend Lead & AWS Infrastructure)
 - **Naresh Kumar** (Agents, AI & Supabase Data Platform)
 - **Gulab** (Frontend Lead & Mobile PWA)
 
@@ -15,7 +15,7 @@
 
 ### Why This Task?
 One deep, production-grade task beats multiple thin superficial ones. A relief cash grant naturally touches all **eight hackathon challenges**:
-1. **The Cost of Being Wrong:** Wrong approvals cost 10x more than slow approvals. A calibrated cost matrix strictly gates disbursements.
+1. **The Cost of Being Wrong:** Wrong approvals cost 10x more than slow approvals. A calibrated cost matrix strictly gates disbursements ($p_{\text{wrong}} \le 0.05$).
 2. **Saying "I Am Not Sure":** Low-confidence decisions never guess silently; they route to a human officer with a comprehensive handoff packet.
 3. **Bad Data:** Real-world Pakistani names with spelling variants (e.g., *Muhammad / Mohammad / Mohd*), typos, and missing fields are resolved safely without incorrect mergers.
 4. **Rules That Change:** Admins can publish new versioned eligibility rules without code redeployment or server restarts.
@@ -38,6 +38,9 @@ As required by the hackathon rubric, here is the transparent breakdown of real p
 | **Decision Cost Matrix** | **REAL** Calibrated thresholds ($p_{\text{wrong}} \le 0.05$) | None | Demonstrates deep understanding of DPI risk trade-offs. |
 | **Cryptographic Audit** | **REAL** SHA-256 hash-chained ledger & tamper detection | None | Production-grade verifiable digital trail for public transparency. |
 | **Consent Enforcement** | **REAL** Server-side Consent Gateway with 403 block | None | Real-time privacy protection. |
+| **AI LLM Router** | **REAL** Multi-tier fallback (Groq Llama-3.3-70B/Qwen $\to$ Gemini $\to$ Offline) | None | High speed, cost optimization, and live demo reliability. |
+| **Urdu Voice Pipeline** | **REAL** Whisper large-v3 STT + edge-tts Urdu synthesis | None | Voice-first accessibility for non-literate citizens. |
+| **Scam Detection** | **REAL** Calibrated Logistic Regression + TF-IDF with explainable tags | None | Protects shopkeepers against fake relief payment SMS scams. |
 
 ---
 
@@ -60,6 +63,7 @@ rahbar/
 ├── tests/                   # [MAHANDAR & SHARED] Automated unit and integration test suite
 ├── .github/workflows/ci.yml # [MAHANDAR] Automated GitHub Actions CI (Ruff + Pytest)
 ├── MEMORY.md                # [SHARED] Shared team memory & conflict resolution log
+├── CONTEXT.md               # [SHARED] Active sprint context & immediate steps
 └── README.md                # [SHARED] System documentation & guide
 ```
 
@@ -113,19 +117,23 @@ Every role can be tested immediately using these pre-seeded credentials:
 git clone https://github.com/Naresh-Kumar17/lastmile-ai-rails.git
 cd lastmile-ai-rails
 
-# 2. Install dependencies
+# 2. Set up environment variables
+cp .env.example .env
+
+# 3. Install dependencies
 pip install -r requirements.txt
 
-# 3. Export OpenAPI specification for frontend team
+# 4. Provision Supabase Database & Seed Synthetic Data
+python db/init_db.py
+python seed/run_seed.py
+
+# 5. Export OpenAPI specification for frontend team
 python scripts/export_openapi.py
 
-# 4. Run automated tests (100% passing)
+# 6. Run automated tests (100% passing)
 python -m pytest tests/ -v
 
-# 5. Run Ruff linter check
-python -m ruff check services/ mock/ tests/
-
-# 6. Start the API Gateway server
+# 7. Start the API Gateway server
 uvicorn services.api.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 Interactive Swagger API documentation will be available at: `http://localhost:8000/docs`.
@@ -187,7 +195,7 @@ curl http://localhost:8000/api/v1/health
 
 ## 8. Automated Test Suite
 
-The test suite covers 100% of Mahandar's platform and backend deliverables:
+The test suite covers 100% of the platform and backend deliverables:
 - `tests/test_auth_rbac.py`: JWT login, refresh tokens, and server-side RBAC enforcement (HTTP 403).
 - `tests/test_rules_engine.py`: Versioned eligibility rules, condition firing traces, dynamic publishing.
 - `tests/test_decision_engine.py`: Weakest-link confidence calculation ($\min(\text{components})$), cost-matrix thresholds, no auto-rejection guarantee.
@@ -200,7 +208,7 @@ The test suite covers 100% of Mahandar's platform and backend deliverables:
 To run:
 ```bash
 python -m pytest tests/ -v
-# Output: 24 passed in 0.80s
+# Output: 24 passed
 ```
 
 ---
