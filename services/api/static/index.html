@@ -754,7 +754,19 @@
               for (let i = 0; i < pcmData.length; i++) sum += pcmData[i];
               const avg = sum / pcmData.length;
               const pct = Math.min(100, Math.round((avg / 100) * 100));
-              if (vizBar) vizBar.style.width = pct + '%';
+              if (vizBar) {
+                vizBar.style.width = pct + '%';
+                if (pct > 18) {
+                  vizBar.className = "h-full bg-emerald-500 transition-all duration-75";
+                  if (status && isRecording) {
+                    const mins = String(Math.floor(recordingSeconds / 60)).padStart(2, '0');
+                    const secs = String(recordingSeconds % 60).padStart(2, '0');
+                    status.innerText = `🟢 بولیں... صاف آواز ریکارڈ ہو رہی ہے (${mins}:${secs}) - روکنے کے لیے دوبارہ کلک کریں`;
+                  }
+                } else {
+                  vizBar.className = "h-full bg-amber-400 transition-all duration-75";
+                }
+              }
               animationFrameId = requestAnimationFrame(updateLevel);
             }
             updateLevel();

@@ -64,6 +64,37 @@ def detect_audio_format(audio_bytes: bytes, filename: Optional[str] = None) -> t
     # Default to MP3
     return "input.mp3", "audio/mp3"
 
+def analyze_audio_vad(audio_bytes: bytes) -> Dict[str, Any]:
+    """
+    Performs Voice Activity Detection (VAD) and RMS energy level calculation.
+    Detects flatline silence or faint room hum early before triggering external Whisper API.
+    """
+    if len(audio_bytes) < 64:
+        return {"has_voice": False, "rms_energy": 0.0, "reason": "Payload too small"}
+
+    # For uncompressed WAV audio
+    if audio_bytes.startswith(b"RIFF") and len(audio_bytes) > 44:
+        try:
+            import struct
+            pcm_data = audio_bytes[44:]
+            num_samples = len(pcm_data) // 2
+            if num_samples > 0:
+                stride = max(1, num_samples // 1000)
+                samples = struct.unpack(f"<{num_samples}h", pcm_data[:num_samples * 2])
+                sampled_sq = [float(s) ** 2 for s in samples[::stride]]
+                rms = (sum(sampled_sq) / len(sampled_sq)) ** 0.5
+                if rms < 80.0:
+                    return {"has_voice": False, "rms_energy": round(rms, 2), "reason": "Ambient silence below threshold"}
+                return {"has_voice": True, "rms_energy": round(rms, 2), "reason": "Vocal activity detected"}
+        except Exception:
+            pass
+
+    # Minimum payload size threshold for compressed webm/ogg/mp3
+    if len(audio_bytes) < 300:
+        return {"has_voice": False, "rms_energy": 0.0, "reason": "Recording too short (< 0.2s)"}
+
+    return {"has_voice": True, "rms_energy": 100.0, "reason": "Vocal stream payload acceptable"}
+
 def transcribe(
     audio_bytes: bytes,
     language: str = "ur",
@@ -72,10 +103,23 @@ def transcribe(
 ) -> Dict[str, Any]:
     """
     Transcribes Urdu / English speech to text using Groq Whisper-large-v3.
+    Pre-screened with Voice Activity Detection (VAD) to filter ambient flatline noise.
     Supports WebM (from browser MediaRecorder), WAV, MP3, OGG, and M4A.
     """
     if not audio_bytes:
         return {"text": "", "language": language, "confidence": 0.0}
+
+    # 1. Voice Activity Detection (VAD) Early Guardrail
+    vad_res = analyze_audio_vad(audio_bytes)
+    if not vad_res["has_voice"]:
+        return {
+            "text": "",
+            "language": language,
+            "confidence": 0.0,
+            "format": filename.split(".")[-1] if filename else "unknown",
+            "is_silent": True,
+            "message": "کوئی واضح آواز سنائی نہیں دی (VAD: No speech detected in recording)"
+        }
 
     from groq import Groq
     if not GROQ_API_KEY:
