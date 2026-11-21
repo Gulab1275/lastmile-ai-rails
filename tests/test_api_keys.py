@@ -169,3 +169,34 @@ def test_admin_create_use_and_revoke_key_lifecycle(client: TestClient, admin_hea
     blocked_resp = client.get("/api/v1/public/health", headers={"X-API-Key": plaintext_key})
     assert blocked_resp.status_code == 401
     assert "Invalid or revoked API key" in blocked_resp.json()["detail"]
+
+
+def test_create_api_key_with_real_login_token(client: TestClient):
+    """
+    Verifies that admin_ayesha can log in via /api/v1/auth/login, obtain a real JWT token,
+    and successfully create an API key even when SQLite enforces foreign key constraints.
+    (Guards against ForeignKeyViolation on api_keys_owner_user_id_fkey).
+    """
+    # 1. Login with demo admin credentials
+    login_resp = client.post(
+        "/api/v1/auth/login",
+        json={"username": "admin_ayesha", "password": "password123"},
+    )
+    assert login_resp.status_code == 200, f"Login failed: {login_resp.text}"
+    token_data = login_resp.json()
+    assert "access_token" in token_data
+    access_token = token_data["access_token"]
+
+    # 2. Use real login token to create an API key
+    headers = {"Authorization": f"Bearer {access_token}"}
+    create_resp = client.post(
+        "/api/v1/admin/api-keys",
+        headers=headers,
+        json={"name": "ayesha-real-token-key"},
+    )
+    assert create_resp.status_code == 200, f"Create key failed: {create_resp.text}"
+    data = create_resp.json()
+    assert "id" in data
+    assert "key" in data
+    assert data["name"] == "ayesha-real-token-key"
+    assert data["key"].startswith(KEY_PREFIX)
