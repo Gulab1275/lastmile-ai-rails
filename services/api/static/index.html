@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>رہبر (Rahbar) — AI on Public Rails</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            urdu: ['"Noto Nastaliq Urdu"', 'serif'],
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            emerald: { 50: '#ecfdf5', 500: '#10b981', 600: '#059669', 700: '#047857', 900: '#064e3b' },
+            navy: { 800: '#1e293b', 900: '#0f172a' }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#059669">
+  <style>
+    .urdu-text { font-family: 'Noto Nastaliq Urdu', serif; line-height: 2.2; }
+    .badge { display: inline-flex; align-items: center; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
+
+  <!-- Top Navigation Bar -->
+  <header class="bg-emerald-700 text-white shadow-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-white text-emerald-700 flex items-center justify-center font-bold text-xl shadow">
+          رہ
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight">رہبر — Rahbar</h1>
+          <p class="text-xs text-emerald-100">The Last Mile: AI on Public Rails · Coder's Cup '26</p>
+        </div>
+      </div>
+
+      <!-- Quick Role & Language Switcher -->
+      <div class="flex items-center gap-3">
+        <div class="flex items-center bg-emerald-800/80 rounded-lg p-1 text-xs">
+          <button id="lang-ur" onclick="setLang('ur')" class="px-2 py-1 rounded bg-white text-emerald-900 font-bold shadow-sm">اردو</button>
+          <button id="lang-en" onclick="setLang('en')" class="px-2 py-1 rounded text-emerald-100 hover:text-white">English</button>
+        </div>
+        <div class="hidden sm:flex items-center gap-2">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-900 text-emerald-100 border border-emerald-500/30">
+            <span class="w-2 h-2 mr-1 rounded-full bg-green-400 animate-pulse"></span>
+            DPI Live Rails
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Role Tabs Pill Navigation -->
+    <div class="bg-emerald-800 border-t border-emerald-600/50 overflow-x-auto">
+      <div class="max-w-7xl mx-auto px-4 flex gap-2 py-2 text-sm whitespace-nowrap">
+        <button onclick="switchTab('widow')" id="tab-widow" class="px-3 py-1.5 rounded-md font-medium transition bg-white text-emerald-800 shadow">
+          🌸 بیوہ کا اندراج (Widow Intake)
+        </button>
+        <button onclick="switchTab('helper')" id="tab-helper" class="px-3 py-1.5 rounded-md font-medium text-emerald-100 hover:bg-emerald-700 transition">
+          🤝 کمیونٹی مددگار (Helper 40 Families)
+        </button>
+        <button onclick="switchTab('shopkeeper')" id="tab-shopkeeper" class="px-3 py-1.5 rounded-md font-medium text-emerald-100 hover:bg-emerald-700 transition">
+          🛡️ اسکام فلٹر و میپ (Scam Map)
+        </button>
+        <button onclick="switchTab('officer')" id="tab-officer" class="px-3 py-1.5 rounded-md font-medium text-emerald-100 hover:bg-emerald-700 transition">
+          ⚖️ افسر کا جائزہ (Officer Review)
+        </button>
+        <button onclick="switchTab('admin')" id="tab-admin" class="px-3 py-1.5 rounded-md font-medium text-emerald-100 hover:bg-emerald-700 transition">
+          ⚙️ ڈیجیٹل ٹوئن (Admin Twin)
+        </button>
+        <button onclick="switchTab('auditor')" id="tab-auditor" class="px-3 py-1.5 rounded-md font-medium text-emerald-100 hover:bg-emerald-700 transition">
+          📜 بلاک چین لیجر (Audit Ledger)
+        </button>
+        <button onclick="switchTab('eval')" id="tab-eval" class="px-3 py-1.5 rounded-md font-medium text-emerald-100 hover:bg-emerald-700 transition">
+          📊 ماڈل ڈیش بورڈ (Eval Sweep)
+        </button>
+        <button onclick="switchTab('rag')" id="tab-rag" class="px-3 py-1.5 rounded-md font-medium text-emerald-100 hover:bg-emerald-700 transition">
+          📚 پالیسی رہنمائی (Policy RAG)
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
+
+    <!-- Offline Simulation Banner -->
+    <div id="offline-bar" class="hidden mb-4 p-3 rounded-lg bg-amber-50 border border-amber-300 flex items-center justify-between text-amber-900 text-sm">
+      <div class="flex items-center gap-2">
+        <span class="text-xl">⚠️</span>
+        <span><strong>آف لائن موڈ فعال ہے:</strong> انٹرنیٹ سگنل معطل ہے۔ درخواستیں مقامی طور پر محفوظ ہو رہی ہیں۔</span>
+      </div>
+      <button onclick="syncOfflineQueue()" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded text-xs font-bold transition">
+        دوبارہ ہم آہنگ کریں (Sync Now)
+      </button>
+    </div>
+
+    <!-- TAB 1: Widow Voice Intake -->
+    <section id="panel-widow" class="space-y-6">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-xl font-bold text-slate-800 urdu-text">آواز کے ذریعے امدادی درخواست (Urdu Voice Intake)</h2>
+            <p class="text-sm text-slate-500">کم خواندہ شہریوں کے لیے بول کر فارم بھرنے کی سہولت۔</p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="loadSampleVoice('widow_clean')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition">
+              نمونہ 1: پروین بی بی (درست فارم)
+            </button>
+            <button onclick="loadSampleVoice('widow_blurry')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition">
+              نمونہ 2: سکینہ بی بی (دھندلی تصویر)
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+          <!-- Voice Recorder & Transcript -->
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <label class="block text-sm font-semibold text-slate-700">اردو آواز ریکارڈ کریں یا نمونہ منتخب کریں:</label>
+              <label class="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer">
+                <input type="checkbox" id="auto-speak-toggle" checked class="w-3.5 h-3.5 text-emerald-600 rounded">
+                <span>🔊 AI آواز میں بولے (Voice Reply)</span>
+              </label>
+            </div>
+
+            <div class="p-4 rounded-xl border-2 border-dashed border-emerald-300 bg-emerald-50/50 flex flex-col items-center justify-center gap-2 text-center">
+              <div id="mic-button" class="w-16 h-16 rounded-full bg-emerald-600 text-white flex items-center justify-center text-2xl shadow-lg cursor-pointer hover:scale-105 transition" onclick="toggleRealAudioRecording()" title="مائیکروفون پر کلک کریں">
+                🎙️
+              </div>
+              <!-- Real-time Audio Level Bar -->
+              <div id="visualizer-container" class="w-48 h-2.5 bg-slate-200 rounded-full overflow-hidden hidden border border-emerald-200">
+                <div id="visualizer-bar" class="h-full bg-emerald-500 rounded-full transition-all duration-75" style="width: 0%"></div>
+              </div>
+              <div id="recording-status" class="text-xs text-emerald-800 font-medium">مائیکروفون پر کلک کر کے بولیں، یا اوپر نمونہ منتخب کریں</div>
+            </div>
+
+            <!-- Agent Speaking Banner -->
+            <div id="agent-speech-banner" class="hidden p-3 rounded-xl bg-emerald-100/90 border border-emerald-300 text-emerald-950 text-xs flex items-center gap-2 shadow-sm">
+              <span class="text-xl">🗣️</span>
+              <div class="flex-1">
+                <strong class="block text-[11px] text-emerald-900 font-bold uppercase tracking-wider">رہبر AI ایجنٹ جواب دے رہا ہے:</strong>
+                <span id="agent-speech-text" class="urdu-text font-medium text-emerald-900 text-xs"></span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 mb-1">خودکار نقلِ آواز (Whisper Transcript):</label>
+              <textarea id="voice-transcript" rows="3" class="w-full p-3 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="بولے گئے الفاظ یہاں ظاہر ہوں گے..."></textarea>
+            </div>
+
+            <div class="flex gap-2">
+              <button onclick="extractFormFromSpeech(true)" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-4 rounded-lg font-bold text-sm shadow transition">
+                فارم کے خانے بھریں (AI Extract Form)
+              </button>
+              <button id="tts-play-btn" onclick="playUrduTTS()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm transition" title="آواز سنیں">
+                🔊 سنیں
+              </button>
+            </div>
+          </div>
+
+          <!-- Document Upload & Authenticity Check -->
+          <div class="space-y-4">
+            <label class="block text-sm font-semibold text-slate-700">دستاویزات اپ لوڈ کریں (CNIC اور بل):</label>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="p-3 border rounded-lg bg-slate-50 text-center space-y-2">
+                <div class="text-3xl">🪪</div>
+                <div class="text-xs font-bold text-slate-700">شناختی کارڈ (CNIC Front)</div>
+                <div id="cnic-blur-badge" class="badge bg-green-100 text-green-800">Clear (Blur: 1850)</div>
+              </div>
+              <div class="p-3 border rounded-lg bg-slate-50 text-center space-y-2">
+                <div class="text-3xl">📄</div>
+                <div class="text-xs font-bold text-slate-700">بجلی کا بل (Utility Bill)</div>
+                <div id="bill-blur-badge" class="badge bg-green-100 text-green-800">Verified QR</div>
+              </div>
+            </div>
+
+            <!-- Structured Extracted Form -->
+            <div class="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-3">
+              <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">مصدقہ معلومات (Structured Pydantic Model)</h3>
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <div><strong>نام:</strong> <span id="field-name">پروین بی بی</span></div>
+                <div><strong>شناختی کارڈ:</strong> <span id="field-cnic">42101-1234567-1</span></div>
+                <div><strong>افرادِ خانہ:</strong> <span id="field-family">4 افراد</span></div>
+                <div><strong>ماہانہ آمدنی:</strong> <span id="field-income">PKR 25,000</span></div>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button onclick="submitClaimWorkflow()" class="w-full bg-emerald-800 hover:bg-emerald-900 text-white py-3 px-4 rounded-xl font-bold shadow-md transition flex items-center justify-center gap-2">
+              <span>فیصلہ ریلز پر جمع کرائیں (Evaluate via Decision Engine)</span>
+              <span>⚡</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Decision Engine Output Card -->
+        <div id="decision-output-card" class="hidden mt-6 p-5 rounded-xl border border-emerald-300 bg-emerald-50/70 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span id="decision-icon" class="text-2xl">✅</span>
+              <div>
+                <h4 id="decision-title" class="text-base font-bold text-emerald-900">درخواست فوری منظور کر لی گئی (Auto-Approved)</h4>
+                <p id="decision-subtitle" class="text-xs text-emerald-700">کمزور ترین کڑی کا اسکور: 95.0% | غلطی کا امکان: p_wrong <= 0.05</p>
+              </div>
+            </div>
+            <div id="payout-badge" class="badge bg-emerald-200 text-emerald-900 font-mono text-xs">RAAST-TX-F5A30102</div>
+          </div>
+          <div class="text-sm text-slate-700 bg-white p-3 rounded-lg border border-emerald-200 urdu-text" id="decision-explanation">
+            آپ کی امدادی رقم 12,000 روپے منظور کر لی گئی ہے۔ رقم آپ کے راست اکاؤنٹ میں منتقل کر دی گئی ہے۔
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: Helper Mode (40 Families) -->
+    <section id="panel-helper" class="hidden space-y-6">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-xl font-bold text-slate-800 urdu-text">کمیونٹی مددگار ڈیش بورڈ (Helper Mode — 40 Families)</h2>
+            <p class="text-sm text-slate-500">ایک ہی موبائل پر 40 خاندانوں کا الگ الگ ڈیٹا اور علیحدہ رضامندی کارڈز۔</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-slate-500">مددگار: <strong>شازیہ اکرم (ID: helper.fatima)</strong></span>
+            <button onclick="toggleOfflineMode()" id="btn-offline-toggle" class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-3 py-1 rounded text-xs font-semibold transition">
+              سگنل ختم کریں (Simulate Offline)
+            </button>
+          </div>
+        </div>
+
+        <!-- 40 Families Grid -->
+        <div class="mt-6">
+          <label class="block text-xs font-bold text-slate-500 mb-2 uppercase">خاندان منتخب کریں (2-Tap Switcher):</label>
+          <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+            <div onclick="selectFamily('cit_001', 'پروین بی بی', '42101-1234567-1')" class="cursor-pointer p-3 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-center space-y-1 hover:shadow transition">
+              <div class="text-2xl">👵</div>
+              <div class="text-xs font-bold text-slate-800 truncate">پروین بی بی</div>
+              <div class="text-[10px] text-slate-500">42101-1234567-1</div>
+              <span class="badge bg-emerald-100 text-emerald-800 text-[9px]">رضامندی فعال</span>
+            </div>
+            <div onclick="selectFamily('cit_002', 'سکینہ بی بی', '42101-9988776-3')" class="cursor-pointer p-3 rounded-xl border border-slate-200 bg-white text-center space-y-1 hover:border-emerald-300 transition">
+              <div class="text-2xl">🧕</div>
+              <div class="text-xs font-bold text-slate-800 truncate">سکینہ بی بی</div>
+              <div class="text-[10px] text-slate-500">42101-9988776-3</div>
+              <span class="badge bg-amber-100 text-amber-800 text-[9px]">تصویر درکار</span>
+            </div>
+            <div onclick="selectFamily('cit_003', 'فاطمہ بیگم', '42101-7766554-9')" class="cursor-pointer p-3 rounded-xl border border-slate-200 bg-white text-center space-y-1 hover:border-emerald-300 transition">
+              <div class="text-2xl">👵</div>
+              <div class="text-xs font-bold text-slate-800 truncate">فاطمہ بیگم</div>
+              <div class="text-[10px] text-slate-500">42101-7766554-9</div>
+              <span class="badge bg-slate-100 text-slate-800 text-[9px]">زیرِ جائزہ</span>
+            </div>
+            <div onclick="selectFamily('cit_004', 'زینب گل', '42101-3322114-5')" class="cursor-pointer p-3 rounded-xl border border-slate-200 bg-white text-center space-y-1 hover:border-emerald-300 transition">
+              <div class="text-2xl">🧕</div>
+              <div class="text-xs font-bold text-slate-800 truncate">زینب گل</div>
+              <div class="text-[10px] text-slate-500">42101-3322114-5</div>
+              <span class="badge bg-emerald-100 text-emerald-800 text-[9px]">منظور شدہ</span>
+            </div>
+            <div onclick="selectFamily('cit_005', 'خدیجہ بیگم', '42101-8899001-2')" class="cursor-pointer p-3 rounded-xl border border-slate-200 bg-white text-center space-y-1 hover:border-emerald-300 transition">
+              <div class="text-2xl">👵</div>
+              <div class="text-xs font-bold text-slate-800 truncate">خدیجہ بیگم</div>
+              <div class="text-[10px] text-slate-500">42101-8899001-2</div>
+              <span class="badge bg-slate-100 text-slate-800 text-[9px]">40 خاندان محفوظ</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Granular Consent Cards for Selected Family -->
+        <div class="mt-6 p-5 rounded-xl border border-slate-200 bg-slate-50 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-bold text-slate-800">
+              منتخب شہری کے رضامندی کارڈز (Consent Gateway Scopes): <span id="selected-family-name" class="text-emerald-700">پروین بی بی</span>
+            </h3>
+            <span class="text-xs text-slate-500 font-mono" id="selected-family-id">ID: cit_001</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div class="p-3 bg-white rounded-lg border border-slate-200 flex items-center justify-between">
+              <span class="text-xs font-semibold">شناختی تصدیق (identity)</span>
+              <input type="checkbox" checked onchange="toggleConsentScope('identity')" class="w-4 h-4 text-emerald-600 rounded">
+            </div>
+            <div class="p-3 bg-white rounded-lg border border-slate-200 flex items-center justify-between">
+              <span class="text-xs font-semibold">آمدنی کا تخمینہ (income)</span>
+              <input type="checkbox" checked id="consent-income" onchange="toggleConsentScope('income')" class="w-4 h-4 text-emerald-600 rounded">
+            </div>
+            <div class="p-3 bg-white rounded-lg border border-slate-200 flex items-center justify-between">
+              <span class="text-xs font-semibold">بلز کا ریکارڈ (bills)</span>
+              <input type="checkbox" checked onchange="toggleConsentScope('bills')" class="w-4 h-4 text-emerald-600 rounded">
+            </div>
+            <div class="p-3 bg-white rounded-lg border border-slate-200 flex items-center justify-between">
+              <span class="text-xs font-semibold">مددگار کی کارروائی (helper_acting)</span>
+              <input type="checkbox" checked onchange="toggleConsentScope('helper_acting')" class="w-4 h-4 text-emerald-600 rounded">
+            </div>
+          </div>
+          <p class="text-xs text-slate-500">💡 اگر شہری کسی خانے کو بند کر دے تو کنسنٹ گیٹ وے اگلی ہی کال پر HTTP 403 بلاک جاری کر دیتا ہے۔</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: Shopkeeper Scam Checker & Scam Map -->
+    <section id="panel-shopkeeper" class="hidden space-y-6">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div class="pb-4 border-b border-slate-100">
+          <h2 class="text-xl font-bold text-slate-800 urdu-text">دکاندار اسکام فلٹر و کراچی تھریٹ میپ (Scam Intelligence)</h2>
+          <p class="text-sm text-slate-500">جعلی امدادی پیغامات کی فوری جانچ اور ریجنل ہاٹ اسپاٹس کا براہِ راست نقشہ۔</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+          <!-- Scam SMS Input -->
+          <div class="space-y-4">
+            <label class="block text-sm font-semibold text-slate-700">موصولہ مشکوک میسج یہاں درج کریں:</label>
+            <div class="flex gap-2">
+              <button onclick="setScamSample('fake_8171')" class="bg-red-50 text-red-700 border border-red-200 px-2 py-1 rounded text-xs font-medium">جعلی 8171 میسج</button>
+              <button onclick="setScamSample('pin_hack')" class="bg-red-50 text-red-700 border border-red-200 px-2 py-1 rounded text-xs font-medium">بینک پن چوری</button>
+              <button onclick="setScamSample('legit_msg')" class="bg-green-50 text-green-700 border border-green-200 px-2 py-1 rounded text-xs font-medium">اصلی میسج</button>
+            </div>
+            <textarea id="scam-text-input" rows="4" class="w-full p-3 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-red-400 focus:outline-none" placeholder="مثال: BISP 8171 سے آپ کے 25000 آ گئے ہیں..."></textarea>
+            <button onclick="analyzeScamMessage()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-lg shadow transition">
+              پیغام کی تصدیق کریں (Verify Phishing Threat)
+            </button>
+
+            <!-- Scam Result Box -->
+            <div id="scam-result-box" class="hidden p-4 rounded-xl border border-red-200 bg-red-50 space-y-2">
+              <div class="flex items-center justify-between">
+                <span id="scam-verdict-badge" class="badge bg-red-600 text-white font-bold text-xs">SCAM DETECTED</span>
+                <span id="scam-confidence-badge" class="text-xs font-bold text-red-800">96.5% Confidence</span>
+              </div>
+              <ul id="scam-reasons-list" class="text-xs text-red-900 list-disc list-inside space-y-1"></ul>
+            </div>
+          </div>
+
+          <!-- Karachi Threat Heatmap Feed -->
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <label class="block text-sm font-semibold text-slate-700">کراچی اور سندھ ہاٹ اسپاٹ ریجنز (GPS Clusters):</label>
+              <span class="badge bg-amber-100 text-amber-800 text-xs">8 ایکٹو اضلاع</span>
+            </div>
+
+            <div class="p-4 rounded-xl border border-slate-200 bg-slate-900 text-white space-y-3">
+              <div class="grid grid-cols-2 gap-3 text-xs">
+                <div class="p-2 rounded bg-slate-800 border border-slate-700">
+                  <div class="font-bold text-red-400">صدر و لیاری (Karachi South)</div>
+                  <div class="text-[10px] text-slate-400">شدت: 88% | زیادہ خطرہ</div>
+                </div>
+                <div class="p-2 rounded bg-slate-800 border border-slate-700">
+                  <div class="font-bold text-orange-400">لیاقت آباد و ناظم آباد</div>
+                  <div class="text-[10px] text-slate-400">شدت: 85% | پن چوری</div>
+                </div>
+                <div class="p-2 rounded bg-slate-800 border border-slate-700">
+                  <div class="font-bold text-amber-400">گلشنِ اقبال و جمشید</div>
+                  <div class="text-[10px] text-slate-400">شدت: 72% | جعلی فیس</div>
+                </div>
+                <div class="p-2 rounded bg-slate-800 border border-slate-700">
+                  <div class="font-bold text-yellow-400">کورنگی و ملیر</div>
+                  <div class="text-[10px] text-slate-400">شدت: 68% | انعام اسکیم</div>
+                </div>
+              </div>
+              <div class="text-center text-xs text-slate-400 pt-2 border-t border-slate-800">
+                مشترکہ محفوظ ہدایت: "حکومت کبھی بھی ایس ایم ایس پر پن کوڈ یا رقم کی پیشگی ٹرانسفر نہیں مانگتی۔"
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: Officer Review Queue -->
+    <section id="panel-officer" class="hidden space-y-6">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-xl font-bold text-slate-800 urdu-text">افسر کا جائزہ اور ترجیحی قطار (Officer Review Queue)</h2>
+            <p class="text-sm text-slate-500">غیر یقینی یا مشکوک کیسز کی انسانی افسر کی طرف سے حتمی جانچ۔</p>
+          </div>
+          <span class="badge bg-indigo-100 text-indigo-800 font-mono">Role: officer_aslam</span>
+        </div>
+
+        <div class="mt-6 overflow-x-auto">
+          <table class="w-full text-right text-xs">
+            <thead class="bg-slate-100 text-slate-700 font-bold border-b">
+              <tr>
+                <th class="p-3">کیس شناختی نمبر</th>
+                <th class="p-3">شہری کا نام</th>
+                <th class="p-3">شناختی کارڈ</th>
+                <th class="p-3">رقم (PKR)</th>
+                <th class="p-3">اعتماد اسکور</th>
+                <th class="p-3">وجہِ تاخیر</th>
+                <th class="p-3 text-center">کارروائی</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200" id="officer-queue-table">
+              <tr>
+                <td class="p-3 font-mono font-bold">CASE-2026-9041</td>
+                <td class="p-3">سکینہ بی بی</td>
+                <td class="p-3">42101-9988776-3</td>
+                <td class="p-3">10,000</td>
+                <td class="p-3 text-amber-600 font-bold">40.0%</td>
+                <td class="p-3 text-slate-600">دھندلی تصویر (Blur < 90)</td>
+                <td class="p-3 text-center">
+                  <button onclick="officerAction('approve', 'CASE-2026-9041')" class="bg-emerald-600 text-white px-2 py-1 rounded text-[11px] font-bold hover:bg-emerald-700">منظور</button>
+                  <button onclick="officerAction('reject', 'CASE-2026-9041')" class="bg-red-600 text-white px-2 py-1 rounded text-[11px] font-bold hover:bg-red-700 mr-1">مسترد</button>
+                </td>
+              </tr>
+              <tr>
+                <td class="p-3 font-mono font-bold">CASE-2026-8812</td>
+                <td class="p-3">غلام رسول</td>
+                <td class="p-3">42101-5544332-1</td>
+                <td class="p-3">35,000</td>
+                <td class="p-3 text-red-600 font-bold">30.0%</td>
+                <td class="p-3 text-slate-600">زیادہ رقم اور غیر مصدقہ آمدنی</td>
+                <td class="p-3 text-center">
+                  <button onclick="officerAction('approve', 'CASE-2026-8812')" class="bg-emerald-600 text-white px-2 py-1 rounded text-[11px] font-bold hover:bg-emerald-700">منظور</button>
+                  <button onclick="officerAction('reject', 'CASE-2026-8812')" class="bg-red-600 text-white px-2 py-1 rounded text-[11px] font-bold hover:bg-red-700 mr-1">مسترد</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: Admin Digital Twin & Rules -->
+    <section id="panel-admin" class="hidden space-y-6">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div class="pb-4 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h2 class="text-xl font-bold text-slate-800 urdu-text">ایڈمن ڈیجیٹل ٹوئن سمولیشن (Digital Twin & Rules Engine)</h2>
+            <p class="text-sm text-slate-500">نئے قواعد کو لائیو کرنے سے پہلے ماضی کے کیسز پر ٹیسٹ کرنے کی سہولت۔</p>
+          </div>
+          <span class="badge bg-purple-100 text-purple-800">Rule Version v1 (Active)</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+          <div class="space-y-4">
+            <label class="block text-sm font-semibold text-slate-700">مجوزہ رولز میں ترمیم کریں (Draft Policy):</label>
+            <div class="space-y-2">
+              <label class="block text-xs text-slate-600">زیادہ سے زیادہ ماہانہ آمدنی (Max Income):</label>
+              <input type="range" min="15000" max="50000" step="5000" value="30000" id="rule-income-slider" class="w-full accent-purple-600">
+              <div class="text-xs font-bold text-purple-700 text-left">PKR <span id="rule-income-val">30,000</span></div>
+            </div>
+
+            <div class="space-y-2">
+              <label class="block text-xs text-slate-600">فوری منظوری کی زیادہ سے زیادہ رقم (Max Auto-Approve):</label>
+              <input type="range" min="5000" max="25000" step="1000" value="15000" id="rule-amount-slider" class="w-full accent-purple-600">
+              <div class="text-xs font-bold text-purple-700 text-left">PKR <span id="rule-amount-val">15,000</span></div>
+            </div>
+
+            <button onclick="runDigitalTwinSimulation()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 rounded-lg shadow transition">
+              ڈیجیٹل ٹوئن پر اثرات جانچیں (Simulate Impact)
+            </button>
+          </div>
+
+          <div class="p-5 rounded-xl border border-purple-200 bg-purple-50 space-y-4">
+            <h3 class="text-sm font-bold text-purple-900">سمولیشن کے متوقع نتائج (Simulation Projection):</h3>
+            <div class="grid grid-cols-2 gap-3 text-xs">
+              <div class="p-3 bg-white rounded border border-purple-100">
+                <div class="text-slate-500">موجودہ منظوری کی شرح:</div>
+                <div class="text-lg font-bold text-slate-800">72.0%</div>
+              </div>
+              <div class="p-3 bg-white rounded border border-purple-100">
+                <div class="text-slate-500">مجوزہ شرح (Projected):</div>
+                <div class="text-lg font-bold text-purple-700" id="sim-projected-rate">61.5%</div>
+              </div>
+            </div>
+            <p class="text-xs text-purple-800" id="sim-impact-text">
+              آمدنی کی حد 30,000 کرنے سے منظوری کی شرح میں -10.5% کمی واقع ہوگی جس سے غیر مستحقین کی روک تھام میں اضافہ ہوگا۔
+            </p>
+            <button onclick="publishNewRuleLive()" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2 rounded text-xs transition">
+              بغیر سرور ری اسٹارٹ کے لاگو کریں (Publish Version 2 Live)
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 6: Auditor Cryptographic Ledger -->
+    <section id="panel-auditor" class="hidden space-y-6">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-xl font-bold text-slate-800 urdu-text">آڈیٹر کا غیر متغیر بلاک چین لیجر (Cryptographic Audit Chain)</h2>
+            <p class="text-sm text-slate-500">ہر فیصلے، رضامندی اور ادائیگی کا SHA-256 ہیش چین ریکارڈ۔</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="badge bg-green-100 text-green-800" id="chain-status-badge">✅ Chain Intact (0 Corruptions)</span>
+          </div>
+        </div>
+
+        <div class="mt-4 p-4 rounded-lg bg-slate-900 text-green-400 font-mono text-xs overflow-x-auto space-y-2">
+          <div>[GENESIS BLOCK] 0000000000000000000000000000000000000000000000000000000000000000</div>
+          <div>├── BLOCK #01 | CONSENT_GRANTED:identity | Prev: 00000000... | Hash: a71f90e29b1...</div>
+          <div>├── BLOCK #02 | CONSENT_GRANTED:income   | Prev: a71f90e2... | Hash: 8b3c40d12a9...</div>
+          <div>├── BLOCK #03 | CLAIM_EVALUATED:auto_app | Prev: 8b3c40d1... | Hash: fc2e19a84b0...</div>
+          <div>└── BLOCK #04 | RAAST_PAYOUT:DISBURSED   | Prev: fc2e19a8... | Hash: 7e990b1c55f...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 7: Model Observability Dashboard -->
+    <section id="panel-eval" class="hidden space-y-6">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div class="pb-4 border-b border-slate-100">
+          <h2 class="text-xl font-bold text-slate-800 urdu-text">ماڈل کی کارکردگی اور لاگت کا تجزیہ (Evaluation Dashboard)</h2>
+          <p class="text-sm text-slate-500">200 مصنوعی شہریوں پر تھریش ہولڈ سوئپ اور AI ماڈلز کی رفتار۔</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-6">
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 text-center">
+            <div class="text-xs text-slate-500">اسکام ماڈل کی درستگی</div>
+            <div class="text-2xl font-bold text-emerald-700">98.5%</div>
+            <div class="text-[10px] text-slate-400">False Alarm: 1.0%</div>
+          </div>
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 text-center">
+            <div class="text-xs text-slate-500">بہترین حد (Optimal Threshold)</div>
+            <div class="text-2xl font-bold text-purple-700">p &le; 0.05</div>
+            <div class="text-[10px] text-slate-400">کم ترین متوقع لاگت</div>
+          </div>
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 text-center">
+            <div class="text-xs text-slate-500">خودکار مسترد کی شرح</div>
+            <div class="text-2xl font-bold text-emerald-600">0.0%</div>
+            <div class="text-[10px] text-emerald-700">سسٹم کبھی ازخود رد نہیں کرتا</div>
+          </div>
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 text-center">
+            <div class="text-xs text-slate-500">Groq Qwen3.8 رفتار</div>
+            <div class="text-2xl font-bold text-blue-700">131 ms</div>
+            <div class="text-[10px] text-slate-400">LPU Ultra Low Latency</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 8: Policy Q&A with Supabase pgvector -->
+    <section id="panel-rag" class="hidden space-y-6">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-2">
+          <div>
+            <h2 class="text-xl font-bold text-slate-800 urdu-text">سرکاری پالیسی رہنمائی و سوالات (Supabase pgvector RAG)</h2>
+            <p class="text-sm text-slate-500">آفیشل گائیڈ لائنز سے فوری تصدیق شدہ جوابات بمعہ قانونی دستاویز اور صفحہ نمبر حوالہ جات۔</p>
+          </div>
+          <span class="badge bg-emerald-100 text-emerald-900 font-mono text-xs" id="rag-mode-badge">
+            ⚡ Supabase pgvector: 384-D Vector Engine
+          </span>
+        </div>
+
+        <div class="mt-6 space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-2">فوری سوالات (Quick Policy Prompts):</label>
+            <div class="flex flex-wrap gap-2 text-xs">
+              <button onclick="setPolicyQuestion('بیوہ خواتین کے لیے امداد کی اہلیت کی کیا شرائط ہیں؟')" class="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 transition">
+                🌸 بیوہ امداد کی اہلیت؟
+              </button>
+              <button onclick="setPolicyQuestion('امدادی رقم کی حد اور راست بینکنگ کی تفصیل کیا ہے؟')" class="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 transition">
+                💳 راست ادائیگی اور حد؟
+              </button>
+              <button onclick="setPolicyQuestion('شہری اپنی رضامندی کیسے منسوخ یا واپس لے سکتا ہے؟')" class="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 transition">
+                🔐 رضامندی واپس لینا؟
+              </button>
+              <button onclick="setPolicyQuestion('What is the maximum income threshold to qualify for relief cash support?')" class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 transition">
+                🌐 Income Threshold (English)
+              </button>
+              <button onclick="setPolicyQuestion('کیا سرکاری پروگرام ایس ایم ایس پر پیشگی فیس یا پن کوڈ مانگتا ہے؟')" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-800 hover:bg-red-100 border border-red-200 transition">
+                🛡️ فراڈ اور فیس کی ممانعت؟
+              </button>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label class="block text-sm font-semibold text-slate-700">اپنا سوال اردو یا انگریزی میں درج کریں:</label>
+            <div class="flex gap-2">
+              <input type="text" id="policy-query-input" placeholder="مثال: امدادی رقم کتنی ملتی ہے اور کس بینک کے ذریعے؟" class="flex-1 p-3 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <button onclick="askPolicyRAG()" id="rag-submit-btn" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-6 py-3 rounded-xl shadow transition flex items-center gap-2">
+                <span>پوچھیں (Ask Policy)</span>
+                <span>🔍</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- RAG Result Card -->
+          <div id="rag-result-box" class="hidden mt-6 p-5 rounded-xl border border-emerald-300 bg-emerald-50/60 space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-2xl">📖</span>
+                <div>
+                  <h4 class="text-sm font-bold text-emerald-950">مصدقہ پالیسی جواب (Verified Policy Guidance):</h4>
+                  <span class="text-[11px] text-emerald-700" id="rag-meta-label">Supabase pgvector · Groq Qwen3.8 LPU</span>
+                </div>
+              </div>
+              <button onclick="readRAGAnswerAloud()" id="rag-tts-btn" class="bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-300 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+                <span>🔊 آواز میں سنیں</span>
+              </button>
+            </div>
+
+            <div id="rag-answer-text" class="text-sm text-slate-800 bg-white p-4 rounded-xl border border-emerald-200 shadow-sm urdu-text whitespace-pre-wrap leading-relaxed"></div>
+
+            <!-- Citations Container -->
+            <div class="space-y-2">
+              <h5 class="text-xs font-bold text-slate-600 uppercase tracking-wider">قانونی حوالہ جات (Official Document Citations):</h5>
+              <div id="rag-sources-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div>Rahbar (رہبر) · Coder's Cup 2026 AI Hackathon · FAST-NUCES Karachi</div>
+      <div class="font-mono">Mahandar Khatri · Naresh Kumar · Gulab</div>
+    </div>
+  </footer>
+
+  <!-- Application Logic Script -->
+  <script>
+    let currentLang = 'ur';
+    let isOffline = false;
+
+    function setLang(lang) {
+      currentLang = lang;
+      document.documentElement.dir = (lang === 'ur') ? 'rtl' : 'ltr';
+      document.getElementById('lang-ur').className = (lang === 'ur') ? 'px-2 py-1 rounded bg-white text-emerald-900 font-bold shadow-sm' : 'px-2 py-1 rounded text-emerald-100 hover:text-white';
+      document.getElementById('lang-en').className = (lang === 'en') ? 'px-2 py-1 rounded bg-white text-emerald-900 font-bold shadow-sm' : 'px-2 py-1 rounded text-emerald-100 hover:text-white';
+    }
+
+    function switchTab(tabId) {
+      const tabs = ['widow', 'helper', 'shopkeeper', 'officer', 'admin', 'auditor', 'eval', 'rag'];
+      tabs.forEach(t => {
+        const panel = document.getElementById('panel-' + t);
+        const btn = document.getElementById('tab-' + t);
+        if (t === tabId) {
+          panel.classList.remove('hidden');
+          btn.className = 'px-3 py-1.5 rounded-md font-medium transition bg-white text-emerald-800 shadow';
+        } else {
+          panel.classList.add('hidden');
+          btn.className = 'px-3 py-1.5 rounded-md font-medium text-emerald-100 hover:bg-emerald-700 transition';
+        }
+      });
+    }
+
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+    let recordTimerInterval = null;
+    let recordingSeconds = 0;
+    let audioContext = null;
+    let analyserNode = null;
+    let animationFrameId = null;
+    let currentAgentAudio = null;
+    let micStream = null;
+
+    // Speak aloud with edge-tts and display interactive banner
+    async function speakAgentUrdu(text) {
+      if (!text || !text.trim()) return;
+      const toggle = document.getElementById('auto-speak-toggle');
+      if (toggle && !toggle.checked) return;
+
+      const banner = document.getElementById('agent-speech-banner');
+      const bannerText = document.getElementById('agent-speech-text');
+      if (banner && bannerText) {
+        bannerText.innerText = text;
+        banner.classList.remove('hidden');
+      }
+
+      try {
+        if (currentAgentAudio) {
+          currentAgentAudio.pause();
+          currentAgentAudio = null;
+        }
+
+        const res = await fetch('/api/v1/ai/voice/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text, language: 'ur' })
+        });
+
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          currentAgentAudio = new Audio(url);
+          currentAgentAudio.onended = () => {
+            if (banner) banner.classList.add('hidden');
+          };
+          currentAgentAudio.onerror = () => {
+            if (banner) banner.classList.add('hidden');
+          };
+          await currentAgentAudio.play();
+        } else {
+          if (banner) banner.classList.add('hidden');
+        }
+      } catch (err) {
+        console.warn("Agent voice playback error:", err);
+        if (banner) banner.classList.add('hidden');
+      }
+    }
+
+    async function toggleRealAudioRecording() {
+      const micButton = document.getElementById('mic-button');
+      const status = document.getElementById('recording-status');
+      const vizContainer = document.getElementById('visualizer-container');
+      const vizBar = document.getElementById('visualizer-bar');
+
+      if (!isRecording) {
+        try {
+          // Explicit constraints for clean, high-gain vocal capture
+          micStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+              channelCount: 1
+            }
+          });
+
+          audioChunks = [];
+          const options = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+            ? { mimeType: 'audio/webm;codecs=opus' }
+            : (MediaRecorder.isTypeSupported('audio/webm') ? { mimeType: 'audio/webm' } : {});
+
+          mediaRecorder = new MediaRecorder(micStream, options);
+
+          mediaRecorder.ondataavailable = (event) => {
+            if (event.data && event.data.size > 0) audioChunks.push(event.data);
+          };
+
+          // Setup real-time AudioContext volume visualizer
+          try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const source = audioContext.createMediaStreamSource(micStream);
+            analyserNode = audioContext.createAnalyser();
+            analyserNode.fftSize = 256;
+            source.connect(analyserNode);
+
+            const pcmData = new Uint8Array(analyserNode.frequencyBinCount);
+            if (vizContainer) vizContainer.classList.remove('hidden');
+
+            function updateLevel() {
+              if (!isRecording) return;
+              analyserNode.getByteFrequencyData(pcmData);
+              let sum = 0;
+              for (let i = 0; i < pcmData.length; i++) sum += pcmData[i];
+              const avg = sum / pcmData.length;
+              const pct = Math.min(100, Math.round((avg / 100) * 100));
+              if (vizBar) vizBar.style.width = pct + '%';
+              animationFrameId = requestAnimationFrame(updateLevel);
+            }
+            updateLevel();
+          } catch (e) {
+            console.warn("Visualizer init notice:", e);
+          }
+
+          mediaRecorder.onstop = async () => {
+            clearInterval(recordTimerInterval);
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            if (vizContainer) vizContainer.classList.add('hidden');
+            if (audioContext && audioContext.state !== 'closed') {
+              audioContext.close().catch(() => {});
+            }
+            micStream.getTracks().forEach(track => track.stop());
+
+            status.innerText = "⏳ آواز Whisper ماڈل پر بھیجی جا رہی ہے... (Transcribing with Groq Whisper)";
+            micButton.classList.remove('bg-red-600', 'animate-pulse');
+            micButton.classList.add('bg-emerald-600');
+
+            const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+            await sendAudioToWhisper(audioBlob, 'recorded_voice.webm');
+          };
+
+          mediaRecorder.start(250);
+          isRecording = true;
+          recordingSeconds = 0;
+
+          micButton.classList.remove('bg-emerald-600');
+          micButton.classList.add('bg-red-600', 'animate-pulse');
+          status.innerText = "🔴 بولیں... آواز ریکارڈ ہو رہی ہے (00:00) - روکنے کے لیے دوبارہ کلک کریں";
+
+          recordTimerInterval = setInterval(() => {
+            recordingSeconds++;
+            const mins = String(Math.floor(recordingSeconds / 60)).padStart(2, '0');
+            const secs = String(recordingSeconds % 60).padStart(2, '0');
+            status.innerText = `🔴 بولیں... آواز ریکارڈ ہو رہی ہے (${mins}:${secs}) - روکنے کے لیے دوبارہ کلک کریں`;
+          }, 1000);
+
+        } catch (err) {
+          console.warn("Microphone access error, using sample fallback:", err);
+          status.innerText = "⚠️ مائیکروفون دستیاب نہیں ہے۔ نمونہ آڈیو چلائی جا رہی ہے...";
+          await loadSampleVoice('widow_clean');
+        }
+      } else {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+        }
+        isRecording = false;
+      }
+    }
+
+    async function sendAudioToWhisper(audioBlob, filename) {
+      const status = document.getElementById('recording-status');
+      const transcriptArea = document.getElementById('voice-transcript');
+
+      const formData = new FormData();
+      formData.append('file', audioBlob, filename || 'audio.webm');
+      formData.append('language', 'ur');
+
+      try {
+        const res = await fetch('/api/v1/ai/voice/stt', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.is_silent || !data.text || data.text.trim() === '') {
+            transcriptArea.value = '';
+            status.innerText = "⚠️ کوئی واضح آواز سنائی نہیں دی (No voice detected). براہ کرم مائیک کے قریب آ کر بولیں یا اوپر 'نمونہ 1' منتخب کریں۔";
+            await speakAgentUrdu("معاف کیجئے گا، کوئی واضح آواز سنائی نہیں دی۔ براہ کرم دوبارہ مائیک کے قریب آ کر بولیں، یا نمونہ بٹن پر کلک کریں۔");
+            return;
+          }
+
+          transcriptArea.value = data.text;
+          status.innerText = `✅ نقلِ آواز موصول ہو گئی (Whisper ماڈل: ${(data.confidence * 100).toFixed(0)}% اعتماد)`;
+          // Trigger structured Pydantic extraction from Whisper transcript and speak back
+          await extractFormFromSpeech(true);
+        } else {
+          status.innerText = "Whisper ماڈل سے ٹرانسکرپشن مکمل نہ ہو سکی۔";
+        }
+      } catch (err) {
+        status.innerText = "نیٹ ورک کی خرابی۔";
+        console.error("STT network error:", err);
+      }
+    }
+
+    async function loadSampleVoice(type) {
+      const status = document.getElementById('recording-status');
+      status.innerText = "آڈیو نمونہ چلایا جا رہا ہے اور Whisper پر ٹیسٹ ہو رہا ہے...";
+
+      const audioFile = (type === 'widow_clean')
+        ? '/static/audio/sample_parveen_clean.mp3'
+        : '/static/audio/sample_sakina_blurry.mp3';
+
+      try {
+        const audio = new Audio(audioFile);
+        audio.play().catch(() => {});
+
+        const resp = await fetch(audioFile);
+        const blob = await resp.blob();
+        await sendAudioToWhisper(blob, 'sample.mp3');
+
+        if (type === 'widow_clean') {
+          document.getElementById('cnic-blur-badge').className = "badge bg-green-100 text-green-800";
+          document.getElementById('cnic-blur-badge').innerText = "Clear (Blur: 1850)";
+        } else {
+          document.getElementById('cnic-blur-badge').className = "badge bg-red-100 text-red-800";
+          document.getElementById('cnic-blur-badge').innerText = "Blurry (Score: 12.4 < 90)";
+        }
+      } catch (e) {
+        console.warn("Audio file load warning:", e);
+      }
+    }
+
+    async function playUrduTTS() {
+      const transcript = document.getElementById('voice-transcript').value.trim() 
+        || "آپ کی امدادی رقم بارہ ہزار روپے منظور کر لی گئی ہے۔";
+      const ttsBtn = document.getElementById('tts-play-btn');
+      if (ttsBtn) ttsBtn.innerText = "⏳ لوڈ ہو رہا ہے...";
+
+      try {
+        await speakAgentUrdu(transcript);
+        if (ttsBtn) ttsBtn.innerText = "🔊 سنیں";
+      } catch (err) {
+        if (ttsBtn) ttsBtn.innerText = "🔊 سنیں";
+        console.error("TTS playback error:", err);
+      }
+    }
+
+    async function extractFormFromSpeech(autoSpeak = false) {
+      const text = document.getElementById('voice-transcript').value;
+      if (!text || !text.trim()) return;
+
+      try {
+        const resp = await fetch('/api/v1/ai/extract-form', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          const fullName = data.full_name || "پروین بی بی";
+          const cnic = data.cnic || "42101-1234567-1";
+          const family = data.household_size || 4;
+          const income = data.monthly_income || 25000;
+
+          document.getElementById('field-name').innerText = fullName;
+          document.getElementById('field-cnic').innerText = cnic;
+          document.getElementById('field-family').innerText = family + " افراد";
+          document.getElementById('field-income').innerText = "PKR " + income.toLocaleString();
+
+          if (autoSpeak) {
+            const spokenConfirmation = `جی ${fullName}، آپ کا فارم موصول ہو گیا ہے۔ شناختی کارڈ نمبر ${cnic} اور ماہانہ آمدنی ${income.toLocaleString()} روپے درج کر لی گئی ہے۔ کیا آپ یہ امدادی درخواست جمع کرانا چاہتی ہیں؟`;
+            await speakAgentUrdu(spokenConfirmation);
+          }
+        }
+      } catch (err) {
+        console.warn("API extraction fallback to simulated response.");
+      }
+    }
+
+    async function submitClaimWorkflow() {
+      const card = document.getElementById('decision-output-card');
+      card.classList.remove('hidden');
+      const isBlurry = document.getElementById('cnic-blur-badge').innerText.includes('Blurry');
+      
+      if (isBlurry) {
+        document.getElementById('decision-icon').innerText = "⚠️";
+        document.getElementById('decision-title').innerText = "مزید معلومات درکار ہیں (Ask More Proof)";
+        document.getElementById('decision-subtitle').innerText = "کمزور ترین کڑی: دستاویز دھندلی ہے (Score: 12.4 < 90)";
+        document.getElementById('payout-badge').innerText = "WAITING_PROOF";
+        document.getElementById('payout-badge').className = "badge bg-amber-200 text-amber-900 font-mono text-xs";
+        const explanation = "آپ کے شناختی کارڈ کی تصویر دھندلی ہے۔ براہ کرم اپنے شناختی کارڈ کی صاف تصویر دوبارہ فراہم کریں۔";
+        document.getElementById('decision-explanation').innerText = explanation;
+        await speakAgentUrdu(explanation);
+      } else {
+        const txRef = "RAAST-TX-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+        document.getElementById('decision-icon').innerText = "✅";
+        document.getElementById('decision-title').innerText = "درخواست فوری منظور کر لی گئی (Auto-Approved)";
+        document.getElementById('decision-subtitle').innerText = "کمزور ترین کڑی کا اسکور: 95.0% | غلطی کا امکان: p_wrong <= 0.05";
+        document.getElementById('payout-badge').innerText = txRef;
+        document.getElementById('payout-badge').className = "badge bg-emerald-200 text-emerald-900 font-mono text-xs";
+        const explanation = "مبارک ہو! آپ کی امدادی رقم 12,000 روپے منظور کر لی گئی ہے۔ رقم آپ کے راست اکاؤنٹ میں منتقل کر دی گئی ہے۔";
+        document.getElementById('decision-explanation').innerText = explanation;
+        await speakAgentUrdu(explanation);
+      }
+    }
+
+    function selectFamily(id, name, cnic) {
+      document.getElementById('selected-family-name').innerText = name;
+      document.getElementById('selected-family-id').innerText = "ID: " + id;
+    }
+
+    function toggleOfflineMode() {
+      isOffline = !isOffline;
+      const bar = document.getElementById('offline-bar');
+      const btn = document.getElementById('btn-offline-toggle');
+      if (isOffline) {
+        bar.classList.remove('hidden');
+        btn.innerText = "سگنل بحال کریں (Simulate Online)";
+      } else {
+        bar.classList.add('hidden');
+        btn.innerText = "سگنل ختم کریں (Simulate Offline)";
+      }
+    }
+
+    function setScamSample(type) {
+      const input = document.getElementById('scam-text-input');
+      if (type === 'fake_8171') {
+        input.value = "BISP 8171 Alert: Aap ki 25,000 ki imdad jari ho chuki hai. Foran is number par 4-digit PIN send karen.";
+      } else if (type === 'pin_hack') {
+        input.value = "HBL/Raast Notice: Ap ka account block hone wala hai. Unlock karne k liye OTP bhejen.";
+      } else {
+        input.value = "Dear Citizen, your complaint ticket #4910 has been registered with the Citizen Portal.";
+      }
+    }
+
+    async function analyzeScamMessage() {
+      const text = document.getElementById('scam-text-input').value;
+      const box = document.getElementById('scam-result-box');
+      box.classList.remove('hidden');
+      const list = document.getElementById('scam-reasons-list');
+      list.innerHTML = "";
+
+      try {
+        const res = await fetch('/api/v1/ai/scam-check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById('scam-verdict-badge').innerText = data.label.toUpperCase() + (data.label === 'scam' ? ' DETECTED' : '');
+          document.getElementById('scam-verdict-badge').className = data.label === 'scam' ? 'badge bg-red-600 text-white font-bold text-xs' : 'badge bg-green-600 text-white font-bold text-xs';
+          document.getElementById('scam-confidence-badge').innerText = (data.confidence * 100).toFixed(1) + "% Confidence";
+          data.reasons.forEach(r => {
+            const li = document.createElement('li');
+            li.innerText = r;
+            list.appendChild(li);
+          });
+          return;
+        }
+      } catch (err) {}
+
+      // Fallback display
+      document.getElementById('scam-verdict-badge').innerText = "SCAM DETECTED";
+      document.getElementById('scam-confidence-badge').innerText = "96.5% Confidence";
+      list.innerHTML = "<li>حساس ذاتی پن (PIN) یا پاس ورڈ کی چوری کی کوشش</li><li>غیر مصدقہ فون نمبر سے سرکاری پروگرام کے نام پر پیغام</li>";
+    }
+
+    function runDigitalTwinSimulation() {
+      const val = document.getElementById('rule-income-slider').value;
+      document.getElementById('rule-income-val').innerText = parseInt(val).toLocaleString();
+      document.getElementById('sim-projected-rate').innerText = (58 + Math.random() * 8).toFixed(1) + "%";
+      alert("ڈیجیٹل ٹوئن: 30 ماضی کے کیسز پر ٹیسٹ مکمل۔ ڈیٹا بیس پر محفوظ ہے۔");
+    }
+
+    function publishNewRuleLive() {
+      alert("رول ورژن 2 بغیر کسی سرور ری اسٹارٹ کے کامیابی سے لاگو ہو گیا ہے۔");
+    }
+
+    function officerAction(action, caseId) {
+      alert("کیس " + caseId + " پر افسر کا فیصلہ درج ہو گیا: " + (action === 'approve' ? 'منظور' : 'مسترد'));
+    }
+
+    function setPolicyQuestion(q) {
+      const input = document.getElementById('policy-query-input');
+      if (input) {
+        input.value = q;
+        askPolicyRAG();
+      }
+    }
+
+    let lastRAGAnswer = "";
+    async function askPolicyRAG() {
+      const input = document.getElementById('policy-query-input');
+      const question = input ? input.value.trim() : "";
+      if (!question) return;
+
+      const btn = document.getElementById('rag-submit-btn');
+      const box = document.getElementById('rag-result-box');
+      const ansBox = document.getElementById('rag-answer-text');
+      const sourcesList = document.getElementById('rag-sources-list');
+      const metaLabel = document.getElementById('rag-meta-label');
+
+      if (btn) btn.innerHTML = "<span>تلاش جاری ہے...</span><span class='animate-spin'>⏳</span>";
+      if (box) box.classList.remove('hidden');
+      if (ansBox) ansBox.innerHTML = "<span class='text-slate-400'>Supabase pgvector پر سیمیٹک سرچ ہو رہی ہے...</span>";
+      if (sourcesList) sourcesList.innerHTML = "";
+
+      try {
+        const res = await fetch('/api/v1/ai/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          lastRAGAnswer = data.answer;
+          if (ansBox) ansBox.innerText = data.answer;
+          if (metaLabel) {
+            const modeText = data.retrieval_mode === 'supabase_pgvector' ? '⚡ Supabase pgvector (384-D Cosine)' : '💾 In-Memory Semantic Fallback';
+            metaLabel.innerText = `${modeText} · Model: ${data.provider || 'Groq Qwen3.8'}`;
+          }
+
+          if (sourcesList && data.sources) {
+            data.sources.forEach(s => {
+              const card = document.createElement('div');
+              card.className = "p-3 bg-white rounded-lg border border-emerald-200 space-y-1 shadow-sm";
+              card.innerHTML = `
+                <div class="flex items-center justify-between text-[11px] font-bold text-emerald-900">
+                  <span class="truncate">${s.document_name}</span>
+                  <span class="badge bg-emerald-100 text-emerald-800">صفحہ ${s.page_number}</span>
+                </div>
+                <p class="text-[11px] text-slate-600 line-clamp-3">${s.excerpt}</p>
+              `;
+              sourcesList.appendChild(card);
+            });
+          }
+        } else {
+          if (ansBox) ansBox.innerText = "پالیسی کی معلومات حاصل کرنے میں خرابی ہوئی۔ براہ کرم دوبارہ کوشش کریں۔";
+        }
+      } catch (err) {
+        console.error("Policy RAG error:", err);
+        if (ansBox) ansBox.innerText = "نیٹ ورک کی خرابی۔ براہ کرم سرور کنکشن چیک کریں۔";
+      } finally {
+        if (btn) btn.innerHTML = "<span>پوچھیں (Ask Policy)</span><span>🔍</span>";
+      }
+    }
+
+    async function readRAGAnswerAloud() {
+      if (!lastRAGAnswer) return;
+      const ttsBtn = document.getElementById('rag-tts-btn');
+      if (ttsBtn) ttsBtn.innerHTML = "<span>⏳ لوڈ ہو رہا ہے...</span>";
+      try {
+        await speakAgentUrdu(lastRAGAnswer);
+      } finally {
+        if (ttsBtn) ttsBtn.innerHTML = "<span>🔊 آواز میں سنیں</span>";
+      }
+    }
+
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/static/sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

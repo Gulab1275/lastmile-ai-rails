@@ -80,11 +80,18 @@ async def speech_to_text(
     Transcribes spoken Urdu or English audio into text using Groq Whisper-large-v3.
     """
     audio_data = await file.read()
-    res = transcribe(audio_data, language=language)
+    res = transcribe(
+        audio_data,
+        language=language,
+        filename=file.filename,
+        content_type=file.content_type
+    )
     return TranscribeResponse(
         text=res["text"],
         language=res["language"],
-        confidence=res["confidence"]
+        confidence=res["confidence"],
+        is_silent=res.get("is_silent", False),
+        message=res.get("message")
     )
 
 @router.post("/voice/tts")
@@ -112,7 +119,9 @@ def ask_policy_question(payload: PolicyAskRequest):
     res = ask_policy(payload.question)
     return PolicyAskResponse(
         answer=res["answer"],
-        sources=res["sources"]
+        sources=res["sources"],
+        retrieval_mode=res.get("retrieval_mode", "supabase_pgvector"),
+        provider=res.get("provider", "groq")
     )
 
 @router.post("/extract-form", response_model=ExtractedClaimForm)
@@ -137,7 +146,11 @@ def run_autonomous_agent(payload: Dict[str, Any]):
         "reasons": res["reasons"],
         "disbursed": res["disbursed"],
         "disbursement_ref": res["disbursement_ref"],
-        "current_step": res["current_step"]
+        "current_step": res["current_step"],
+        "thought_chain": res.get("thought_chain", []),
+        "tools_executed": res.get("tools_executed", []),
+        "components": res.get("components", {}),
+        "handoff_packet": res.get("handoff_packet")
     }
 
 @router.get("/health")

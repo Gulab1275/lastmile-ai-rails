@@ -10,7 +10,7 @@
 Every DPI system, payment rail, identity ladder, and ML model can be verified live in under 2 minutes:
 - **FastAPI Backend Server:** `uvicorn services.api.main:app --port 8000`
 - **Interactive Swagger Docs:** `http://localhost:8000/docs`
-- **Automated Test Suite:** `python -m pytest tests/ -v` (**37 / 37 passed**)
+- **Automated Test Suite:** `python -m pytest tests/ -v` (**46 / 46 passed**)
 - **12-Step Presentation Runner:** `python scripts/demo_runner.py` (**100% verified**)
 - **Supabase Keep-Alive:** `python scripts/keepalive_ping.py`
 
@@ -26,7 +26,7 @@ Every DPI system, payment rail, identity ladder, and ML model can be verified li
 | **04: Rules That Change** | Dynamic JSON rules stored in Supabase; new rules take effect instantly without code deploy. | `services/api/engine/rules_engine.py`<br/>`services/api/routes/rules.py` | Publish via `POST /api/v1/rules/publish` |
 | **05: Explain and Audit** | Dual-view explainability (plain Urdu voice for citizens, parameters for auditors) + SHA-256 hash-chained ledger. | `services/api/engine/explanation_builder.py`<br/>`services/api/engine/audit_log.py` | Verify chain: `GET /api/v1/audit/verify-chain` |
 | **06: Consent & Take-Back** | Server-side Consent Gateway enforces granular scopes; revocation immediately blocks reads (HTTP 403). | `services/api/engine/consent_gateway.py`<br/>`services/api/routes/consent.py` | Withdraw scope via `POST /api/v1/consent/withdraw` |
-| **07: Works for Everyone** | Voice-first conversational Urdu intake, Edge-TTS speech synthesis, and offline-first sync. | `services/ai/voice.py`<br/>`services/ai/forms.py`<br/>`services/ai/sync.py` | Run `POST /api/v1/ai/voice/tts` and `POST /api/v1/ai/extract-form` |
+| **07: Works for Everyone** | Voice-first conversational Urdu intake, Edge-TTS speech synthesis, Supabase pgvector RAG, and offline-first sync. | `services/ai/voice.py`<br/>`services/ai/forms.py`<br/>`services/ai/rag.py`<br/>`services/ai/embeddings.py` | Run `POST /api/v1/ai/voice/tts`, `POST /api/v1/ai/extract-form`, and `POST /api/v1/ai/ask` |
 | **08: Scams & Fake Documents** | Scikit-learn calibrated classifier for relief SMS; Laplacian blur gate (<90) and ELA tamper detection. | `services/ai/scam.py`<br/>`services/ai/ocr.py`<br/>`services/ai/scam_map.py` | Run `POST /api/v1/ai/scam-check` and `GET /api/v1/ai/scam-map` |
 
 ---

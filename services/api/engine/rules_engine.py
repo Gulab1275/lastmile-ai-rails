@@ -77,6 +77,24 @@ class RulesEngine:
 
         self._rule_versions[new_version_num] = new_ruleset
         self._active_version = new_version_num
+
+        # Dual-persistence to Supabase Postgres
+        try:
+            from db.connection import SessionLocal
+            from db.models import RuleVersion as DBRuleVersion
+            with SessionLocal() as db_session:
+                db_rule = DBRuleVersion(
+                    version=new_version_num,
+                    rule_name=new_ruleset.name,
+                    conditions=[c.model_dump() if hasattr(c, "model_dump") else c.__dict__ for c in new_ruleset.custom_conditions],
+                    author=publisher_id,
+                    status="active"
+                )
+                db_session.add(db_rule)
+                db_session.commit()
+        except Exception:
+            pass
+
         return new_ruleset
 
     def evaluate_condition(self, case_data: Dict[str, Any], condition: RuleCondition) -> Dict[str, Any]:

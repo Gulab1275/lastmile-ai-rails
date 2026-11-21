@@ -96,10 +96,60 @@ def test_ai_voice_tts_synthesis():
     assert response.headers["content-type"] == "audio/mpeg"
     assert len(response.content) > 1000
 
+def test_ai_voice_stt_multi_format_and_detection():
+    """Verify audio format detection (WebM, WAV, MP3) and STT endpoint."""
+    from services.ai.voice import detect_audio_format
+    
+    # Check WebM detection
+    name, mime = detect_audio_format(b"\x1aE\xdf\xa3dummy_webm_bytes")
+    assert name == "input.webm"
+    assert mime == "audio/webm"
+    
+    # Check WAV detection
+    name, mime = detect_audio_format(b"RIFFdummy_wav_bytes")
+    assert name == "input.wav"
+    assert mime == "audio/wav"
+    
+    # Check filename override
+    name, mime = detect_audio_format(b"anything", filename="speech.weba")
+    assert name == "input.webm"
+    assert mime == "audio/webm"
+
+def test_ai_pgvector_semantic_embedding_engine():
+    """Verify 384-dimensional dense semantic embedding engine and cosine similarity."""
+    from services.ai.embeddings import generate_embedding, cosine_similarity
+
+    v_query = generate_embedding("What is the monthly income limit for widow relief?")
+    v_policy = generate_embedding("Section 2.1: Households with monthly income below PKR 35,000 qualify for widow assistance.")
+    v_irrelevant = generate_embedding("Chocolate brownie recipe with cocoa powder.")
+
+    assert len(v_query) == 384
+    assert len(v_policy) == 384
+    assert round(sum(x*x for x in v_query), 2) == 1.0  # L2 normalized
+
+    sim_related = cosine_similarity(v_query, v_policy)
+    sim_unrelated = cosine_similarity(v_query, v_irrelevant)
+    assert sim_related > sim_unrelated
+    assert sim_related > 0.30
+
 def test_ai_policy_rag_with_citations():
-    """Verify policy Q&A returns authoritative answer with source citations."""
+    """Verify policy Q&A returns authoritative answer with source citations via pgvector."""
     payload = {
         "question": "What is the maximum income to be eligible for relief support?"
+    }
+    response = client.post("/api/v1/ai/ask", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["answer"]) > 10
+    assert len(data["sources"]) >= 1
+    assert "document_name" in data["sources"][0]
+    assert "page_number" in data["sources"][0]
+    assert "retrieval_mode" in data
+
+def test_ai_policy_rag_urdu_query():
+    """Verify Urdu policy query returns Urdu guidance with citations."""
+    payload = {
+        "question": "بیوہ خواتین کے لیے اہلیت کی کیا شرائط ہیں؟"
     }
     response = client.post("/api/v1/ai/ask", json=payload)
     assert response.status_code == 200
@@ -143,6 +193,53 @@ def test_ai_langgraph_agent_clean_approval():
     assert data["disbursed"] is True
     assert data["disbursement_ref"] is not None
     assert data["disbursement_ref"].startswith("RAAST-TX-")
+    assert "thought_chain" in data
+    assert len(data["thought_chain"]) >= 4
+    assert "verify_identity" in data["tools_executed"]
+    assert "disburse_payment" in data["tools_executed"]
+
+def test_ai_langgraph_agent_blurry_requests_more_proof():
+    """Verify LangGraph agent flags blurry document and requests proof without auto-rejecting."""
+    payload = {
+        "case_id": "case_test_agent_blurry",
+        "cnic": "42101-9988776-3",
+        "citizen_name": "Sakina Bibi",
+        "monthly_income": 20000.0,
+        "household_size": 4,
+        "claim_amount": 10000.0,
+        "documents": [
+            {"doc_type": "cnic_front", "blur_score": 25.0, "tamper_score": 0.02}
+        ]
+    }
+    response = client.post("/api/v1/ai/agent/run", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["route"] == "ask_more_proof"
+    assert data["disbursed"] is False
+    assert "thought_chain" in data
+    assert any("blur detected" in step.get("thought", "").lower() for step in data["thought_chain"])
+
+def test_ai_langgraph_agent_high_claim_hands_off_to_officer():
+    """Verify LangGraph agent hands off high-risk claim to human officer with triage packet."""
+    payload = {
+        "case_id": "case_test_agent_high",
+        "cnic": "42101-5544332-1",
+        "citizen_name": "Ghulam Rasool",
+        "monthly_income": 50000.0,  # exceeds poverty cap
+        "household_size": 2,
+        "claim_amount": 35000.0,    # exceeds auto threshold
+        "documents": [
+            {"doc_type": "cnic_front", "blur_score": 1200.0, "tamper_score": 0.01},
+            {"doc_type": "utility_bill", "blur_score": 1400.0, "tamper_score": 0.01}
+        ]
+    }
+    response = client.post("/api/v1/ai/agent/run", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["route"] == "human_review"
+    assert data["disbursed"] is False
+    assert data["handoff_packet"] is not None
+    assert data["handoff_packet"]["tool"] == "handoff_to_officer"
 
 
 def test_ai_anomaly_detection_flags_outlier_and_velocity():
