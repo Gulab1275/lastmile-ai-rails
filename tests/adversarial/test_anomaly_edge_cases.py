@@ -3,7 +3,6 @@ Adversarial Test Suite L: Anomaly Detection Statistical Outliers & Boundary Case
 Tests K01 - K06: Evaluates Isolation Forest feature extraction, repeat CNIC bursts,
 velocity thresholds, and separation of statistical anomaly from confirmed fraud.
 """
-import pytest
 from services.ai.anomaly import detect_claim_anomalies, extract_claim_features
 
 

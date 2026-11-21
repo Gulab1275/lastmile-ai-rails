@@ -3,9 +3,8 @@ Adversarial Test Suite D: Urdu Voice Intake & Conversational Extraction Confusio
 Tests D01 - D10: Evaluates conversational self-correction, code-switching,
 number-to-word conversions, VAD silence rejection, and prompt injection in voice transcripts.
 """
-import pytest
 from services.ai.forms import extract_claim_form
-from services.ai.voice import analyze_audio_vad, detect_audio_format, transcribe
+from services.ai.voice import analyze_audio_vad, detect_audio_format
 
 
 def test_d01_income_conversational_self_correction():
@@ -15,7 +14,7 @@ def test_d01_income_conversational_self_correction():
     """
     text = "Meri aamdani pandrah hazaar nahi, pachees hazaar hai."
     form = extract_claim_form(text)
-    
+
     assert form.monthly_income == 25000.0, f"Expected 25,000 after self-correction, got {form.monthly_income}"
 
 
@@ -26,7 +25,7 @@ def test_d02_household_size_conversational_self_correction():
     """
     text = "Mere teen bachay hain... nahi, chaar bachay hain."
     form = extract_claim_form(text)
-    
+
     # Either household_size is 4 or 5 (including mother)
     assert form.household_size in (4, 5), f"Expected 4 or 5 after self-correction, got {form.household_size}"
 
@@ -73,7 +72,7 @@ def test_d06_flatline_silence_audio_rejected_by_vad():
     # 44-byte WAV header followed by 100 samples of zero PCM
     silence_wav = b"RIFF,\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00\x80>\x00\x00\x00}\x00\x00\x02\x00\x10\x00data\x00\x00\x00\x00" + (b"\x00" * 200)
     vad = analyze_audio_vad(silence_wav)
-    
+
     assert vad["has_voice"] is False
     assert vad["rms_energy"] < 80.0
 
@@ -125,6 +124,6 @@ def test_d10_cross_modal_conflict_audio_vs_form():
 
     assert spoken_form.monthly_income is not None
     income_delta = abs(spoken_form.monthly_income - written_income)
-    
+
     # Must identify the significant conflict
     assert income_delta > 30000.0

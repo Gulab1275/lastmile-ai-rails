@@ -8,16 +8,18 @@ Tests:
 5. Concurrent appends from independent processes produce one valid chain.
 6. Failed audit write prevents associated business action from committing.
 """
-import pytest
 from unittest.mock import patch
+
+import pytest
 from fastapi.testclient import TestClient
 
 from db.connection import SessionLocal
-from db.models import AuditLog as DBAuditLog, Case as DBCase
-from services.api.engine.audit_log import audit_log, AuditLogLedger
-from services.shared.schemas import RoleEnum
+from db.models import AuditLog as DBAuditLog
+from db.models import Case as DBCase
+from services.api.engine.audit_log import AuditLogLedger
 from services.api.main import app
 from services.api.routes.cases import _CASES_DB
+from services.shared.schemas import RoleEnum
 
 
 def test_deleting_newest_record_detected_via_signed_checkpoint():
@@ -26,7 +28,7 @@ def test_deleting_newest_record_detected_via_signed_checkpoint():
     A signed checkpoint anchors height and head_hash, detecting newest record deletion immediately.
     """
     ledger = AuditLogLedger()
-    e1 = ledger.append("admin", RoleEnum.ADMIN, "CHK_ACTION_A", "RES_CHK_A", {"seq": 1})
+    ledger.append("admin", RoleEnum.ADMIN, "CHK_ACTION_A", "RES_CHK_A", {"seq": 1})
     e2 = ledger.append("admin", RoleEnum.ADMIN, "CHK_ACTION_B", "RES_CHK_B", {"seq": 2})
 
     # Create signed checkpoint anchoring the tip
@@ -81,7 +83,7 @@ def test_modifying_historical_record_and_recalculating_hashes_detected_via_check
     # Simulate an attacker who has forged rows in DB and recalculated head_hash
     forged_checkpoint = dict(checkpoint)
     forged_checkpoint["head_hash"] = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-    
+
     # Checkpoint signature check catches forgery
     tamper_sig = ledger.verify_checkpoint(forged_checkpoint, secret_key="airgap-audit-key-test")
     assert tamper_sig["is_valid"] is False
@@ -115,7 +117,7 @@ def test_records_after_checkpoint_detected():
     """
     ledger = AuditLogLedger()
     checkpoint = ledger.create_signed_checkpoint(secret_key="airgap-audit-key-test")
-    
+
     # Append record after checkpoint
     ledger.append("admin", RoleEnum.ADMIN, "POST_CHK_ACTION", "RES_POST", {"step": "after_chk"})
 

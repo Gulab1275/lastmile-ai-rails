@@ -11,7 +11,9 @@ Tests:
 Analyzes dependence on process-local memory vs persistent store.
 """
 import multiprocessing
+
 import pytest
+
 from services.api.engine.consent_gateway import ConsentGateway, ConsentWithdrawnException
 from services.shared.schemas import ConsentScope, RoleEnum
 

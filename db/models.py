@@ -1,15 +1,25 @@
-import hashlib
 import uuid
 from datetime import datetime
-from sqlalchemy import (
-    Column, String, Integer, Float, Boolean, DateTime,
-    ForeignKey, Text, JSON, Enum as SQLEnum, CheckConstraint
-)
+
+from sqlalchemy import JSON, Boolean, CheckConstraint, Column, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import relationship
 
 from services.shared.schemas import CaseStatus, ConsentStatus, UserRole
 
 from .connection import Base
+
+
+@compiles(CheckConstraint, "sqlite")
+def _compile_check_constraint_sqlite(element, compiler, **kw):
+    if element.name == "check_valid_cnic_format":
+        return (
+            "CONSTRAINT check_valid_cnic_format CHECK ("
+            "cnic GLOB '[0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]' "
+            "OR (length(cnic) = 13 AND cnic NOT GLOB '*[^0-9]*')"
+            ")"
+        )
+    return compiler.visit_check_constraint(element, **kw)
 
 
 def generate_uuid() -> str:
@@ -215,23 +225,38 @@ class AuditLog(Base):
     details = Column(JSON, default=dict)
 
     @classmethod
-    def create_entry(cls, session, actor: str, action: str, target: str, result: str, request_id: str):
-        last_entry = session.query(cls).order_by(cls.id.desc()).first()
-        prev_hash = last_entry.current_hash if last_entry else "0" * 64
+    def create_entry(cls, session, actor: str, action: str, target: str, result: str, request_id: str, details: dict = None):
+        from services.api.engine.audit_log import GENESIS_PREV_HASH, calculate_hash
 
-        now = datetime.utcnow().isoformat()
-        payload = f"{prev_hash}|{actor}|{action}|{target}|{result}|{request_id}|{now}"
-        current_hash = hashlib.sha256(payload.encode()).hexdigest()
+        last_entry = session.query(cls).order_by(cls.id.desc()).first()
+        prev_hash = last_entry.current_hash if last_entry else GENESIS_PREV_HASH
+
+        now_dt = datetime.utcnow()
+        parts = actor.split(":", 1)
+        actor_id = parts[0]
+        actor_role = parts[1] if len(parts) > 1 else "admin"
+        details_dict = details or {}
+
+        current_hash = calculate_hash(
+            prev_hash=prev_hash,
+            timestamp=now_dt.isoformat(),
+            actor_id=actor_id,
+            actor_role=actor_role,
+            action=action,
+            resource_id=target,
+            details=details_dict,
+        )
 
         entry = cls(
             prev_hash=prev_hash,
             current_hash=current_hash,
-            actor=actor,
+            actor=f"{actor_id}:{actor_role}",
             action=action,
             target=target,
             result=result,
             request_id=request_id,
-            timestamp=datetime.utcnow()
+            timestamp=now_dt,
+            details=details_dict,
         )
         session.add(entry)
         session.commit()

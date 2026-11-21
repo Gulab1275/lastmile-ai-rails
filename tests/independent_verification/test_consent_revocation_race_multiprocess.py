@@ -7,7 +7,6 @@ Required sequence:
 Verifies the outcome and documents transaction and locking behavior.
 """
 import multiprocessing
-import pytest
 
 from services.api.engine.consent_gateway import ConsentGateway, ConsentWithdrawnException
 from services.shared.schemas import ConsentScope, RoleEnum

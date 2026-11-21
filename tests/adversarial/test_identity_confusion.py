@@ -5,10 +5,11 @@ name transliteration works without duplication, and conflicting identity records
 """
 import pytest
 from sqlalchemy.exc import IntegrityError
+
 from db.connection import SessionLocal
 from db.models import Citizen
-from services.ai.matcher import resolve_identity, compute_name_similarity, clean_cnic, normalize_name
 from services.ai.anomaly import detect_claim_anomalies
+from services.ai.matcher import resolve_identity
 
 
 def test_a01_identical_names_different_cnics_never_merge():
@@ -30,7 +31,7 @@ def test_a01_identical_names_different_cnics_never_merge():
     }
 
     score, status, details = resolve_identity(citizen_a, citizen_b)
-    
+
     assert score == 0.0, f"Expected 0.0 match score for different CNICs, got {score}"
     assert status == "cnic_mismatch", f"Expected cnic_mismatch status, got {status}"
     assert details.get("requires_proof") is True
@@ -50,7 +51,7 @@ def test_a02_same_cnic_multiple_transliterations_normalized():
     ]
 
     base_record = {"cnic": shared_cnic, "full_name": transliterations[0]}
-    
+
     for variant in transliterations[1:]:
         input_record = {"cnic": shared_cnic, "full_name": variant}
         score, status, details = resolve_identity(input_record, base_record)
@@ -78,7 +79,7 @@ def test_a03_cnic_single_digit_typo_never_silent_corrected():
     }
 
     score, status, details = resolve_identity(typo_input, registered)
-    
+
     # Must refuse to merge or silently correct
     assert score == 0.0
     assert status == "cnic_mismatch"
@@ -94,7 +95,7 @@ def test_a04_cnic_applicant_utility_bill_mismatch_detected():
     bill_owner_b = {"full_name": "Ghulam Mustafa", "cnic": "42101-7777777-7"}
 
     score, status, details = resolve_identity(applicant_a, bill_owner_b)
-    
+
     assert score == 0.0
     assert status == "cnic_mismatch"
 
@@ -106,7 +107,7 @@ def test_a05_concurrent_duplicate_cnic_creation_db_uniqueness():
     """
     session = SessionLocal()
     test_cnic = "42101-9999999-9"
-    
+
     # Clean up if exists from prior test runs
     existing = session.query(Citizen).filter(Citizen.cnic == test_cnic).all()
     for e in existing:
@@ -159,7 +160,7 @@ def test_a06_applicant_submits_conflicting_cnics_across_sessions():
     }
 
     anomaly = detect_claim_anomalies(new_claim, historical_claims=historical)
-    
+
     # Must flag suspicious duplicate phone burst across different CNICs
     assert anomaly["is_anomaly"] is True
     assert "REPEAT_PHONE_BURST" in anomaly["flags"]

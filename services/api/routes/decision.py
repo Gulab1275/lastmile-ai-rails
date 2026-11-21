@@ -12,7 +12,15 @@ from services.api.engine.decision_engine import decision_engine
 from services.api.engine.explanation_builder import ExplanationBuilder
 from services.api.routes.cases import _CASES_DB
 from services.api.security.rbac import get_current_user
-from services.shared.schemas import CaseStatus, ComponentScores, ConsentScope, DecisionResponse, RoleEnum, RouteDecision, UserResponse
+from services.shared.schemas import (
+    CaseStatus,
+    ComponentScores,
+    ConsentScope,
+    DecisionResponse,
+    RoleEnum,
+    RouteDecision,
+    UserResponse,
+)
 
 router = APIRouter(prefix="/decisions", tags=["Decision Engine & Explainability"])
 

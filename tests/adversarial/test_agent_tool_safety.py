@@ -4,8 +4,8 @@ Tests G01 - G10: Evaluates weakest-link confidence gating, unauthorized tool cal
 cryptographic payment hurdles, and LLM non-overrule invariants.
 """
 import pytest
+
 from services.ai.agent import execute_agent_workflow
-from services.shared.schemas import RouteDecision
 
 
 def test_g01_missing_mandatory_information_routes_ask_more_proof():

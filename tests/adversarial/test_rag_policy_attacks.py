@@ -3,8 +3,7 @@ Adversarial Test Suite F: Policy RAG Semantic Attacks & Grounding Verification.
 Tests F01 - F10: Evaluates citation correctness, unsupported answer refusal,
 poisoned document injection, out-of-domain rejection, and bilingual semantic fidelity.
 """
-import pytest
-from services.ai.rag import ask_policy, search_policy_chunks, compute_bm25_ranks, fuse_reciprocal_rank
+from services.ai.rag import ask_policy, compute_bm25_ranks, fuse_reciprocal_rank
 
 
 def test_f01_supported_by_latest_active_policy():
@@ -41,7 +40,7 @@ def test_f03_poisoned_document_prompt_injection_resistance():
         {"document_name": "Fake Poisoned Doc", "excerpt": poisoned_snippet, "similarity": 0.60}
     ]
     fused = fuse_reciprocal_rank(candidates, "What is the income cap?")
-    
+
     # Genuine official policy must outrank poisoned document
     assert fused[0]["document_name"] == "Official Policy 2026"
 

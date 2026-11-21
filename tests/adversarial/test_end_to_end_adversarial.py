@@ -3,10 +3,7 @@ Adversarial Test Suite O: End-to-End Multi-Stage Composite Pipeline Attacks.
 Tests complex realistic attack chains across Voice, OCR, RAG, Rules Engine,
 Consent Revocation, and Payment Gating in full integration.
 """
-import pytest
-from fastapi.testclient import TestClient
 from services.ai.agent import execute_agent_workflow
-from services.api.engine.decision_engine import generate_approval_token, verify_approval_token
 
 
 def test_o01_composite_attack_prompt_injection_with_ineligible_income():

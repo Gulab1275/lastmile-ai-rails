@@ -10,8 +10,8 @@ Enhanced in Production Security Hardening Mission 2:
 - Fails closed upon database connection failures.
 - Zero stale cached consent overrides database state.
 """
-import uuid
 import threading
+import uuid
 from datetime import datetime
 from typing import Any, Dict, Optional
 
@@ -21,8 +21,8 @@ from services.api.engine.audit_log import audit_log
 from services.shared.schemas import (
     ConsentRecord,
     ConsentScope,
-    RoleEnum,
     ConsentStatus,
+    RoleEnum,
 )
 
 

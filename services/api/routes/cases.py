@@ -10,11 +10,11 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
 
 from services.api.engine.audit_log import audit_log
 from services.api.engine.consent_gateway import consent_gateway
 from services.api.security.rbac import get_current_user, require_officer
-from pydantic import BaseModel, Field
 from services.shared.schemas import (
     CaseCreate,
     CaseResponse,
@@ -176,7 +176,7 @@ async def list_cases(
     elif current_user.role == RoleEnum.HELPER:
         # Task 3: Check active helper consent at point of use before returning protected family cases
         cases = [
-            c for c in all_cases 
+            c for c in all_cases
             if c.helper_id == current_user.id and consent_gateway.check_consent(c.citizen_id, ConsentScope.HELPER_ACTING, current_user.id)
         ]
     else:
@@ -412,7 +412,8 @@ async def propose_legacy_cnic_correction(
     Does NOT update the citizen's CNIC in the database yet. Status remains PENDING_APPROVAL.
     """
     from db.connection import SessionLocal
-    from db.models import Citizen as DBCitizen, AuditLog as DBAuditLog
+    from db.models import AuditLog as DBAuditLog
+    from db.models import Citizen as DBCitizen
 
     if req.verified_cnic.endswith("-X"):
         raise HTTPException(

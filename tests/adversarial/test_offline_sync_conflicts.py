@@ -4,7 +4,7 @@ Tests J01 - J06: Evaluates idempotency deduplication across batch IDs,
 partial batch fault tolerance, malformed payload isolation, and conflict resolution.
 """
 import uuid
-import pytest
+
 from services.ai.sync import process_offline_sync_batch
 
 
@@ -79,7 +79,7 @@ def test_j04_malformed_records_mixed_with_valid_do_not_abort_batch():
     }
 
     res = process_offline_sync_batch("helper_shazia", "batch_mixed", [valid_item, malformed_item])
-    
+
     assert res["summary"]["total_items"] == 2
     assert res["summary"]["synced_count"] == 1
     assert res["summary"]["failed_count"] == 1

@@ -18,21 +18,17 @@ Tests:
 5. Database-level constraints vs Schema-level validation
 """
 import pytest
-from pydantic import ValidationError
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
+from db.models import Citizen
 from services.shared.schemas import (
     CaseCreate,
     CitizenProfile,
     ClaimCreate,
-    MockNADRARequest,
     MockComplaintRequest,
-    UserCreate,
-    RoleEnum,
+    MockNADRARequest,
 )
-from db.models import Citizen
-from sqlalchemy.exc import IntegrityError
-
 
 # ============================================================================
 # 1. Negative Test Cases - ASCII Invalid CNICs (Must raise ValidationError)
@@ -156,7 +152,7 @@ def test_cnic_rejects_null_none_values():
 # ============================================================================
 
 def test_cnic_unicode_digits_analysis():
-    """
+    r"""
     Phase 2 Security Hardening:
     Replaces Unicode-sensitive \d with ASCII [0-9].
     Urdu, Arabic, and mixed Unicode numerals MUST be strictly rejected with ValidationError.
@@ -378,8 +374,9 @@ def test_database_model_cnic_column_constraints():
 
 def test_database_check_constraint_rejects_invalid_cnic():
     """Verify live PostgreSQL rejects direct SQL insert of invalid CNIC."""
-    from db.connection import engine
     from sqlalchemy import text
+
+    from db.connection import engine
     with engine.connect() as conn:
         # 1. Invalid CNIC with letter must raise CheckViolation
         with pytest.raises(Exception) as exc_info:

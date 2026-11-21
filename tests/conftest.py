@@ -37,6 +37,11 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
 
 Base.metadata.create_all(bind=engine)
 
+# Seed audit ledger with Genesis block if empty
+from services.api.engine.audit_log import audit_log  # noqa: E402
+
+audit_log._sync_from_db()
+
 
 @pytest.fixture(scope="session")
 def client() -> TestClient:

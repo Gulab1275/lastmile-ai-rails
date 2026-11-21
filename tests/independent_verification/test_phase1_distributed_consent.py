@@ -11,6 +11,7 @@ Tests:
 import multiprocessing
 import threading
 from unittest.mock import patch
+
 import pytest
 
 from services.api.engine.consent_gateway import ConsentGateway, ConsentWithdrawnException

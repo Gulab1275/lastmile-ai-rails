@@ -72,7 +72,7 @@ def create_api_key(
     # Audit log for key creation
     AuditLog.create_entry(
         session=db,
-        actor=owner_user_id or "system",
+        actor=f"{owner_user_id or 'system'}:admin",
         action="api_key_created",
         target="api_key",
         result="success",
@@ -100,7 +100,7 @@ async def require_api_key(
     if not api_key_header:
         AuditLog.create_entry(
             session=db,
-            actor="anonymous",
+            actor="anonymous:admin",
             action="api_key_denied",
             target="api_key",
             result="denied",
@@ -123,7 +123,7 @@ async def require_api_key(
     if not is_valid:
         AuditLog.create_entry(
             session=db,
-            actor=prefix if len(prefix) <= 12 else "unknown",
+            actor=f"{prefix}:admin" if len(prefix) <= 12 else "unknown:admin",
             action="api_key_denied",
             target="api_key",
             result="denied",
@@ -141,7 +141,7 @@ async def require_api_key(
     # Record successful usage in audit log
     AuditLog.create_entry(
         session=db,
-        actor=api_key_obj.key_prefix,
+        actor=f"{api_key_obj.key_prefix}:admin",
         action="api_key_used",
         target="api",
         result="success",

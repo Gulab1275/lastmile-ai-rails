@@ -5,8 +5,9 @@ IDOR cross-citizen access prevention, and concurrent consent invalidation.
 """
 import pytest
 from fastapi.testclient import TestClient
+
 from services.api.engine.consent_gateway import consent_gateway
-from services.shared.schemas import RoleEnum, ConsentScope
+from services.shared.schemas import ConsentScope, RoleEnum
 
 
 def test_h01_granular_consent_identity_allowed_income_denied():
@@ -84,9 +85,8 @@ def test_h04_helper_acting_consent_revocation_blocks_case_submission(client: Tes
 
 def test_h05_consent_status_persistence_in_audit_chain():
     """H05: Every grant and revocation writes an immutable audit block with SHA-256 hash."""
-    from services.api.engine.audit_log import audit_log
     citizen_id = "cit_h05_audit"
-    
+
     rec_grant = consent_gateway.grant_consent(citizen_id, ConsentScope.INCOME)
     assert rec_grant.audit_hash is not None
     assert len(rec_grant.audit_hash) == 64  # SHA-256 length

@@ -4,7 +4,9 @@ Tests B01 - B10: Evaluates Roman Urdu Soundex, prompt injection resistance,
 Unicode/length fuzzing, and ambiguity detection without throwing unhandled exceptions.
 """
 import time
+
 import pytest
+
 from services.ai.scam import classify_message
 from services.shared.schemas import ScamLabel
 
@@ -105,7 +107,7 @@ def test_b09_capitalization_punctuation_spacing_invariance():
         "Apka  BISP-wazifa  aya  hai: OTP bhejein?!?"
     ]
     results = [classify_message(v)["label"] for v in variants]
-    
+
     # All variants should produce the same classification
     assert len(set(results)) == 1, f"Inconsistent classifications across formatting variants: {results}"
     assert results[0] == ScamLabel.SCAM

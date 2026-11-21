@@ -8,14 +8,15 @@ Runs controlled concurrent load tests (10, 25, 50, 100 requests) against:
 Calculates: Average, P95, P99 latency, error rate, and throughput.
 """
 import time
-import numpy as np
 from concurrent.futures import ThreadPoolExecutor
-import pytest
+
+import numpy as np
 from fastapi.testclient import TestClient
-from services.ai.scam import classify_message
+from PIL import Image
+
 from services.ai.ocr import compute_blur_score
 from services.ai.rag import search_policy_chunks
-from PIL import Image
+from services.ai.scam import classify_message
 
 
 def _run_load_test(target_fn, concurrency_level: int, *args):
@@ -28,14 +29,14 @@ def _run_load_test(target_fn, concurrency_level: int, *args):
         for f in futures:
             try:
                 t0 = time.time()
-                res = f.result()
+                f.result()
                 latencies.append((time.time() - t0) * 1000)
             except Exception:
                 errors += 1
 
     total_time = time.time() - t_start
     lat_arr = np.array(latencies) if latencies else np.array([0.0])
-    
+
     return {
         "concurrency": concurrency_level,
         "completed": len(latencies),

@@ -10,8 +10,9 @@ Task 2 Verification:
 - Concurrency serialization via PostgreSQL transaction advisory lock
 """
 import threading
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from db.connection import SessionLocal
 from db.models import AuditLog as DBAuditLog
@@ -64,7 +65,7 @@ def test_historical_record_modification_detected():
     """Modifying any historical field in PostgreSQL must immediately trigger tamper detection."""
     ledger = AuditLogLedger()
     target_entry = ledger.append("auditor_test", RoleEnum.AUDITOR, "TAMPER_CHECK_ACTION", "TARGET_TAMPER_01", {"val": 100})
-    
+
     # Verify valid before tampering
     assert ledger.verify_chain().is_valid is True
 
@@ -93,9 +94,9 @@ def test_historical_record_modification_detected():
 def test_historical_record_deletion_detected():
     """Deleting a record creates a cryptographic break and must be detected immediately."""
     ledger = AuditLogLedger()
-    e1 = ledger.append("admin", RoleEnum.ADMIN, "RECORD_A", "RES_A", {"seq": 1})
+    ledger.append("admin", RoleEnum.ADMIN, "RECORD_A", "RES_A", {"seq": 1})
     e2 = ledger.append("admin", RoleEnum.ADMIN, "RECORD_B", "RES_B", {"seq": 2})
-    e3 = ledger.append("admin", RoleEnum.ADMIN, "RECORD_C", "RES_C", {"seq": 3})
+    ledger.append("admin", RoleEnum.ADMIN, "RECORD_C", "RES_C", {"seq": 3})
 
     assert ledger.verify_chain().is_valid is True
 
@@ -133,11 +134,11 @@ def test_historical_record_deletion_detected():
 def test_application_restart_persistence():
     """Creating a brand new AuditLogLedger instance simulates app restart and verifies chain from DB."""
     ledger_instance_1 = AuditLogLedger()
-    e = ledger_instance_1.append("worker_x", RoleEnum.OFFICER, "PRE_RESTART_ACTION", "SYS_01")
-    
+    ledger_instance_1.append("worker_x", RoleEnum.OFFICER, "PRE_RESTART_ACTION", "SYS_01")
+
     # Simulate restart: delete in-memory instance, create fresh instance
     del ledger_instance_1
-    
+
     fresh_ledger = AuditLogLedger()
     res = fresh_ledger.verify_chain()
     assert res.is_valid is True
@@ -148,11 +149,11 @@ def test_application_restart_persistence():
 def test_database_outage_fails_closed():
     """When PostgreSQL is unreachable, append() must raise an exception rather than silently losing logs."""
     ledger = AuditLogLedger()
-    
+
     # Simulate database connection outage
     with patch("db.connection.SessionLocal", side_effect=Exception("Connection refused")):
         with pytest.raises(RuntimeError) as exc_info:
             ledger.append("worker_y", RoleEnum.ADMIN, "CRITICAL_SECURITY_EVENT", "RES_FAIL")
-        
+
         assert "Audit log persistence failure" in str(exc_info.value)
         assert "database unavailable" in str(exc_info.value)

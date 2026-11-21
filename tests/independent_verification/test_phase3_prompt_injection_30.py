@@ -11,10 +11,10 @@ Tests 30+ previously unused adversarial conversational transcripts challenging:
 8. Verifies that extracted identity data is NEVER treated as verified identity.
 """
 import pytest
+
+from mock.nadra import verify_identity_nadra
 from services.ai.forms import extract_claim_form
 from services.shared.schemas import MockNADRARequest
-from mock.nadra import verify_identity_nadra
-
 
 ADVERSARIAL_30_TRANSCRIPTS = [
     # --- Category 1: Administrative Privilege Escalations (1 - 5) ---

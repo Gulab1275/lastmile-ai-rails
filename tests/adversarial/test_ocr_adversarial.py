@@ -4,8 +4,9 @@ Tests C01 - C10: Evaluates Laplacian blur threshold, ELA tamper detection,
 corrupted byte handling, format spoofing, and orientation stress without crash.
 """
 import io
-import pytest
-from PIL import Image, ImageDraw, ImageFilter, ImageEnhance
+
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
+
 from services.ai.ocr import compute_blur_score, compute_tamper_score, extract_documents, extract_fields_from_text
 
 
@@ -43,7 +44,7 @@ def test_c03_unreadable_or_missing_qr_code_handled():
     img = _create_synthetic_cnic_image()
     buf = io.BytesIO()
     img.save(buf, format="PNG")
-    
+
     # extract_documents should process without crashing when no QR is decoded
     res = extract_documents([buf.getvalue()])
     assert "blur_score" in res
@@ -54,7 +55,7 @@ def test_c04_qr_code_identity_mismatch_check():
     """C04: Document where extracted QR text differs from printed OCR fields is distinguishable."""
     ocr_fields = {"cnic": "42101-1234567-1", "full_name": "Parveen Bibi"}
     qr_payload = {"cnic": "42101-9999999-9", "full_name": "Fatima Bibi"}
-    
+
     # System must flag mismatch between printed OCR and QR payload
     assert ocr_fields["cnic"] != qr_payload["cnic"]
 
@@ -80,7 +81,7 @@ def test_c06_utility_bill_belongs_to_different_citizen():
 def test_c07_rotated_dark_glare_and_cropped_stress():
     """C07: Rotated, dark, and shadowed images do not cause pipeline crash."""
     base = _create_synthetic_cnic_image()
-    
+
     # 90-degree rotated
     rot90 = base.rotate(90, expand=True)
     score_rot = compute_blur_score(rot90)
@@ -101,7 +102,7 @@ def test_c08_unsupported_file_disguised_as_jpg():
     """C08: Unsupported file type disguised as JPG (arbitrary binary bytes) does not crash."""
     fake_jpg = b"MZ\x90\x00\x03\x00\x00\x00FAKE_EXECUTABLE_HEADER_NOT_A_REAL_IMAGE"
     res = extract_documents([fake_jpg])
-    
+
     # Must handle gracefully and return 0 blur / fallback tamper
     assert res["blur_score"] == 0.0
     assert "fields" in res

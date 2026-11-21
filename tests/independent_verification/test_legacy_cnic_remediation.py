@@ -8,7 +8,7 @@ Verifies the safe legacy CNIC remediation plan.
 - Verifies audit logging of manual corrections.
 """
 import uuid
-import pytest
+
 from fastapi.testclient import TestClient
 from sqlalchemy import text
 
@@ -165,8 +165,8 @@ def test_manual_verification_success_and_audit(client: TestClient, officer_heade
     from services.api.security.auth import _USERS_BY_USERNAME
     admin_id = _USERS_BY_USERNAME["admin_ayesha"]
     temp_citizen_id = f"cit_test_leg_{uuid.uuid4().hex[:6]}"
-    legacy_cnic = f"42101-8888888-X"
-    test_verified_cnic = f"42101-8888888-1"
+    legacy_cnic = "42101-8888888-X"
+    test_verified_cnic = "42101-8888888-1"
 
     with SessionLocal() as db_session:
         # Temporarily drop and re-add constraint NOT VALID to insert temporary legacy record
@@ -237,8 +237,8 @@ def test_two_phase_maker_checker_proposal_and_approval(client: TestClient, offic
     """
     from services.api.security.auth import _USERS_BY_USERNAME
     temp_citizen_id = f"cit_test_phase_{uuid.uuid4().hex[:6]}"
-    legacy_cnic = f"42101-7777777-X"
-    verified_cnic = f"42101-7777777-9"
+    legacy_cnic = "42101-7777777-X"
+    verified_cnic = "42101-7777777-9"
 
     with SessionLocal() as db_session:
         db_session.execute(text("ALTER TABLE citizens DROP CONSTRAINT IF EXISTS check_valid_cnic_format"))

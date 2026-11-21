@@ -88,7 +88,7 @@ async def revoke_key(
 
     AuditLog.create_entry(
         session=db,
-        actor=admin_user.username or admin_user.id,
+        actor=f"{admin_user.username or admin_user.id}:admin",
         action="api_key_revoked",
         target="api_key",
         result="success",

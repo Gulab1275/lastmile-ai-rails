@@ -5,6 +5,7 @@ non-standard currency notations, decimal family sizes, and fabrication resistanc
 """
 import pytest
 from pydantic import ValidationError
+
 from services.ai.forms import ExtractedClaimForm, extract_claim_form
 from services.shared.schemas import CaseCreate
 
@@ -92,7 +93,7 @@ def test_e07_contradictory_information_preserves_uncertainty():
     """E07: Contradictory information across statements handled gracefully."""
     text1 = "Mera naam Parveen hai aur CNIC 42101-1111111-1 hai."
     text2 = "Actually mera CNIC 42101-2222222-2 hai."
-    
+
     form1 = extract_claim_form(text1)
     form2 = extract_claim_form(text2)
 

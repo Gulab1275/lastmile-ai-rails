@@ -5,14 +5,15 @@ Verifies that helpers cannot access, view, modify, evaluate, explain, or sync ci
 without active point-of-use consent.
 """
 import uuid
+
 import pytest
 from fastapi.testclient import TestClient
 
+from services.ai.sync import process_offline_sync_batch
 from services.api.engine.consent_gateway import consent_gateway
 from services.api.routes.cases import _CASES_DB
 from services.api.security.auth import _USERS_BY_USERNAME
-from services.shared.schemas import CaseResponse, CaseStatus, ConsentScope, DocumentAttachment, RoleEnum
-from services.ai.sync import process_offline_sync_batch
+from services.shared.schemas import CaseResponse, CaseStatus, ConsentScope, RoleEnum
 
 
 @pytest.fixture

@@ -9,24 +9,24 @@ Validates:
 6. Phase 3 security mandates: deterministic rule supremacy over LLM, cryptographic audit persistence, and weakest-link gating.
 """
 import concurrent.futures
+
 import pytest
 from pydantic import ValidationError
 
-from services.api.engine.consent_gateway import consent_gateway, ConsentWithdrawnException
-from services.api.engine.audit_log import audit_log
+from services.ai.forms import extract_claim_form
 from services.ai.scam import classify_message
-from services.ai.forms import extract_claim_form, ExtractedClaimForm
+from services.api.engine.audit_log import audit_log
+from services.api.engine.consent_gateway import ConsentWithdrawnException, consent_gateway
 from services.shared.schemas import (
-    ConsentScope,
-    RoleEnum,
-    ScamLabel,
     CaseCreate,
     CitizenProfile,
     ClaimCreate,
-    MockNADRARequest,
+    ConsentScope,
     MockComplaintRequest,
+    MockNADRARequest,
+    RoleEnum,
+    ScamLabel,
 )
-
 
 # ==============================================================================
 # 1. CONSENT GATEWAY REGRESSION & ABUSE TESTS
@@ -35,14 +35,14 @@ from services.shared.schemas import (
 def test_revoke_consent_for_uninitialized_scope():
     """Revoke consent for a scope that was never explicitly granted."""
     cit_id = "cit_rem_uninit_001"
-    
+
     # Attempt withdrawing income consent on fresh citizen
     rec = consent_gateway.withdraw_consent(cit_id, ConsentScope.INCOME)
-    
+
     assert rec.granted is False
     assert rec.revoked_at is not None
     assert consent_gateway.check_consent(cit_id, ConsentScope.INCOME) is False
-    
+
     # Read gateway must immediately raise HTTP 403 ConsentWithdrawnException
     with pytest.raises(ConsentWithdrawnException):
         consent_gateway.read_gateway(
@@ -197,7 +197,7 @@ def test_legitimate_messages_mentioning_money_not_flagged(legit_msg):
 def test_malicious_transcripts_fabrication_resistance(inj_transcript):
     """Untrusted conversational transcripts must never be able to inject administrative names or fabricate data."""
     form = extract_claim_form(inj_transcript)
-    
+
     # Must never assign administrative spoofed identities
     blocked_identities = {"super admin", "admin system", "administrator", "root"}
     if form.full_name:
@@ -257,7 +257,7 @@ def test_valid_cnics_accepted_by_schemas(valid_cnic):
 def test_phase3_security_deterministic_rules_override_llm():
     """Phase 3 Security Mandate: Ineligible income can never be auto-approved, even if LLM claims approval."""
     from services.api.engine.rules_engine import rules_engine
-    
+
     # Ineligible applicant: income exceeds 35,000 threshold
     res = rules_engine.evaluate(
         case_data={
@@ -274,8 +274,7 @@ def test_phase3_security_deterministic_rules_override_llm():
 
 def test_phase3_security_audit_log_cryptographic_tamper_detection():
     """Phase 3 Security Mandate: Any modification of audit ledger is detected by SHA-256 chain verification."""
-    from services.api.engine.audit_log import audit_log
-    
+
     # Initial audit chain must be valid
     status_before = audit_log.verify_chain()
     assert status_before.is_valid is True
@@ -284,10 +283,10 @@ def test_phase3_security_audit_log_cryptographic_tamper_detection():
     if len(audit_log._entries) > 2:
         original_action = audit_log._entries[1].action
         audit_log._entries[1].action = "FORGED_SECURITY_ACTION"
-        
+
         status_tampered = audit_log.verify_chain()
         assert status_tampered.is_valid is False
         assert status_tampered.corrupted_at_index is not None
-        
+
         # Restore entry
         audit_log._entries[1].action = original_action

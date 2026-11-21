@@ -4,10 +4,8 @@ Dataset: 105 completely independent, freshly constructed messages.
 Measures False Negatives (FN) and False Positives (FP) independently.
 Never uses training or development test samples.
 """
-import pytest
 from services.ai.scam import classify_message
 from services.shared.schemas import ScamLabel
-
 
 INDEPENDENT_105_DATASET = [
     # =========================================================================
@@ -184,7 +182,7 @@ def test_independent_105_scam_classifier_accuracy_metrics():
     fp_rate = (len(legit_false_positives) / legit_count) * 100.0
     overall_accuracy = ((scam_detected + legit_correct) / len(INDEPENDENT_105_DATASET)) * 100.0
 
-    print(f"\n================ SCAM CLASSIFIER EVALUATION (105 NEW SAMPLES) ================")
+    print("\n================ SCAM CLASSIFIER EVALUATION (105 NEW SAMPLES) ================")
     print(f"Total Scam Messages Evaluated:       {scam_count}")
     print(f"Scam Messages Detected (SCAM/UNSURE): {scam_detected} ({(scam_detected/scam_count)*100:.2f}%)")
     print(f"False Negatives (Scams called LEGIT): {len(scam_false_negatives)} ({fn_rate:.2f}%)")
@@ -192,7 +190,7 @@ def test_independent_105_scam_classifier_accuracy_metrics():
     print(f"Legit Messages Correct (LEGIT/UNSURE): {legit_correct} ({(legit_correct/legit_count)*100:.2f}%)")
     print(f"False Positives (Legit called SCAM):  {len(legit_false_positives)} ({fp_rate:.2f}%)")
     print(f"Overall Safety / Accuracy Rate:       {overall_accuracy:.2f}%")
-    print(f"==============================================================================\n")
+    print("==============================================================================\n")
 
     # Strict Security Assertions:
     # 1. False Negative Rate must be 0% (Zero tolerance for credential theft or advance-fee scams escaping)

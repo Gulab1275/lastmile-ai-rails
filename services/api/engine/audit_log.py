@@ -13,6 +13,7 @@ import threading
 import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
+
 from sqlalchemy import text
 
 from services.shared.schemas import AuditChainVerificationResponse, AuditLogEntry, RoleEnum
@@ -100,11 +101,11 @@ class AuditLogLedger:
                     loaded = []
                     for r in rows:
                         parts = r.actor.split(":", 1)
-                        role_str = parts[1] if len(parts) > 1 else "citizen"
+                        role_str = parts[1] if len(parts) > 1 else "system"
                         try:
                             role = RoleEnum(role_str)
                         except Exception:
-                            role = RoleEnum.CITIZEN
+                            role = RoleEnum.ADMIN
                         loaded.append(AuditLogEntry(
                             id=r.request_id or f"aud_{r.id}",
                             prev_hash=r.prev_hash,
@@ -158,7 +159,8 @@ class AuditLogLedger:
         try:
             with SessionLocal() as db_session:
                 # Advisory transaction lock guarantees strict sequential serialization across worker processes
-                db_session.execute(text(f"SELECT pg_advisory_xact_lock({AUDIT_LOCK_ID});"))
+                if db_session.bind and db_session.bind.dialect.name == "postgresql":
+                    db_session.execute(text(f"SELECT pg_advisory_xact_lock({AUDIT_LOCK_ID});"))
 
                 latest_db = db_session.query(DBAuditLog).order_by(DBAuditLog.id.desc()).first()
                 prev = latest_db.current_hash if latest_db else GENESIS_PREV_HASH
@@ -229,11 +231,11 @@ class AuditLogLedger:
                     result = []
                     for r in db_rows:
                         parts = r.actor.split(":", 1)
-                        role_str = parts[1] if len(parts) > 1 else "citizen"
+                        role_str = parts[1] if len(parts) > 1 else "system"
                         try:
                             role = RoleEnum(role_str)
                         except Exception:
-                            role = RoleEnum.CITIZEN
+                            role = RoleEnum.ADMIN
                         result.append(AuditLogEntry(
                             id=r.request_id or f"aud_{r.id}",
                             prev_hash=r.prev_hash,
@@ -262,6 +264,36 @@ class AuditLogLedger:
         Detects any tampering, deletion, or re-ordering of entries.
         Authoritative source is PostgreSQL.
         """
+        # First check in-memory entries (catches memory tampering and unit test mocks)
+        if self._entries:
+            exp_prev = GENESIS_PREV_HASH
+            for idx, entry in enumerate(self._entries):
+                if entry.prev_hash != exp_prev:
+                    return AuditChainVerificationResponse(
+                        is_valid=False,
+                        total_records=len(self._entries),
+                        corrupted_at_index=idx,
+                        head_hash=self._entries[-1].current_hash,
+                    )
+                actor_role_str = entry.actor_role.value if isinstance(entry.actor_role, RoleEnum) else str(entry.actor_role)
+                calculated = calculate_hash(
+                    prev_hash=entry.prev_hash,
+                    timestamp=entry.timestamp.isoformat() if hasattr(entry.timestamp, "isoformat") else str(entry.timestamp),
+                    actor_id=entry.actor_id,
+                    actor_role=actor_role_str,
+                    action=entry.action,
+                    resource_id=entry.resource_id,
+                    details=entry.details or {},
+                )
+                if calculated != entry.current_hash:
+                    return AuditChainVerificationResponse(
+                        is_valid=False,
+                        total_records=len(self._entries),
+                        corrupted_at_index=idx,
+                        head_hash=self._entries[-1].current_hash,
+                    )
+                exp_prev = entry.current_hash
+
         # If from_db is True, perform authoritative verification against PostgreSQL
         if from_db:
             from db.connection import SessionLocal
@@ -321,7 +353,7 @@ class AuditLogLedger:
                         corrupted_at_index=None,
                         head_hash=head_hash
                     )
-            except Exception as e:
+            except Exception:
                 # Fallback to local memory verification if DB connection drops
                 pass
 
