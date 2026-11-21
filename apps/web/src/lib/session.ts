@@ -27,31 +27,49 @@ export function getSession(): Session | null {
 }
 
 export function clearSession() {
-  ["token", "role", "user_id", "username", "active_citizen"].forEach((k) => localStorage.removeItem(k));
+  ["token", "role", "user_id", "username", "active_citizen", "active_citizen_name"].forEach((k) =>
+    localStorage.removeItem(k)
+  );
 }
 
-/** The citizen whose data we are acting on. Helpers can switch this (Helper Mode). */
+/** The citizen whose data we are acting on. Helpers switch this (Helper Mode). */
 export function getActiveCitizenId(): string {
   return localStorage.getItem("active_citizen") || localStorage.getItem("user_id") || "";
 }
+export function getActiveCitizenName(): string {
+  return localStorage.getItem("active_citizen_name") || "";
+}
+export function setActiveCitizen(id: string, name: string) {
+  localStorage.setItem("active_citizen", id);
+  localStorage.setItem("active_citizen_name", name);
+}
 
-/** Menu per role (G3). href = page route. */
-export const NAV: Record<Role, { href: string; en: string; ur: string }[]> = {
+/** Menu per role (G3). */
+type NavItem = { href: string; en: string; ur: string };
+const HOME: NavItem = { href: "/dashboard", en: "Home", ur: "ہوم" };
+const SCAM: NavItem = { href: "/scam", en: "Scam Check", ur: "فراڈ چیک" };
+const EVAL: NavItem = { href: "/eval", en: "AI Report", ur: "اے آئی رپورٹ" };
+
+export const NAV: Record<Role, NavItem[]> = {
   citizen: [
-    { href: "/dashboard", en: "Home", ur: "ہوم" },
+    HOME,
+    { href: "/apply", en: "Apply", ur: "درخواست" },
+    { href: "/cases", en: "My Cases", ur: "میرے کیس" },
     { href: "/consent", en: "My Data", ur: "میرا ڈیٹا" },
+    SCAM,
   ],
   helper: [
-    { href: "/dashboard", en: "Home", ur: "ہوم" },
+    HOME,
+    { href: "/families", en: "Families", ur: "خاندان" },
+    { href: "/apply", en: "Apply", ur: "درخواست" },
+    { href: "/cases", en: "Cases", ur: "کیس" },
     { href: "/consent", en: "Consent", ur: "رضامندی" },
-    { href: "/scam", en: "Scam Check", ur: "فراڈ چیک" },
+    SCAM,
   ],
-  officer: [{ href: "/dashboard", en: "Home", ur: "ہوم" }],
-  admin: [{ href: "/dashboard", en: "Home", ur: "ہوم" }],
-  auditor: [{ href: "/dashboard", en: "Home", ur: "ہوم" }],
+  officer: [HOME, { href: "/officer", en: "Review Queue", ur: "ریویو قطار" }, EVAL],
+  admin: [HOME, { href: "/admin", en: "Rules", ur: "قواعد" }, EVAL],
+  auditor: [HOME, { href: "/auditor", en: "Audit Log", ur: "آڈٹ لاگ" }, EVAL],
 };
-// Citizens who are shopkeepers also need the scam checker:
-NAV.citizen.push({ href: "/scam", en: "Scam Check", ur: "فراڈ چیک" });
 
 /** Read text aloud with the phone's built-in voice (works offline). */
 export function speak(text: string, lang: "ur-PK" | "en-US" = "ur-PK") {
