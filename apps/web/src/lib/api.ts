@@ -1,52 +1,157 @@
+import { mockRequest } from "./mock";
+
 /**
- * Rahbar API Client for Frontend (Next.js / PWA).
- * Provides typed methods for all 5 roles:
- * - Citizen (Voice intake, OCR blur, form submission)
- * - Helper (40-family selector, granular consent management)
- * - Shopkeeper (SMS scam verification, fraud heatmap)
- * - Officer (Triage review queue, token-gated approval)
- * - Admin (Digital twin simulations, rules publishing)
- * - Auditor (SHA-256 cryptographic audit chain)
+ * Rahbar API client (Next.js / PWA).
+ * Endpoints match docs/openapi.json.
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const API_PREFIX = '/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_PREFIX = "/api/v1";
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
-export interface CitizenClaimRequest {
+// ---------- Types (match services/shared/schemas.py) ----------
+export type Role = "citizen" | "helper" | "officer" | "admin" | "auditor";
+export type ConsentScope = "identity" | "income" | "bills" | "helper_acting";
+export type ScamLabel = "scam" | "legit" | "unsure";
+export type RouteDecision = "auto_approve" | "ask_more_proof" | "human_review";
+export type CaseStatus =
+  | "draft" | "submitted" | "in_review" | "approved" | "rejected"
+  | "need_more_info" | "processing" | "need_proof" | "disbursed";
+
+export interface ApiError {
+  message_en?: string;
+  message_ur?: string;
+}
+
+export interface TokenResponse {
+  access_token: string;
+  refresh_token: string;
+  role: Role;
+  user_id: string;
+  username: string;
+}
+
+export interface CaseCreate {
   citizen_name: string;
   cnic: string;
-  family_members_count: number;
-  monthly_income_pkr: number;
-  requested_amount_pkr: number;
-  documents: Array<{ doc_type: string; file_url: string; qr_code_valid?: boolean }>;
-}
-
-export interface DecisionResult {
-  case_id: string;
-  verdict: 'auto_approve' | 'ask_more_proof' | 'human_review';
-  weakest_link_score: number;
-  p_wrong: number;
-  reason: string;
-  payment_status?: string;
-  raast_reference?: string;
-}
-
-export interface ScamCheckRequest {
-  text: string;
-  phone_number?: string;
-  region?: string;
+  phone: string;
+  household_size: number;
+  monthly_income: number;
+  benefit_type?: string;
+  requested_amount?: number;
+  address?: string;
+  helper_id?: string;
+  notes?: string;
 }
 
 export interface ScamCheckResponse {
-  label: 'scam' | 'legitimate';
+  label: ScamLabel;
   confidence: number;
   reasons: string[];
 }
 
-export interface ConsentScopeUpdate {
+export interface ConsentRecord {
+  id: string;
   citizen_id: string;
-  scope: 'identity' | 'income' | 'bills' | 'helper_acting';
+  scope: ConsentScope;
   granted: boolean;
+  granted_to_helper_id?: string | null;
+  granted_at: string;
+  revoked_at?: string | null;
+  audit_hash?: string | null;
+}
+
+export interface ConsentStatus {
+  citizen_id: string;
+  active_scopes: ConsentScope[];
+  revoked_scopes: ConsentScope[];
+  all_consents: ConsentRecord[];
+  can_helper_act: boolean;
+}
+
+export interface Decision {
+  case_id: string;
+  route: RouteDecision;
+  confidence: number;
+  components: {
+    identity: number; ocr: number; authenticity: number;
+    rules_complete: number; scam_safety: number;
+  };
+  missing: string[];
+  reason_simple: { en: string; ur: string };
+  rule_version: number;
+  approval_token?: string | null;
+}
+
+export interface CaseItem {
+  id: string;
+  citizen_id: string;
+  citizen_name: string;
+  cnic: string;
+  phone: string;
+  household_size: number;
+  monthly_income: number;
+  benefit_type: string;
+  requested_amount: number;
+  status: CaseStatus;
+  decision?: Decision | null;
+  officer_notes?: string | null;
+  disbursement_ref?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReviewQueueItem {
+  case_id: string;
+  citizen_name: string;
+  cnic: string;
+  requested_amount: number;
+  confidence: number;
+  priority_score: number;
+  status: CaseStatus;
+  handoff_packet: {
+    flags: string[];
+    suggested_action: string;
+    component_breakdown: Decision["components"];
+  };
+  submitted_at: string;
+}
+
+export interface RuleSet {
+  version: number;
+  name: string;
+  max_monthly_income: number;
+  is_active: boolean;
+}
+
+export interface SimulationResult {
+  total_cases_simulated: number;
+  previous_rule_version: number;
+  draft_rule_version: number;
+  previous_approval_rate: number;
+  projected_approval_rate: number;
+  approval_rate_delta: number;
+  impact_summary: string;
+  affected_case_ids: string[];
+}
+
+export interface AuditEntry {
+  id?: string;
+  prev_hash: string;
+  current_hash: string;
+  timestamp: string;
+  actor?: string | null;
+  actor_role?: string | null;
+  action: string;
+  resource_id?: string | null;
+  result?: string | null;
+}
+
+export interface ChainStatus {
+  is_valid: boolean;
+  total_records: number;
+  corrupted_at_index?: number | null;
+  head_hash?: string | null;
 }
 
 class RahbarApiClient {
@@ -56,93 +161,141 @@ class RahbarApiClient {
     this.token = token;
   }
 
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
-      ...(options.headers as Record<string, string> || {}),
-    };
-
-    const url = `${API_BASE_URL}${API_PREFIX}${endpoint}`;
-    const response = await fetch(url, { ...options, headers });
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(`API Error [${response.status}]: ${errorBody}`);
-    }
-
-    return response.json();
+  private getToken(): string | null {
+    if (this.token) return this.token;
+    if (typeof window !== "undefined") return localStorage.getItem("token");
+    return null;
   }
 
-  // AI & Voice Services
-  async transcribeUrduAudio(audioBlob: Blob): Promise<{ transcript: string; confidence: number }> {
+  private authHeaders(): Record<string, string> {
+    const token = this.getToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    if (USE_MOCK) return (await mockRequest(endpoint, options)) as T;
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...this.authHeaders(),
+      ...((options.headers as Record<string, string>) ?? {}),
+    };
+    const res = await fetch(`${API_BASE_URL}${API_PREFIX}${endpoint}`, { ...options, headers });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw (body?.detail ?? { message_en: `Error ${res.status}` }) as ApiError;
+    }
+    return res.json() as Promise<T>;
+  }
+
+  // ---------- Auth ----------
+  async login(username: string, password: string): Promise<TokenResponse> {
+    const data = await this.request<TokenResponse>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
+    });
+    this.token = data.access_token;
+    return data;
+  }
+
+  me() {
+    return this.request<Record<string, unknown>>("/auth/me");
+  }
+
+  // ---------- AI & voice ----------
+  async transcribeUrduAudio(audioBlob: Blob): Promise<Record<string, unknown>> {
+    if (USE_MOCK) return { text: "میرا نام پروین بی بی ہے", language: "ur", confidence: 0.9 };
     const formData = new FormData();
-    formData.append('audio', audioBlob);
-    const headers = this.token ? { Authorization: `Bearer ${this.token}` } : {};
-    const res = await fetch(`${API_BASE_URL}${API_PREFIX}/ai/transcribe`, {
-      method: 'POST',
-      headers,
+    formData.append("audio", audioBlob);
+    const res = await fetch(`${API_BASE_URL}${API_PREFIX}/ai/voice/stt`, {
+      method: "POST",
+      headers: this.authHeaders(),
       body: formData,
     });
     return res.json();
   }
 
-  async checkScamSms(payload: ScamCheckRequest): Promise<ScamCheckResponse> {
-    return this.request<ScamCheckResponse>('/ai/scam-check', {
-      method: 'POST',
-      body: JSON.stringify(payload),
+  checkScamSms(text: string) {
+    return this.request<ScamCheckResponse>("/ai/scam-check", {
+      method: "POST",
+      body: JSON.stringify({ text }),
     });
   }
 
-  // Decision & Case Services
-  async evaluateClaim(claim: CitizenClaimRequest): Promise<DecisionResult> {
-    return this.request<DecisionResult>('/decision/evaluate', {
-      method: 'POST',
-      body: JSON.stringify(claim),
+  getEvalSummary() {
+    return this.request<Record<string, unknown>>("/ai/eval-summary");
+  }
+
+  // ---------- Cases & decisions ----------
+  createCase(data: CaseCreate) {
+    return this.request<CaseItem>("/cases", { method: "POST", body: JSON.stringify(data) });
+  }
+  listCases() {
+    return this.request<CaseItem[]>("/cases");
+  }
+  getCase(caseId: string) {
+    return this.request<CaseItem>(`/cases/${caseId}`);
+  }
+  submitCase(caseId: string) {
+    return this.request<CaseItem>(`/cases/${caseId}/submit`, { method: "POST" });
+  }
+  evaluateCase(caseId: string) {
+    return this.request<Decision>(`/decisions/evaluate/${caseId}`, { method: "POST" });
+  }
+
+  // ---------- Consent ----------
+  grantConsent(citizen_id: string, scope: ConsentScope, helper_id?: string) {
+    return this.request<Record<string, unknown>>("/consent/grant", {
+      method: "POST",
+      body: JSON.stringify({ citizen_id, scope, helper_id }),
+    });
+  }
+  withdrawConsent(citizen_id: string, scope: ConsentScope, reason?: string) {
+    return this.request<Record<string, unknown>>("/consent/withdraw", {
+      method: "POST",
+      body: JSON.stringify({ citizen_id, scope, reason }),
+    });
+  }
+  getConsentStatus(citizenId: string) {
+    return this.request<ConsentStatus>(`/consent/status/${citizenId}`);
+  }
+
+  // ---------- Officer queue ----------
+  getOfficerQueue() {
+    return this.request<ReviewQueueItem[]>("/review/queue");
+  }
+  decideReview(caseId: string, decision: string, approved: boolean, mandatory_officer_notes: string) {
+    return this.request<Record<string, unknown>>(`/review/${caseId}/decision`, {
+      method: "POST",
+      body: JSON.stringify({ decision, approved, mandatory_officer_notes }),
     });
   }
 
-  // Consent Gateway
-  async updateConsent(update: ConsentScopeUpdate): Promise<{ status: string; updated_scope: string }> {
-    return this.request('/consent/update', {
-      method: 'POST',
-      body: JSON.stringify(update),
+  // ---------- Admin ----------
+  getActiveRules() {
+    return this.request<RuleSet>("/rules/active");
+  }
+  publishRule(name: string, rule_set: RuleSet) {
+    return this.request<RuleSet>("/rules/publish", {
+      method: "POST",
+      body: JSON.stringify({ name, rule_set }),
+    });
+  }
+  simulateRules(draft_rule_set: RuleSet, sample_size = 100) {
+    return this.request<SimulationResult>("/digital-twin/simulate", {
+      method: "POST",
+      body: JSON.stringify({ draft_rule_set, sample_size }),
     });
   }
 
-  async getCitizenConsents(citizenId: string): Promise<Record<string, { granted: boolean }>> {
-    return this.request(`/consent/status/${citizenId}`);
+  // ---------- Auditor ----------
+  getAuditLogs() {
+    return this.request<AuditEntry[]>("/audit/logs");
   }
-
-  // Officer Queue
-  async getOfficerQueue(): Promise<any[]> {
-    return this.request('/review/queue');
-  }
-
-  async decideOfficerReview(caseId: string, action: 'approve' | 'reject', notes: string): Promise<any> {
-    return this.request(`/review/${caseId}/action`, {
-      method: 'POST',
-      body: JSON.stringify({ action, notes }),
-    });
-  }
-
-  // Digital Twin Simulation
-  async runDigitalTwinSimulation(policyDraft: { max_income: number; max_auto_payout: number }): Promise<any> {
-    return this.request('/digital-twin/simulate', {
-      method: 'POST',
-      body: JSON.stringify(policyDraft),
-    });
-  }
-
-  // Cryptographic Audit Hash Chain
-  async getAuditLedger(limit: number = 20): Promise<any> {
-    return this.request(`/audit/chain?limit=${limit}`);
-  }
-
-  async verifyAuditChainIntegrity(): Promise<{ verified: boolean; length: number; errors: string[] }> {
-    return this.request('/audit/verify');
+  verifyAuditChain() {
+    return this.request<ChainStatus>("/audit/verify-chain");
   }
 }
 
 export const api = new RahbarApiClient();
+export const login = (username: string, password: string) => api.login(username, password);
 export default api;
