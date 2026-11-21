@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 
 from services.api.config import settings
+from services.api.routes.admin.api_keys import router as admin_api_keys_router
 from services.api.routes.ai import router as ai_router
 from services.api.routes.audit import router as audit_router
 from services.api.routes.auth import router as auth_router
@@ -21,6 +22,7 @@ from services.api.routes.decision import router as decision_router
 from services.api.routes.digital_twin import router as digital_twin_router
 from services.api.routes.health import router as health_router
 from services.api.routes.mock_routes import router as mock_router
+from services.api.routes.public import router as public_router
 from services.api.routes.review import router as review_router
 from services.api.routes.rules import router as rules_router
 from services.api.routes.webhooks import router as webhooks_router
@@ -68,11 +70,14 @@ app.include_router(mock_router, prefix=api_prefix)
 app.include_router(digital_twin_router, prefix=api_prefix)
 app.include_router(webhooks_router, prefix=api_prefix)
 app.include_router(ai_router, prefix=api_prefix)
+app.include_router(admin_api_keys_router, prefix=api_prefix)
+app.include_router(public_router, prefix=api_prefix)
 
 # 4. Mount Static Directory & Serve Web App
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
 
 @app.get("/app", include_in_schema=False)
 async def serve_app():
@@ -81,6 +86,7 @@ async def serve_app():
     if index_path.exists():
         return FileResponse(str(index_path))
     return {"error": "PWA Web App not found"}
+
 
 # Root convenience redirect or status
 @app.get("/")

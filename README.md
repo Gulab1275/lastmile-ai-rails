@@ -168,6 +168,41 @@ docker compose -f infra/docker-compose.yml up -d --build
 curl http://localhost:8000/api/v1/health
 ```
 
+### 6.4 API keys and Alembic
+On production (AWS EC2), the core tables already exist. Never run `alembic upgrade` for the baseline.
+Instead, stamp the baseline revision **once**, then apply subsequent revisions:
+
+```bash
+# 1. Pull the latest backend code
+git pull
+
+# 2. Rebuild and restart the API container
+docker compose -f infra/docker-compose.yml up -d --build api
+
+# 3. Stamp baseline revision (ONLY ONCE on existing production database)
+docker exec rahbar-api alembic stamp 817c2a6afcca
+
+# 4. Upgrade to head to apply new migrations (e.g. api_keys table)
+docker exec rahbar-api alembic upgrade head
+```
+
+#### API Key Management & Public Rails
+- **Generate API Key (Admin only):**
+  ```bash
+  curl -X POST "http://localhost:8000/api/v1/admin/api-keys" \
+       -H "Authorization: Bearer <ADMIN_JWT_TOKEN>" \
+       -H "Content-Type: application/json" \
+       -d '{"name": "external-partner"}'
+  ```
+  Returns the plaintext key (starts with `rk_demo_`) **exactly once**. Only its SHA-256 hash and prefix are stored.
+- **List Keys (Admin only):** `GET /api/v1/admin/api-keys` (returns masked keys).
+- **Revoke Key (Admin only):** `POST /api/v1/admin/api-keys/{id}/revoke`.
+- **Public API Access:** Pass `X-API-Key: rk_demo_...` to access non-PII public endpoints:
+  - `GET /api/v1/public/health`
+  - `POST /api/v1/public/scam-check`
+  - `POST /api/v1/public/ask` (Policy Guidelines RAG)
+  *All calls are rate-limited per API key identity and audit-logged.*
+
 ---
 
 ## 7. Key API Endpoints

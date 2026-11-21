@@ -10,7 +10,8 @@ import hashlib
 import secrets
 from datetime import datetime
 
-from fastapi import Depends, Header, HTTPException, Request, status
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import APIKeyHeader
 from sqlalchemy.orm import Session
 
 from db import get_db
@@ -22,6 +23,13 @@ from db.models import ApiKey, AuditLog
 API_KEY_HEADER = "X-API-Key"
 KEY_PREFIX = "rk_demo_"  # demo prefix (no real secret)
 KEY_RANDOM_BYTES = 32  # 256‑bit entropy => ~43‑base64 chars; we truncate for readability
+
+api_key_header_scheme = APIKeyHeader(
+    name=API_KEY_HEADER,
+    auto_error=False,
+    description="X-API-Key header for service access",
+)
+
 
 # ---------------------------------------------------------------------------
 def _hash_key(key: str) -> str:
@@ -82,30 +90,55 @@ def _load_key_by_prefix_and_hash(db: Session, prefix: str, key_hash: str) -> Api
 
 
 async def require_api_key(
+    request: Request,
     db: Session = Depends(get_db),
-    api_key_header: str = Header(None, description="X-API-Key header for service access"), request: Request = Depends(),
+    api_key_header: str | None = Depends(api_key_header_scheme),
 ) -> ApiKey:
-    """FastAPI dependency that validates the API‑key header.
+    """FastAPI dependency that validates the API‑key header via APIKeyHeader.
     Returns the ``ApiKey`` ORM object when valid; otherwise raises ``401``.
     """
     if not api_key_header:
+        AuditLog.create_entry(
+            session=db,
+            actor="anonymous",
+            action="api_key_denied",
+            target="api_key",
+            result="denied",
+            request_id=request.headers.get("X-Request-ID", "unknown"),
+        )
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing API key")
-    # Split prefix and secret – our format guarantees the prefix length
+
     prefix = api_key_header[: len(KEY_PREFIX)]
     secret = api_key_header[len(KEY_PREFIX) :]
-    # Compute hash of the *full* key (prefix + secret)
     full_key = f"{prefix}{secret}"
     key_hash = _hash_key(full_key)
+
     api_key_obj = _load_key_by_prefix_and_hash(db, prefix, key_hash)
-    if not api_key_obj or not api_key_obj.is_active():
+    is_valid = (
+        api_key_obj is not None
+        and secrets.compare_digest(api_key_obj.key_hash, key_hash)
+        and api_key_obj.is_active()
+    )
+
+    if not is_valid:
+        AuditLog.create_entry(
+            session=db,
+            actor=prefix if len(prefix) <= 12 else "unknown",
+            action="api_key_denied",
+            target="api_key",
+            result="denied",
+            request_id=request.headers.get("X-Request-ID", "unknown"),
+        )
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or revoked API key")
 
-
-    # Update last used timestamp (non‑blocking – commit happens later in request lifecycle)
+    # Update last used timestamp
     api_key_obj.last_used_at = datetime.utcnow()
     db.add(api_key_obj)
     db.commit()
-    # Record successful usage in audit log (actor = key prefix, action = "api_key_used")
+
+    request.state.api_key = api_key_obj
+
+    # Record successful usage in audit log
     AuditLog.create_entry(
         session=db,
         actor=api_key_obj.key_prefix,
@@ -115,4 +148,3 @@ async def require_api_key(
         request_id=request.headers.get("X-Request-ID", "unknown"),
     )
     return api_key_obj
-
