@@ -74,6 +74,24 @@ async def create_case(
 
     _CASES_DB[case_id] = case_obj
 
+    # Dual-persistence to Supabase Postgres
+    try:
+        from db.connection import SessionLocal
+        from db.models import Case as DBCase
+        with SessionLocal() as db_session:
+            db_case = DBCase(
+                id=case_id,
+                citizen_id=citizen_id,
+                helper_id=helper_id,
+                status=CaseStatus.DRAFT.value,
+                claim_amount=float(case_in.requested_amount),
+                form_data=case_in.model_dump() if hasattr(case_in, "model_dump") else case_in.__dict__
+            )
+            db_session.add(db_case)
+            db_session.commit()
+    except Exception:
+        pass
+
     # Automatically grant baseline consent when citizen self-registers
     if current_user.role == RoleEnum.CITIZEN:
         consent_gateway.grant_consent(citizen_id, ConsentScope.IDENTITY, actor_id=current_user.id, actor_role=current_user.role)

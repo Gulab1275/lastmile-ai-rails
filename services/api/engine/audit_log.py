@@ -112,6 +112,27 @@ class AuditLogLedger:
         )
 
         self._entries.append(entry)
+
+        # Dual-persistence to Supabase Postgres
+        try:
+            from db.connection import SessionLocal
+            from db.models import AuditLog as DBAuditLog
+            with SessionLocal() as db_session:
+                db_entry = DBAuditLog(
+                    prev_hash=prev,
+                    current_hash=current_h,
+                    actor=f"{actor_id}:{actor_role.value if isinstance(actor_role, RoleEnum) else str(actor_role)}",
+                    action=action,
+                    target=resource_id,
+                    result="SUCCESS",
+                    request_id=entry_id,
+                    timestamp=now
+                )
+                db_session.add(db_entry)
+                db_session.commit()
+        except Exception:
+            pass
+
         return entry
 
     def get_entries(

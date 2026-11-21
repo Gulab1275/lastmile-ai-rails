@@ -75,6 +75,29 @@ class ConsentGateway:
         )
 
         self._consents[citizen_id][scope] = record
+
+        # Dual-persistence to Supabase Postgres
+        try:
+            from db.connection import SessionLocal
+            from db.models import Consent as DBConsent
+            from services.shared.schemas import ConsentStatus
+            with SessionLocal() as db_session:
+                db_rec = db_session.query(DBConsent).filter_by(citizen_id=citizen_id, scope=scope.value).first()
+                if db_rec:
+                    db_rec.status = ConsentStatus.ACTIVE.value
+                    db_rec.revoked_at = None
+                else:
+                    db_rec = DBConsent(
+                        citizen_id=citizen_id,
+                        grantee=helper_id or "system",
+                        scope=scope.value,
+                        status=ConsentStatus.ACTIVE.value
+                    )
+                    db_session.add(db_rec)
+                db_session.commit()
+        except Exception:
+            pass
+
         return record
 
     def withdraw_consent(
@@ -110,6 +133,21 @@ class ConsentGateway:
         })
 
         self._consents[citizen_id][scope] = updated_record
+
+        # Dual-persistence to Supabase Postgres
+        try:
+            from db.connection import SessionLocal
+            from db.models import Consent as DBConsent
+            from services.shared.schemas import ConsentStatus
+            with SessionLocal() as db_session:
+                db_rec = db_session.query(DBConsent).filter_by(citizen_id=citizen_id, scope=scope.value).first()
+                if db_rec:
+                    db_rec.status = "revoked"
+                    db_rec.revoked_at = now
+                    db_session.commit()
+        except Exception:
+            pass
+
         return updated_record
 
     def check_consent(

@@ -129,6 +129,26 @@ def register_user(user_in: UserCreate) -> UserResponse:
     _USERS_DB[user_id] = user_record
     _USERS_BY_USERNAME[user_in.username.lower()] = user_id
 
+    # Dual persistence to Supabase Postgres
+    try:
+        from db.connection import SessionLocal
+        from db.models import User as DBUser
+        with SessionLocal() as db_session:
+            db_u = db_session.query(DBUser).filter_by(email=user_in.username.lower()).first()
+            if not db_u:
+                db_u = DBUser(
+                    id=user_id,
+                    email=user_in.username.lower(),
+                    password_hash=hashed,
+                    full_name=user_in.full_name,
+                    role=user_in.role.value if hasattr(user_in.role, "value") else str(user_in.role),
+                    is_active=True
+                )
+                db_session.add(db_u)
+                db_session.commit()
+    except Exception:
+        pass
+
     return UserResponse(
         id=user_id,
         username=user_record["username"],
