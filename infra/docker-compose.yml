@@ -1,8 +1,5 @@
 services:
-  # ----------------------------------------------------------------------------
-  # FastAPI API Gateway & Core Platform (Mahandar)
-  # ----------------------------------------------------------------------------
-    api:
+  api:
     build:
       context: ..
       dockerfile: infra/Dockerfile
@@ -16,16 +13,14 @@ services:
     expose:
       - "8000"
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')" ]
       interval: 20s
       timeout: 5s
       retries: 3
       start_period: 40s
     networks:
       - rahbar-net
-  # ----------------------------------------------------------------------------
-  # Caddy Reverse Proxy & Automatic Let's Encrypt HTTPS (Mahandar)
-  # ----------------------------------------------------------------------------
+
   caddy:
     image: caddy:2-alpine
     container_name: rahbar-caddy
