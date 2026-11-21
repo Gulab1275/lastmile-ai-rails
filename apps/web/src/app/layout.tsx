@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Noto_Nastaliq_Urdu } from "next/font/google";
+import { Inter, Noto_Nastaliq_Urdu } from "next/font/google";
 import "./globals.css";
 import SwRegister from "@/components/SwRegister";
 import PrototypeBanner from "@/components/PrototypeBanner";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 const urdu = Noto_Nastaliq_Urdu({
   subsets: ["arabic"],
@@ -27,8 +29,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ur" dir="rtl">
       <body
-        className={`${urdu.variable} antialiased`}
-        style={{ fontFamily: "var(--font-urdu), sans-serif", lineHeight: 2 }}
+        className={`${inter.variable} ${urdu.variable} font-sans antialiased`}
+        style={{ lineHeight: 1.9 }}
       >
         <SwRegister />
         <PrototypeBanner />
