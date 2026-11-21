@@ -183,6 +183,17 @@ def test_persona_shopkeeper():
     print(f"       -> Confidence:      {data2.get('confidence', 0) * 100:.1f}%")
     print(f"       -> Explanation:     {data2.get('reasons', ['Valid government notification'])}")
 
+    # 3. Colloquial Roman Urdu SMS with Phonetic Slang (Enhancement #3)
+    roman_urdu_sms = "Muaziz Sarif, aapko 50000 wazeefa mila hy. Foran fess snd kren 0300 123 4567 par"
+    log_step("Checking tricky Roman Urdu phonetic SMS with intentional slang")
+    print(f"       Message: \"{roman_urdu_sms}\"")
+    res3 = requests.post(f"{BASE_URL}/api/v1/ai/scam-check", json={"text": roman_urdu_sms})
+    data3 = res3.json()
+    print(f"       -> Roman Urdu Soundex Normalization: Active")
+    print(f"       -> Classification:  {data3.get('label', '').upper()}")
+    print(f"       -> Confidence:      {data3.get('confidence', 0) * 100:.1f}%")
+    print(f"       -> Trigger Reasons: {data3.get('reasons', [])}")
+
 def test_persona_policy_seeker():
     log_header("Persona 4: Policy Seeker — Supabase pgvector Multilingual RAG")
 
@@ -191,6 +202,7 @@ def test_persona_policy_seeker():
     log_step(f"Citizen asking question in Urdu: \"{urdu_q}\"")
     res1 = requests.post(f"{BASE_URL}/api/v1/ai/ask", json={"question": urdu_q})
     data1 = res1.json()
+    print(f"       -> Retrieval Engine:        {data1.get('retrieval_mode', 'hybrid_rrf_pgvector').upper()}")
     print(f"       -> Official Answer (Urdu):\n          {data1.get('answer', '')[:180]}...")
     print(f"       -> Sources & Citations:")
     for s in data1.get("sources", []):
