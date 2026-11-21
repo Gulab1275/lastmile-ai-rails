@@ -12,13 +12,17 @@ import sys
 
 # Ensure repository root is on sys.path for test discovery in CI
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+os.environ.setdefault("DATABASE_URL", "sqlite:///test_local.db")
 
 import pytest
 from fastapi.testclient import TestClient
 
+from db.connection import Base, engine
 from services.api.main import app
 from services.api.security.auth import _USERS_BY_USERNAME, create_access_token
 from services.shared.schemas import RoleEnum
+
+Base.metadata.create_all(bind=engine)
 
 
 @pytest.fixture(scope="session")
