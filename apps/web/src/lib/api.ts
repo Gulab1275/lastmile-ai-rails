@@ -1,3 +1,5 @@
+import { mockRequest } from "./mock";
+
 /**
  * Rahbar API client (Next.js / PWA).
  * Endpoints match docs/openapi.json.
@@ -7,6 +9,9 @@
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const API_PREFIX = "/api/v1";
+
+
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
 export type Role = "citizen" | "helper" | "officer" | "admin" | "auditor";
 
@@ -67,6 +72,7 @@ class RahbarApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
+    if (USE_MOCK) return (await mockRequest(endpoint, options)) as T;
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       ...this.authHeaders(),
