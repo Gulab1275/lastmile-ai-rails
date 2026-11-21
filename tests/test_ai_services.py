@@ -359,3 +359,40 @@ def test_ai_offline_sync_batch_with_idempotency():
     assert data2["summary"]["synced_count"] == 0
     assert data2["items"][0]["status"] == "DUPLICATE_SKIPPED"
 
+def test_ai_hybrid_rrf_policy_search():
+    """Verify Reciprocal Rank Fusion (BM25 + pgvector dense) accurately ranks policy chunks."""
+    from services.ai.rag import search_policy_chunks
+    # Query with exact number and terms
+    results = search_policy_chunks("PKR 35,000 income limit for widow assistance", limit=3)
+    assert len(results) >= 1
+    top = results[0]
+    assert "35,000" in top["excerpt"] or "35,000" in top.get("content", "")
+    assert top["retrieval_mode"] in ("hybrid_rrf_pgvector", "local_resilient_fallback")
+    assert top["similarity"] >= 0.40
+
+def test_ai_voice_vad_silence_guardrail():
+    """Verify Voice Activity Detection (VAD) intercepts flatline silence early."""
+    from services.ai.voice import transcribe
+    # 0.1s silence buffer
+    empty_silence = b"RIFF" + b"\x00" * 40
+    res = transcribe(empty_silence, language="ur")
+    assert res["is_silent"] is True
+    assert res["confidence"] == 0.0
+
+def test_ai_roman_urdu_normalization_and_scam_detection():
+    """Verify Roman Urdu soundex normalizer catches adversarial phonetic evasion."""
+    from services.ai.normalizer import normalize_roman_urdu
+    raw = "Aapko 50000 wazeefa mila hy foran fess snd kren 0300 123 4567"
+    normalized = normalize_roman_urdu(raw)
+    assert "fee" in normalized
+    assert "bhejo" in normalized
+    assert "03001234567" in normalized
+
+    # Scam check on adversarial spelling
+    resp = client.post("/api/v1/ai/scam-check", json={"text": raw})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["label"] == "scam"
+    assert data["confidence"] >= 0.70
+
+

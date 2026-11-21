@@ -9,6 +9,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.calibration import CalibratedClassifierCV
 from services.shared.schemas import ScamLabel
+from services.ai.normalizer import normalize_roman_urdu
 
 # Rule patterns and trigger explanations
 SCAM_INDICATORS = [
@@ -60,14 +61,16 @@ class ScamClassifier:
 
     def extract_reasons(self, text: str) -> List[str]:
         reasons = []
+        normalized = normalize_roman_urdu(text)
         for pattern, explanation in SCAM_INDICATORS:
-            if re.search(pattern, text, re.IGNORECASE):
+            if re.search(pattern, text, re.IGNORECASE) or re.search(pattern, normalized, re.IGNORECASE):
                 reasons.append(explanation)
-        return reasons
+        return list(dict.fromkeys(reasons))
 
     def classify(self, text: str) -> Dict[str, Any]:
         """
         Classifies message text into Scam, Legit, or Unsure.
+        Enhanced with Roman Urdu phonetic soundex normalization.
         Returns: {
             "label": ScamLabel,
             "confidence": float,
@@ -84,7 +87,9 @@ class ScamClassifier:
             }
 
         reasons = self.extract_reasons(text)
-        X = self.vectorizer.transform([text])
+        normalized = normalize_roman_urdu(text)
+        eval_text = f"{text} {normalized}"
+        X = self.vectorizer.transform([eval_text])
         probs = self.model.predict_proba(X)[0]
         prob_scam = float(probs[1])
 
