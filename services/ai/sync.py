@@ -12,6 +12,8 @@ from typing import Any, Dict, List, Optional
 from services.ai.forms import extract_claim_form
 from services.ai.agent import execute_agent_workflow
 from services.ai.anomaly import detect_claim_anomalies
+from services.api.engine.consent_gateway import consent_gateway
+from services.shared.schemas import ConsentScope
 
 # In-memory idempotency register for synced offline batches
 _SYNC_IDEMPOTENCY_STORE: Dict[str, Dict[str, Any]] = {}
@@ -70,6 +72,33 @@ def process_offline_sync_batch(
                 for k, v in extracted_dict.items():
                     if v is not None and k not in citizen_data:
                         citizen_data[k] = v
+
+            # Task 1 & 3: Check legacy CNIC and helper acting consent at point-of-use
+            cnic = citizen_data.get("cnic", "")
+            if cnic and cnic.endswith("-X"):
+                failed_count += 1
+                results.append({
+                    "idempotency_key": idempotency_key,
+                    "status": "SYNC_FAILED_UNVERIFIED_LEGACY_CNIC",
+                    "error": f"Citizen has unverified legacy CNIC ({cnic}). Identity-dependent workflows restricted until manual caseworker verification."
+                })
+                continue
+
+            citizen_id = item.get("citizen_id") or citizen_data.get("citizen_id")
+            if citizen_id:
+                has_consent = consent_gateway.check_consent(
+                    citizen_id=citizen_id,
+                    scope=ConsentScope.HELPER_ACTING,
+                    acting_helper_id=helper_id
+                )
+                if not has_consent:
+                    failed_count += 1
+                    results.append({
+                        "idempotency_key": idempotency_key,
+                        "status": "SYNC_FAILED_CONSENT_REVOKED",
+                        "error": f"Active consent for scope HELPER_ACTING not found or revoked for citizen {citizen_id}."
+                    })
+                    continue
 
             case_id = f"case_sync_{uuid.uuid4().hex[:8]}"
 
