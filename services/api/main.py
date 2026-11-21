@@ -81,6 +81,22 @@ async def serve_app():
         return FileResponse(str(index_path))
     return {"error": "PWA Web App not found"}
 
+@app.get("/sw.js", include_in_schema=False)
+async def serve_sw():
+    """Serves the PWA Service Worker."""
+    sw_path = STATIC_DIR / "sw.js"
+    if sw_path.exists():
+        return FileResponse(str(sw_path), media_type="application/javascript")
+    return {"error": "sw.js not found"}
+
+@app.get("/manifest.json", include_in_schema=False)
+async def serve_manifest():
+    """Serves the PWA Web App Manifest."""
+    manifest_path = STATIC_DIR / "manifest.json"
+    if manifest_path.exists():
+        return FileResponse(str(manifest_path), media_type="application/json")
+    return {"error": "manifest.json not found"}
+
 # Root convenience redirect or status
 @app.get("/")
 async def root():
