@@ -16,6 +16,8 @@ export type CaseStatus =
 export interface ApiError {
   message_en?: string;
   message_ur?: string;
+  code?: string;
+  status?: number;
 }
 
 export interface TokenResponse {
@@ -208,6 +210,49 @@ export interface SyncResult {
   batch_id?: string;
   [key: string]: unknown;
 }
+export interface NadraResult {
+  matched: boolean;
+  match_score: number;
+  canonical_cnic: string;
+  canonical_name: string;
+  deceased: boolean;
+  status: string;
+  latency_ms: number;
+}
+
+export interface DocCheck {
+  fields: Record<string, unknown>;
+  field_confidences: Record<string, number>;
+  blur_score: number;
+  is_blurry: boolean;
+  tamper_score: number;
+  qr_verified?: boolean | null;
+}
+
+export interface Hotspot {
+  district: string;
+  latitude: number;
+  longitude: number;
+  incident_count: number;
+  threat_intensity: number;
+  threat_level: "CRITICAL" | "HIGH" | "MODERATE";
+  primary_scam_type: string;
+}
+
+export interface ScamMap {
+  total_active_clusters: number;
+  total_analyzed_threats: number;
+  category_distribution: Record<string, number>;
+  hotspots: Hotspot[];
+  top_keywords: { keyword_ur: string; keyword_en: string; frequency: number; category: string }[];
+  temporal_trends: { date: string; blocked_scams: number; shopkeeper_reports: number }[];
+  summary: {
+    highest_risk_district: string;
+    dominant_scam_category: string;
+    citizen_protection_advice_ur: string;
+    citizen_protection_advice_en: string;
+  };
+}
 
 class RahbarApiClient {
   private token: string | null = null;
@@ -236,8 +281,13 @@ class RahbarApiClient {
     };
     const res = await fetch(`${API_BASE_URL}${API_PREFIX}${endpoint}`, { ...options, headers });
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw (body?.detail ?? { message_en: `Error ${res.status}` }) as ApiError;
+            const body = await res.json().catch(() => ({}));
+      const d = body?.detail;
+      const detail =
+        typeof d === "string" ? { message_en: d }
+        : Array.isArray(d) ? { message_en: "Some information is missing or invalid" }
+        : d ?? { message_en: `Error ${res.status}` };
+      throw { ...detail, status: res.status } as ApiError;
     }
     return res.json() as Promise<T>;
   }
@@ -290,6 +340,31 @@ class RahbarApiClient {
       method: "POST",
       body: JSON.stringify({ helper_id, batch_id, queued_cases, client_timestamp: new Date().toISOString() }),
     });
+  }
+
+    verifyIdentity(cnic: string, full_name: string, chaos?: string) {
+    const q = chaos && chaos !== "none" ? `?chaos=${chaos}` : "";
+    return this.request<NadraResult>(`/mock/identity/verify${q}`, {
+      method: "POST",
+      body: JSON.stringify({ cnic, full_name }),
+    });
+  }
+  async checkDocument(file: File): Promise<DocCheck> {
+    if (USE_MOCK) {
+      return mockRequest("/ai/ocr", { method: "POST", body: JSON.stringify({ file_name: file.name }) }) as Promise<DocCheck>;
+    }
+    const form = new FormData();
+    form.append("files", file);
+    const res = await fetch(`${API_BASE_URL}${API_PREFIX}/ai/ocr`, {
+      method: "POST",
+      headers: this.authHeaders(),
+      body: form,
+    });
+    if (!res.ok) throw { message_en: `Document check failed (${res.status})`, status: res.status } as ApiError;
+    return res.json();
+  }
+  getScamMap() {
+    return this.request<ScamMap>("/ai/scam-map");
   }
 
   // ---------- Cases & decisions ----------

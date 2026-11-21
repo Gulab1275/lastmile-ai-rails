@@ -51,7 +51,32 @@ const families: Family[] = Array.from({ length: 40 }, (_, i) => ({
   name: `${NAMES[i % NAMES.length]} ${i >= NAMES.length ? `(${Math.floor(i / NAMES.length) + 1})` : ""}`.trim(),
   cnic: `42101-${String(1000000 + i * 37).slice(0, 7)}-${(i % 9) + 1}`,
 }));
+// Family #1 is Parveen herself, so the consent demo works across logins.
+families[0] = { id: "mock-citizen_parveen", name: "Parveen Bibi", cnic: "42101-1234567-1" };
 
+// ---------- Fake NADRA registry ----------
+const REGISTRY: Record<string, { name: string; variants: string[]; deceased: boolean }> = {
+  "42101-1234567-1": { name: "Parveen Bibi", variants: ["Parveen Bibi", "Parveen Akhtar", "پروین بی بی"], deceased: false },
+  "42101-7654321-2": { name: "Mohammad Tariq", variants: ["Mohammad Tariq", "Muhammad Tariq", "Mohd Tariq", "محمد طارق"], deceased: false },
+  "42201-9876543-3": { name: "Fatima Zahra", variants: ["Fatima Zahra", "Fatima Zehra", "فاطمہ زہرا"], deceased: false },
+  "42301-5555555-5": { name: "Deceased Record Test", variants: ["Deceased Record Test"], deceased: true },
+};
+
+function similarity(a: string, b: string): number {
+  const norm = (t: string) => t.toLowerCase().replace(/\s+/g, " ").trim();
+  const x = norm(a), y = norm(b);
+  if (x === y) return 1;
+  const grams = (t: string) => Array.from({ length: Math.max(0, t.length - 1) }, (_, i) => t.slice(i, i + 2));
+  const gx = grams(x), gy = grams(y);
+  if (!gx.length || !gy.length) return 0;
+  const used = new Set<number>();
+  let hit = 0;
+  gx.forEach((g) => {
+    const j = gy.findIndex((h, k) => h === g && !used.has(k));
+    if (j >= 0) { used.add(j); hit++; }
+  });
+  return (2 * hit) / (gx.length + gy.length);
+}
 // ---------- Rules ----------
 let rules: RuleSet = {
   version: 3, name: "Standard Relief Policy", max_monthly_income: 35000, min_household_size: 1,
@@ -247,6 +272,71 @@ export async function mockRequest(endpoint: string, options: RequestInit = {}): 
       }));
     return { batch_id: body.batch_id, synced: (body.queued_cases ?? []).length };
   }
+    if (path === "/mock/identity/verify") {
+    const q = endpoint.split("?")[1] ?? "";
+    if (q.includes("timeout")) throw { status: 504, message_en: "NADRA did not answer in time (timeout).", message_ur: "نادرا نے وقت پر جواب نہیں دیا۔" };
+    if (q.includes("500")) throw { status: 500, message_en: "NADRA server error (simulated).", message_ur: "نادرا سرور میں خرابی۔" };
+    const cnic = String(body.cnic ?? "");
+    const digits = cnic.replace(/\D/g, "");
+    const key = digits.length === 13 ? `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits[12]}` : cnic;
+    const rec = REGISTRY[key];
+    if (!rec) {
+      return { matched: false, match_score: 0.35, canonical_cnic: key, canonical_name: "NOT_FOUND", deceased: false, status: "RECORD_NOT_FOUND", latency_ms: 150 };
+    }
+    const score = Math.round(Math.max(...rec.variants.map((v) => similarity(String(body.full_name ?? ""), v))) * 100) / 100;
+    return {
+      matched: score >= 0.7 && !rec.deceased, match_score: score, canonical_cnic: key, canonical_name: rec.name,
+      deceased: rec.deceased, status: rec.deceased ? "DECEASED" : "VERIFIED", latency_ms: q.includes("slow") ? 2400 : 120,
+    };
+  }
+
+  if (path === "/ai/ocr") {
+    const n = String(body.file_name ?? "").toLowerCase();
+    const blurry = /blur/.test(n);
+    const tampered = /fake|tamper|edit/.test(n);
+    return {
+      fields: { name: "Parveen Bibi", cnic: "42101-1234567-1", address: "Lyari, Karachi" },
+      field_confidences: { name: blurry ? 0.5 : 0.96, cnic: blurry ? 0.42 : 0.98, address: blurry ? 0.4 : 0.9 },
+      blur_score: blurry ? 38 : 412, is_blurry: blurry, tamper_score: tampered ? 0.91 : 0.04, qr_verified: null,
+    };
+  }
+
+  if (path === "/ai/scam-map") {
+    const spots: [string, number, number, number, number, string][] = [
+      ["Karachi Central (Liaquatabad / Nazimabad)", 24.918, 67.034, 3, 0.85, "fake_disbursement"],
+      ["Karachi East (Gulshan-e-Iqbal / Jamshed)", 24.9012, 67.0984, 2, 0.72, "pin_harvesting"],
+      ["Karachi South (Saddar / Lyari)", 24.8607, 67.0011, 4, 0.88, "fake_disbursement"],
+      ["Karachi West (Orangi / Site)", 24.9534, 66.985, 2, 0.79, "registration_fee"],
+      ["Malir (Model Colony / Bin Qasim)", 24.8934, 67.199, 1, 0.65, "lottery_scam"],
+      ["Korangi (Landhi / Korangi Industrial)", 24.834, 67.124, 2, 0.74, "pin_harvesting"],
+      ["Hyderabad (Qasimabad / Latifabad)", 25.396, 68.3578, 1, 0.58, "fake_disbursement"],
+      ["Sukkur (City / Rohri)", 27.7052, 68.8574, 1, 0.52, "registration_fee"],
+    ];
+    return {
+      total_active_clusters: spots.length, total_analyzed_threats: 16,
+      category_distribution: { fake_disbursement: 8, pin_harvesting: 4, registration_fee: 2, lottery_scam: 2 },
+      hotspots: spots.map(([district, latitude, longitude, incident_count, base, primary_scam_type]) => {
+        const i = Math.min(1, incident_count * 0.25 + base * 0.4);
+        return { district, latitude, longitude, incident_count, threat_intensity: Math.round(i * 100) / 100,
+          threat_level: i >= 0.8 ? "CRITICAL" : i >= 0.6 ? "HIGH" : "MODERATE", primary_scam_type };
+      }),
+      top_keywords: [
+        { keyword_ur: "8171", keyword_en: "8171", frequency: 48, category: "fake_disbursement" },
+        { keyword_ur: "امداد", keyword_en: "Emdad/Relief", frequency: 42, category: "fake_disbursement" },
+        { keyword_ur: "او ٹی پی", keyword_en: "OTP/PIN", frequency: 29, category: "pin_harvesting" },
+        { keyword_ur: "فیس", keyword_en: "Advance Fee", frequency: 23, category: "registration_fee" },
+      ],
+      temporal_trends: Array.from({ length: 7 }, (_, i) => ({
+        date: new Date(Date.now() - (7 - i) * 86400000).toISOString().slice(0, 10),
+        blocked_scams: 10 + ((i * 5) % 9), shopkeeper_reports: 3 + (i % 4),
+      })),
+      summary: {
+        highest_risk_district: "Karachi South (Saddar / Lyari)", dominant_scam_category: "fake_disbursement",
+        citizen_protection_advice_ur: "سرکاری ریلیف کے لیے کبھی بھی کسی غیر مصدقہ نمبر پر او ٹی پی یا پیشگی فیس نہ بھیجیں۔",
+        citizen_protection_advice_en: "Never send an OTP or advance registration fee to unverified phone numbers.",
+      },
+    };
+  }
   if (path === "/ai/eval-summary") return evalSummary();
 
   if (path === "/cases" && method === "GET") {
@@ -267,6 +357,13 @@ export async function mockRequest(endpoint: string, options: RequestInit = {}): 
   if (parts[1] === "cases" && parts[2]) {
     const c = cases.find((x) => x.id === parts[2]);
     if (!c) throw { message_en: "Case not found", message_ur: "کیس نہیں ملا" };
+        if (!parts[3] && method === "GET" && ls("role") === "helper" && !consentStatus(c.citizen_id).active_scopes.includes("identity")) {
+      throw {
+        status: 403, code: "CONSENT_WITHDRAWN",
+        message_en: "Access denied: this citizen has withdrawn consent for 'identity'.",
+        message_ur: "رسائی مسترد: شہری نے 'شناخت' کی اجازت واپس لے لی ہے۔",
+      };
+    }
     if (parts[3] === "submit") { c.status = "submitted"; return c; }
     if (parts[3] === "documents") return { case_id: c.id, filename: "upload", status: "received" };
     return c;

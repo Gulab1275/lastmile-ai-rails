@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Noto_Nastaliq_Urdu } from "next/font/google";
 import "./globals.css";
 import SwRegister from "@/components/SwRegister";
+import PrototypeBanner from "@/components/PrototypeBanner";
+
 const urdu = Noto_Nastaliq_Urdu({
   subsets: ["arabic"],
   weight: ["400", "700"],
@@ -12,6 +14,7 @@ export const metadata: Metadata = {
   title: "Rahbar | رہبر",
   description: "Relief support made simple",
   manifest: "/manifest.json",
+  icons: { icon: "/icon-192.png", apple: "/icon-192.png" },
 };
 
 export const viewport: Viewport = {
@@ -28,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         style={{ fontFamily: "var(--font-urdu), sans-serif", lineHeight: 2 }}
       >
         <SwRegister />
+        <PrototypeBanner />
         {children}
       </body>
     </html>

@@ -48,7 +48,11 @@ export function setActiveCitizen(id: string, name: string) {
 type NavItem = { href: string; en: string; ur: string };
 const HOME: NavItem = { href: "/dashboard", en: "Home", ur: "ہوم" };
 const SCAM: NavItem = { href: "/scam", en: "Scam Check", ur: "فراڈ چیک" };
+
 const EVAL: NavItem = { href: "/eval", en: "AI Report", ur: "اے آئی رپورٹ" };
+const MAP: NavItem = { href: "/scam-map", en: "Scam Map", ur: "فراڈ نقشہ" };
+const DOCS: NavItem = { href: "/documents", en: "Check Document", ur: "کاغذ جانچ" };
+const IDCHK: NavItem = { href: "/identity", en: "ID Check", ur: "شناخت جانچ" };
 
 export const NAV: Record<Role, NavItem[]> = {
   citizen: [
@@ -57,6 +61,8 @@ export const NAV: Record<Role, NavItem[]> = {
     { href: "/cases", en: "My Cases", ur: "میرے کیس" },
     { href: "/consent", en: "My Data", ur: "میرا ڈیٹا" },
     SCAM,
+    DOCS,
+    MAP,
   ],
   helper: [
     HOME,
@@ -65,11 +71,15 @@ export const NAV: Record<Role, NavItem[]> = {
     { href: "/cases", en: "Cases", ur: "کیس" },
     { href: "/consent", en: "Consent", ur: "رضامندی" },
     SCAM,
+    DOCS,
+    IDCHK,
+    MAP,
   ],
-  officer: [HOME, { href: "/officer", en: "Review Queue", ur: "ریویو قطار" }, EVAL],
-  admin: [HOME, { href: "/admin", en: "Rules", ur: "قواعد" }, EVAL],
+  officer: [HOME, { href: "/officer", en: "Review Queue", ur: "ریویو قطار" }, IDCHK, DOCS, MAP, EVAL],
+  admin: [HOME, { href: "/admin", en: "Rules", ur: "قواعد" }, EVAL, MAP],
   auditor: [HOME, { href: "/auditor", en: "Audit Log", ur: "آڈٹ لاگ" }, EVAL],
 };
+
 
 /** Read text aloud with the phone's built-in voice (works offline). */
 export function speak(text: string, lang: "ur-PK" | "en-US" = "ur-PK") {

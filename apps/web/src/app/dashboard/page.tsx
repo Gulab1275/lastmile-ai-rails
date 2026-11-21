@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  ShieldCheck, ScanSearch, FilePlus2, FolderOpen, Users, ClipboardList, SlidersHorizontal, ScrollText, BarChart3,
+  ShieldCheck, ScanSearch, FilePlus2, FolderOpen, Users, ClipboardList, SlidersHorizontal, ScrollText, BarChart3, Fingerprint, FileSearch, Map,
 } from "lucide-react";
 import AppShell from "@/components/appShell";
 import { NAV, getSession } from "@/lib/session";
@@ -20,6 +20,9 @@ const ICONS: Record<string, React.ReactNode> = {
   "/admin": <SlidersHorizontal className={ICON} />,
   "/auditor": <ScrollText className={ICON} />,
   "/eval": <BarChart3 className={ICON} />,
+  "/identity": <Fingerprint className={ICON} />,
+  "/documents": <FileSearch className={ICON} />,
+  "/scam-map": <Map className={ICON} />,
 };
 const DESC: Record<string, string> = {
   "/apply": "نئی درخواست دیں · Start a new application",
@@ -31,6 +34,9 @@ const DESC: Record<string, string> = {
   "/admin": "قواعد بدلیں اور آزمائیں · Edit and simulate rules",
   "/auditor": "ہر فیصلے کا ریکارڈ · Tamper-proof record",
   "/eval": "اے آئی کی کارکردگی · How well the AI performs",
+  "/identity": "نام اور شناختی کارڈ ملائیں · Match a name to a CNIC",
+  "/documents": "تصویر صاف اور اصلی ہے؟ · Is the photo clear and genuine?",
+  "/scam-map": "فراڈ کہاں ہو رہا ہے · Where scams are happening",
 };
 
 export default function Dashboard() {
