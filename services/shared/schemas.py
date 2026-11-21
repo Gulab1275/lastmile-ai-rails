@@ -184,7 +184,7 @@ class ClaimAgentResult(BaseModel):
 
 
 class CitizenProfile(BaseModel):
-    cnic: str = Field(..., pattern=r"^\d{5}-\d{7}-\d{1}$", description="Standard 13-digit CNIC format")
+    cnic: str = Field(..., pattern=r"^([0-9]{5}-[0-9]{7}-[0-9]{1}|[0-9]{13})$", description="Standard 13-digit Pakistani CNIC format")
     full_name: str
     phone: Optional[str] = None
     dob: Optional[str] = None
@@ -194,7 +194,7 @@ class CitizenProfile(BaseModel):
 
 
 class ClaimCreate(BaseModel):
-    citizen_cnic: str
+    citizen_cnic: str = Field(..., pattern=r"^([0-9]{5}-[0-9]{7}-[0-9]{1}|[0-9]{13})$", description="13-digit Pakistani CNIC format")
     claim_amount: float = Field(..., gt=0.0, description="Requested cash support amount (PKR)")
     household_size: int = Field(default=1, ge=1)
     monthly_income: float = Field(default=0.0, ge=0.0)
@@ -217,7 +217,7 @@ class UserBase(BaseModel):
     full_name: str
     role: RoleEnum
     phone: Optional[str] = None
-    cnic: Optional[str] = None
+    cnic: Optional[str] = Field(None, pattern=r"^([0-9]{5}-[0-9]{7}-[0-9]{1}|[0-9]{13})$", description="Optional Pakistani CNIC")
 
 
 class UserCreate(UserBase):
@@ -270,7 +270,7 @@ class DocumentAttachment(BaseModel):
 
 class CaseCreate(BaseModel):
     citizen_name: str
-    cnic: str = Field(..., description="13-digit Pakistani CNIC format (e.g. 42101-1234567-1 or 4210112345671)")
+    cnic: str = Field(..., pattern=r"^([0-9]{5}-[0-9]{7}-[0-9]{1}|[0-9]{13})$", description="13-digit Pakistani CNIC format (e.g. 42101-1234567-1 or 4210112345671)")
     phone: str
     household_size: int = Field(..., ge=1)
     monthly_income: float = Field(..., ge=0.0)
@@ -449,7 +449,7 @@ class ReviewDecisionRequest(BaseModel):
 # ==========================================
 
 class MockNADRARequest(BaseModel):
-    cnic: str
+    cnic: str = Field(..., pattern=r"^([0-9]{5}-[0-9]{7}-[0-9]{1}|[0-9]{13})$", description="Target 13-digit Pakistani CNIC to verify")
     full_name: str
     father_husband_name: Optional[str] = None
     date_of_birth: Optional[str] = None
@@ -486,7 +486,7 @@ class MockRaastResponse(BaseModel):
 
 
 class MockComplaintRequest(BaseModel):
-    citizen_cnic: str
+    citizen_cnic: str = Field(..., pattern=r"^([0-9]{5}-[0-9]{7}-[0-9]{1}|[0-9]{13})$", description="Citizen filing complaint")
     phone: str
     category: str = Field(..., description="delay, scam_report, wrong_deduction, agent_misbehavior")
     description: str

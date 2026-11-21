@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from sqlalchemy import (
     Column, String, Integer, Float, Boolean, DateTime,
-    ForeignKey, Text, JSON, Enum as SQLEnum
+    ForeignKey, Text, JSON, Enum as SQLEnum, CheckConstraint
 )
 from sqlalchemy.orm import relationship
 from .connection import Base
@@ -36,6 +36,12 @@ class User(Base):
 
 class Citizen(Base):
     __tablename__ = "citizens"
+    __table_args__ = (
+        CheckConstraint(
+            "cnic ~ '^[0-9]{5}-[0-9]{7}-[0-9]{1}$' OR cnic ~ '^[0-9]{13}$'",
+            name="check_valid_cnic_format"
+        ),
+    )
 
     id = Column(String, primary_key=True, default=generate_uuid)
     cnic = Column(String(15), unique=True, index=True, nullable=False)
@@ -179,6 +185,7 @@ class AuditLog(Base):
     result = Column(String, nullable=False)
     request_id = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
+    details = Column(JSON, default=dict)
 
     @classmethod
     def create_entry(cls, session, actor: str, action: str, target: str, result: str, request_id: str):
