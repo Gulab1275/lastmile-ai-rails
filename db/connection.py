@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -13,10 +14,13 @@ load_dotenv(dotenv_path=env_path)
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
-    raise RuntimeError(
-        "DATABASE_URL environment variable is required but not set. "
-        "Please provide a valid database connection string (e.g. postgresql://user:pass@host:5432/db)."
-    )
+    if any("alembic" in arg.lower() for arg in sys.argv):
+        DATABASE_URL = "sqlite:///test_migrate.db"
+    else:
+        raise RuntimeError(
+            "DATABASE_URL environment variable is required but not set. "
+            "Please provide a valid database connection string (e.g. postgresql://user:pass@host:5432/db)."
+        )
 
 if DATABASE_URL.startswith("postgresql://"):
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
