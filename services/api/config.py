@@ -3,12 +3,18 @@ Configuration settings for Rahbar API.
 Loads environment variables safely with prototype-safe defaults.
 """
 import os
-from typing import List
+from typing import List, Optional
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        case_sensitive=True,
+        env_file=".env",
+        extra="ignore"
+    )
+
     APP_NAME: str = "Rahbar"
     APP_ENV: str = "development"
     APP_DEBUG: bool = True
@@ -32,16 +38,15 @@ class Settings(BaseSettings):
         "*"
     ]
 
+    AUDIT_CHECKPOINT_KEY: Optional[str] = os.getenv("AUDIT_CHECKPOINT_KEY", None)
+
     RATE_LIMIT_DEFAULT: str = "100/minute"
     RATE_LIMIT_AUTH: str = "20/minute"
 
     MOCK_CHAOS_MODE: str = os.getenv("MOCK_CHAOS_MODE", "none")
     MOCK_CHAOS_LATENCY_MS: int = 1500
 
-    class Config:
-        case_sensitive = True
-        env_file = ".env"
-        extra = "ignore"
+
 
 
 settings = Settings()
