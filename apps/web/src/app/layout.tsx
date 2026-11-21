@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Noto_Nastaliq_Urdu } from "next/font/google";
 import "./globals.css";
-
+import SwRegister from "@/components/SwRegister";
 const urdu = Noto_Nastaliq_Urdu({
   subsets: ["arabic"],
   weight: ["400", "700"],
@@ -27,6 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className={`${urdu.variable} antialiased`}
         style={{ fontFamily: "var(--font-urdu), sans-serif", lineHeight: 2 }}
       >
+        <SwRegister />
         {children}
       </body>
     </html>

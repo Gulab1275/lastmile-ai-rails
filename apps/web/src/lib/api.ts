@@ -1,10 +1,5 @@
 import { mockRequest } from "./mock";
 
-/**
- * Rahbar API client (Next.js / PWA).
- * Endpoints match docs/openapi.json.
- */
-
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const API_PREFIX = "/api/v1";
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
@@ -121,7 +116,21 @@ export interface RuleSet {
   version: number;
   name: string;
   max_monthly_income: number;
+  min_household_size: number;
+  max_auto_approve_amount: number;
+  requires_valid_cnic: boolean;
+  requires_utility_bill: boolean;
+  max_wrong_prob_auto_approve: number;
+  max_wrong_prob_ask_proof: number;
   is_active: boolean;
+}
+
+export interface RuleVersion {
+  version: number;
+  name: string;
+  is_active: boolean;
+  rule_set: RuleSet;
+  created_at: string;
 }
 
 export interface SimulationResult {
@@ -152,6 +161,52 @@ export interface ChainStatus {
   total_records: number;
   corrupted_at_index?: number | null;
   head_hash?: string | null;
+}
+
+export interface Family {
+  id: string;
+  name: string;
+  cnic: string;
+}
+
+export interface ExtractedForm {
+  full_name?: string | null;
+  cnic?: string | null;
+  phone?: string | null;
+  household_size?: number | null;
+  monthly_income?: number | null;
+  missing_fields: string[];
+  confidence: number;
+}
+
+export interface SweepPoint {
+  threshold: number;
+  auto_approve_count: number;
+  wrong_approvals: number;
+  human_reviews: number;
+  ask_proofs: number;
+  expected_cost_per_case: number;
+}
+
+export interface EvalSummary {
+  total_test_samples: number;
+  scam_classifier_metrics: {
+    accuracy: number; precision: number; recall: number; f1_score: number;
+    false_alarm_rate: number; confusion_matrix: Record<string, number>;
+  };
+  identity_matcher_metrics: Record<string, number>;
+  decision_engine_metrics: {
+    optimal_p_wrong_threshold: number; min_expected_cost_per_case: number;
+    auto_approve_rate: string; human_review_rate: string; ask_more_proof_rate: string;
+    auto_reject_rate: number;
+  };
+  threshold_sweep_curve: SweepPoint[];
+  system_guarantees: { guarantee: string; verified: boolean; detail: string }[];
+}
+
+export interface SyncResult {
+  batch_id?: string;
+  [key: string]: unknown;
 }
 
 class RahbarApiClient {
@@ -222,7 +277,19 @@ class RahbarApiClient {
   }
 
   getEvalSummary() {
-    return this.request<Record<string, unknown>>("/ai/eval-summary");
+    return this.request<EvalSummary>("/ai/eval-summary");
+  }
+  extractForm(text: string) {
+    return this.request<ExtractedForm>("/ai/extract-form", {
+      method: "POST",
+      body: JSON.stringify({ text }),
+    });
+  }
+  syncOfflineBatch(helper_id: string, batch_id: string, queued_cases: Record<string, unknown>[]) {
+    return this.request<SyncResult>("/ai/sync-offline-batch", {
+      method: "POST",
+      body: JSON.stringify({ helper_id, batch_id, queued_cases, client_timestamp: new Date().toISOString() }),
+    });
   }
 
   // ---------- Cases & decisions ----------
@@ -238,8 +305,32 @@ class RahbarApiClient {
   submitCase(caseId: string) {
     return this.request<CaseItem>(`/cases/${caseId}/submit`, { method: "POST" });
   }
+  uploadDocument(caseId: string, file: File, docType = "utility_bill") {
+    // The backend attaches a document record (JSON), not the raw file.
+    return this.request<CaseItem>(`/cases/${caseId}/documents`, {
+      method: "POST",
+      body: JSON.stringify({
+        doc_id: `doc-${Date.now()}`,
+        doc_type: docType,
+        file_name: file.name,
+        file_url: `local://${file.name}`,
+      }),
+    });
+  }
+  explainCase(caseId: string, view: "citizen" | "auditor") {
+    return this.request<Record<string, unknown>>(`/decisions/explain/${caseId}?view=${view}`);
+  }
   evaluateCase(caseId: string) {
     return this.request<Decision>(`/decisions/evaluate/${caseId}`, { method: "POST" });
+  }
+
+  // ---------- Helper Mode ----------
+  async getFamilies(): Promise<Family[]> {
+    if (USE_MOCK) return mockRequest("/helper/families") as Promise<Family[]>;
+    const cases = await this.listCases();
+    const seen = new Map<string, Family>();
+    cases.forEach((c) => seen.set(c.citizen_id, { id: c.citizen_id, name: c.citizen_name, cnic: c.cnic }));
+    return Array.from(seen.values());
   }
 
   // ---------- Consent ----------
@@ -274,10 +365,14 @@ class RahbarApiClient {
   getActiveRules() {
     return this.request<RuleSet>("/rules/active");
   }
-  publishRule(name: string, rule_set: RuleSet) {
+  listRuleVersions() {
+    return this.request<RuleVersion[]>("/rules/versions");
+  }
+  publishRule(rule_set: RuleSet) {
+    // The backend expects the RuleSet itself as the request body.
     return this.request<RuleSet>("/rules/publish", {
       method: "POST",
-      body: JSON.stringify({ name, rule_set }),
+      body: JSON.stringify(rule_set),
     });
   }
   simulateRules(draft_rule_set: RuleSet, sample_size = 100) {
