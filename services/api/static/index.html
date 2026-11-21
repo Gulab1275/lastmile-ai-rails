@@ -85,6 +85,9 @@
         <button onclick="switchTab('eval')" id="tab-eval" class="px-3 py-1.5 rounded-md font-medium text-emerald-100 hover:bg-emerald-700 transition">
           📊 ماڈل ڈیش بورڈ (Eval Sweep)
         </button>
+        <button onclick="switchTab('rag')" id="tab-rag" class="px-3 py-1.5 rounded-md font-medium text-emerald-100 hover:bg-emerald-700 transition">
+          📚 پالیسی رہنمائی (Policy RAG)
+        </button>
       </div>
     </div>
   </header>
@@ -538,6 +541,79 @@
       </div>
     </section>
 
+    <!-- TAB 8: Policy Q&A with Supabase pgvector -->
+    <section id="panel-rag" class="hidden space-y-6">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-2">
+          <div>
+            <h2 class="text-xl font-bold text-slate-800 urdu-text">سرکاری پالیسی رہنمائی و سوالات (Supabase pgvector RAG)</h2>
+            <p class="text-sm text-slate-500">آفیشل گائیڈ لائنز سے فوری تصدیق شدہ جوابات بمعہ قانونی دستاویز اور صفحہ نمبر حوالہ جات۔</p>
+          </div>
+          <span class="badge bg-emerald-100 text-emerald-900 font-mono text-xs" id="rag-mode-badge">
+            ⚡ Supabase pgvector: 384-D Vector Engine
+          </span>
+        </div>
+
+        <div class="mt-6 space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-2">فوری سوالات (Quick Policy Prompts):</label>
+            <div class="flex flex-wrap gap-2 text-xs">
+              <button onclick="setPolicyQuestion('بیوہ خواتین کے لیے امداد کی اہلیت کی کیا شرائط ہیں؟')" class="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 transition">
+                🌸 بیوہ امداد کی اہلیت؟
+              </button>
+              <button onclick="setPolicyQuestion('امدادی رقم کی حد اور راست بینکنگ کی تفصیل کیا ہے؟')" class="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 transition">
+                💳 راست ادائیگی اور حد؟
+              </button>
+              <button onclick="setPolicyQuestion('شہری اپنی رضامندی کیسے منسوخ یا واپس لے سکتا ہے؟')" class="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 transition">
+                🔐 رضامندی واپس لینا؟
+              </button>
+              <button onclick="setPolicyQuestion('What is the maximum income threshold to qualify for relief cash support?')" class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 transition">
+                🌐 Income Threshold (English)
+              </button>
+              <button onclick="setPolicyQuestion('کیا سرکاری پروگرام ایس ایم ایس پر پیشگی فیس یا پن کوڈ مانگتا ہے؟')" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-800 hover:bg-red-100 border border-red-200 transition">
+                🛡️ فراڈ اور فیس کی ممانعت؟
+              </button>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label class="block text-sm font-semibold text-slate-700">اپنا سوال اردو یا انگریزی میں درج کریں:</label>
+            <div class="flex gap-2">
+              <input type="text" id="policy-query-input" placeholder="مثال: امدادی رقم کتنی ملتی ہے اور کس بینک کے ذریعے؟" class="flex-1 p-3 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <button onclick="askPolicyRAG()" id="rag-submit-btn" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-6 py-3 rounded-xl shadow transition flex items-center gap-2">
+                <span>پوچھیں (Ask Policy)</span>
+                <span>🔍</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- RAG Result Card -->
+          <div id="rag-result-box" class="hidden mt-6 p-5 rounded-xl border border-emerald-300 bg-emerald-50/60 space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-2xl">📖</span>
+                <div>
+                  <h4 class="text-sm font-bold text-emerald-950">مصدقہ پالیسی جواب (Verified Policy Guidance):</h4>
+                  <span class="text-[11px] text-emerald-700" id="rag-meta-label">Supabase pgvector · Groq Qwen3.8 LPU</span>
+                </div>
+              </div>
+              <button onclick="readRAGAnswerAloud()" id="rag-tts-btn" class="bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-300 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+                <span>🔊 آواز میں سنیں</span>
+              </button>
+            </div>
+
+            <div id="rag-answer-text" class="text-sm text-slate-800 bg-white p-4 rounded-xl border border-emerald-200 shadow-sm urdu-text whitespace-pre-wrap leading-relaxed"></div>
+
+            <!-- Citations Container -->
+            <div class="space-y-2">
+              <h5 class="text-xs font-bold text-slate-600 uppercase tracking-wider">قانونی حوالہ جات (Official Document Citations):</h5>
+              <div id="rag-sources-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- Footer -->
@@ -561,7 +637,7 @@
     }
 
     function switchTab(tabId) {
-      const tabs = ['widow', 'helper', 'shopkeeper', 'officer', 'admin', 'auditor', 'eval'];
+      const tabs = ['widow', 'helper', 'shopkeeper', 'officer', 'admin', 'auditor', 'eval', 'rag'];
       tabs.forEach(t => {
         const panel = document.getElementById('panel-' + t);
         const btn = document.getElementById('tab-' + t);
@@ -944,6 +1020,83 @@
 
     function officerAction(action, caseId) {
       alert("کیس " + caseId + " پر افسر کا فیصلہ درج ہو گیا: " + (action === 'approve' ? 'منظور' : 'مسترد'));
+    }
+
+    function setPolicyQuestion(q) {
+      const input = document.getElementById('policy-query-input');
+      if (input) {
+        input.value = q;
+        askPolicyRAG();
+      }
+    }
+
+    let lastRAGAnswer = "";
+    async function askPolicyRAG() {
+      const input = document.getElementById('policy-query-input');
+      const question = input ? input.value.trim() : "";
+      if (!question) return;
+
+      const btn = document.getElementById('rag-submit-btn');
+      const box = document.getElementById('rag-result-box');
+      const ansBox = document.getElementById('rag-answer-text');
+      const sourcesList = document.getElementById('rag-sources-list');
+      const metaLabel = document.getElementById('rag-meta-label');
+
+      if (btn) btn.innerHTML = "<span>تلاش جاری ہے...</span><span class='animate-spin'>⏳</span>";
+      if (box) box.classList.remove('hidden');
+      if (ansBox) ansBox.innerHTML = "<span class='text-slate-400'>Supabase pgvector پر سیمیٹک سرچ ہو رہی ہے...</span>";
+      if (sourcesList) sourcesList.innerHTML = "";
+
+      try {
+        const res = await fetch('/api/v1/ai/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          lastRAGAnswer = data.answer;
+          if (ansBox) ansBox.innerText = data.answer;
+          if (metaLabel) {
+            const modeText = data.retrieval_mode === 'supabase_pgvector' ? '⚡ Supabase pgvector (384-D Cosine)' : '💾 In-Memory Semantic Fallback';
+            metaLabel.innerText = `${modeText} · Model: ${data.provider || 'Groq Qwen3.8'}`;
+          }
+
+          if (sourcesList && data.sources) {
+            data.sources.forEach(s => {
+              const card = document.createElement('div');
+              card.className = "p-3 bg-white rounded-lg border border-emerald-200 space-y-1 shadow-sm";
+              card.innerHTML = `
+                <div class="flex items-center justify-between text-[11px] font-bold text-emerald-900">
+                  <span class="truncate">${s.document_name}</span>
+                  <span class="badge bg-emerald-100 text-emerald-800">صفحہ ${s.page_number}</span>
+                </div>
+                <p class="text-[11px] text-slate-600 line-clamp-3">${s.excerpt}</p>
+              `;
+              sourcesList.appendChild(card);
+            });
+          }
+        } else {
+          if (ansBox) ansBox.innerText = "پالیسی کی معلومات حاصل کرنے میں خرابی ہوئی۔ براہ کرم دوبارہ کوشش کریں۔";
+        }
+      } catch (err) {
+        console.error("Policy RAG error:", err);
+        if (ansBox) ansBox.innerText = "نیٹ ورک کی خرابی۔ براہ کرم سرور کنکشن چیک کریں۔";
+      } finally {
+        if (btn) btn.innerHTML = "<span>پوچھیں (Ask Policy)</span><span>🔍</span>";
+      }
+    }
+
+    async function readRAGAnswerAloud() {
+      if (!lastRAGAnswer) return;
+      const ttsBtn = document.getElementById('rag-tts-btn');
+      if (ttsBtn) ttsBtn.innerHTML = "<span>⏳ لوڈ ہو رہا ہے...</span>";
+      try {
+        await speakAgentUrdu(lastRAGAnswer);
+      } finally {
+        if (ttsBtn) ttsBtn.innerHTML = "<span>🔊 آواز میں سنیں</span>";
+      }
     }
 
     // Register Service Worker for PWA

@@ -119,7 +119,9 @@ def ask_policy_question(payload: PolicyAskRequest):
     res = ask_policy(payload.question)
     return PolicyAskResponse(
         answer=res["answer"],
-        sources=res["sources"]
+        sources=res["sources"],
+        retrieval_mode=res.get("retrieval_mode", "supabase_pgvector"),
+        provider=res.get("provider", "groq")
     )
 
 @router.post("/extract-form", response_model=ExtractedClaimForm)

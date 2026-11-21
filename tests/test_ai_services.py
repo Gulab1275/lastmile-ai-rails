@@ -115,10 +115,41 @@ def test_ai_voice_stt_multi_format_and_detection():
     assert name == "input.webm"
     assert mime == "audio/webm"
 
+def test_ai_pgvector_semantic_embedding_engine():
+    """Verify 384-dimensional dense semantic embedding engine and cosine similarity."""
+    from services.ai.embeddings import generate_embedding, cosine_similarity
+
+    v_query = generate_embedding("What is the monthly income limit for widow relief?")
+    v_policy = generate_embedding("Section 2.1: Households with monthly income below PKR 35,000 qualify for widow assistance.")
+    v_irrelevant = generate_embedding("Chocolate brownie recipe with cocoa powder.")
+
+    assert len(v_query) == 384
+    assert len(v_policy) == 384
+    assert round(sum(x*x for x in v_query), 2) == 1.0  # L2 normalized
+
+    sim_related = cosine_similarity(v_query, v_policy)
+    sim_unrelated = cosine_similarity(v_query, v_irrelevant)
+    assert sim_related > sim_unrelated
+    assert sim_related > 0.30
+
 def test_ai_policy_rag_with_citations():
-    """Verify policy Q&A returns authoritative answer with source citations."""
+    """Verify policy Q&A returns authoritative answer with source citations via pgvector."""
     payload = {
         "question": "What is the maximum income to be eligible for relief support?"
+    }
+    response = client.post("/api/v1/ai/ask", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["answer"]) > 10
+    assert len(data["sources"]) >= 1
+    assert "document_name" in data["sources"][0]
+    assert "page_number" in data["sources"][0]
+    assert "retrieval_mode" in data
+
+def test_ai_policy_rag_urdu_query():
+    """Verify Urdu policy query returns Urdu guidance with citations."""
+    payload = {
+        "question": "بیوہ خواتین کے لیے اہلیت کی کیا شرائط ہیں؟"
     }
     response = client.post("/api/v1/ai/ask", json=payload)
     assert response.status_code == 200

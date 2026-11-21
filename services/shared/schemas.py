@@ -161,11 +161,14 @@ class PolicySource(BaseModel):
     document_name: str
     page_number: int
     excerpt: str
+    similarity: Optional[float] = None
 
 
 class PolicyAskResponse(BaseModel):
     answer: str
     sources: List[PolicySource] = Field(default_factory=list)
+    retrieval_mode: Optional[str] = "supabase_pgvector"
+    provider: Optional[str] = "groq"
 
 
 class ClaimAgentStep(BaseModel):
