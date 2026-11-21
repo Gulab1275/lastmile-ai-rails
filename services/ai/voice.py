@@ -3,13 +3,14 @@ Urdu Voice Pipeline (Challenge 07: Works for Everyone).
 Speech-to-Text: Whisper-large-v3 via Groq (handles Urdu natively).
 Text-to-Speech: edge-tts (Urdu: ur-PK-UzmaNeural / ur-PK-AsadNeural) with MD5 audio disk caching.
 """
-import os
-import io
-import re
 import asyncio
 import hashlib
+import io
+import os
+import re
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
 from dotenv import load_dotenv
 
 # Load environment
@@ -59,7 +60,7 @@ def detect_audio_format(audio_bytes: bytes, filename: Optional[str] = None) -> t
         return "input.ogg", "audio/ogg"
     elif b"ftyp" in audio_bytes[:16]:
         return "input.m4a", "audio/m4a"
-    
+
     # Default to MP3
     return "input.mp3", "audio/mp3"
 
@@ -81,11 +82,11 @@ def transcribe(
         raise ValueError("GROQ_API_KEY is required for voice transcription")
 
     client = Groq(api_key=GROQ_API_KEY)
-    
+
     # Auto-detect audio format
     detected_name, detected_mime = detect_audio_format(audio_bytes, filename)
     file_tuple = (detected_name, io.BytesIO(audio_bytes), content_type or detected_mime)
-    
+
     try:
         transcription = client.audio.transcriptions.create(
             file=file_tuple,
@@ -95,7 +96,7 @@ def transcribe(
             temperature=0.0
         )
         raw_text = transcription.text.strip()
-        
+
         # Check for silence or Whisper hallucinations on low/ambient room sound
         clean_norm = re.sub(r"[^\w\s]", "", raw_text).strip()
         is_silence = (
@@ -104,7 +105,7 @@ def transcribe(
             or clean_norm in ("موسیقا", "موسیقی", "music")
             or len(clean_norm) <= 1
         )
-        
+
         if is_silence:
             return {
                 "text": "",
@@ -151,13 +152,13 @@ def synthesize(text: str, lang: str = "ur") -> bytes:
     # MD5 caching
     cache_key = hashlib.md5(f"{lang}:{text}".encode("utf-8")).hexdigest()
     cache_file = CACHE_DIR / f"{cache_key}.mp3"
-    
+
     if cache_file.exists():
         with open(cache_file, "rb") as f:
             return f.read()
 
     voice = URDU_VOICE if lang == "ur" else ENGLISH_VOICE
-    
+
     try:
         # Run async in synchronous context
         return asyncio.run(_synthesize_async(text, voice, cache_file))

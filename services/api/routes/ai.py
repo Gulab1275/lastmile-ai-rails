@@ -10,30 +10,33 @@ Routes:
 - POST /api/v1/ai/agent/run (LangGraph)
 - GET  /api/v1/ai/health
 """
-import io
-from typing import List, Dict, Any, Optional
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Response
-from fastapi.responses import StreamingResponse
+from typing import Any, Dict, List
 
-from services.shared.schemas import (
-    ScamCheckRequest, ScamCheckResponse,
-    DocumentExtractionResult,
-    TranscribeResponse, SynthesizeRequest,
-    PolicyAskRequest, PolicyAskResponse,
-    AnomalyCheckRequest, AnomalyCheckResponse,
-    OfflineSyncBatchRequest
-)
-from services.ai.scam import classify_message
-from services.ai.ocr import extract_documents
-from services.ai.voice import transcribe, synthesize
-from services.ai.rag import ask_policy
-from services.ai.forms import extract_claim_form, ExtractedClaimForm
+from fastapi import APIRouter, File, Form, HTTPException, Response, UploadFile
+
 from services.ai.agent import execute_agent_workflow
-from services.ai.router import check_llm_health
 from services.ai.anomaly import detect_claim_anomalies
-from services.ai.scam_map import generate_scam_map_feed
 from services.ai.eval_dashboard import get_evaluation_dashboard_metrics
+from services.ai.forms import ExtractedClaimForm, extract_claim_form
+from services.ai.ocr import extract_documents
+from services.ai.rag import ask_policy
+from services.ai.router import check_llm_health
+from services.ai.scam import classify_message
+from services.ai.scam_map import generate_scam_map_feed
 from services.ai.sync import process_offline_sync_batch
+from services.ai.voice import synthesize, transcribe
+from services.shared.schemas import (
+    AnomalyCheckRequest,
+    AnomalyCheckResponse,
+    DocumentExtractionResult,
+    OfflineSyncBatchRequest,
+    PolicyAskRequest,
+    PolicyAskResponse,
+    ScamCheckRequest,
+    ScamCheckResponse,
+    SynthesizeRequest,
+    TranscribeResponse,
+)
 
 router = APIRouter(prefix="/ai", tags=["AI & Agents"])
 
@@ -61,7 +64,7 @@ async def analyze_document_ocr(files: List[UploadFile] = File(...)):
     for f in files:
         data = await f.read()
         file_bytes_list.append(data)
-    
+
     res = extract_documents(file_bytes_list)
     return DocumentExtractionResult(
         fields=res["fields"],
@@ -103,7 +106,7 @@ def text_to_speech(payload: SynthesizeRequest):
     audio_bytes = synthesize(payload.text, lang=payload.language)
     if not audio_bytes:
         raise HTTPException(status_code=500, detail="Text-to-speech generation failed")
-    
+
     return Response(
         content=audio_bytes,
         media_type="audio/mpeg",

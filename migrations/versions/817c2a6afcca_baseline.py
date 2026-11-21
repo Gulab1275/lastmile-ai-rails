@@ -1,15 +1,14 @@
 """baseline
 
 Revision ID: 817c2a6afcca
-Revises: 
+Revises:
 Create Date: 2026-11-21 22:07:34.275318
 
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = '817c2a6afcca'

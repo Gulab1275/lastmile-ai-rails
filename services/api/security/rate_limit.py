@@ -8,15 +8,20 @@ from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
+from services.api.security.api_key import KEY_PREFIX
+
 
 def get_client_identifier(request: Request) -> str:
-    """
-    Identifies client by API Key if present, otherwise by client IP.
+    """Identify client for rate limiting.
+    • If an ``X-API-Key`` header is present, bucket by its *prefix* (e.g. ``rk_demo_``).
+    • Otherwise fall back to the remote IP address.
     """
     api_key = request.headers.get("X-API-Key")
-    if api_key:
-        return f"api_key:{api_key}"
+    if api_key and api_key.startswith(KEY_PREFIX):
+        # Use only the stable prefix for bucketing – prevents a new key from exploding the bucket space.
+        return f"api_key:{api_key[:len(KEY_PREFIX)]}"
     return get_remote_address(request)
+
 
 
 limiter = Limiter(key_func=get_client_identifier)

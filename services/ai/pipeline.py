@@ -8,20 +8,18 @@ Rules:
 3. The system never auto-rejects. Rejections require human officer confirmation.
 """
 import uuid
-from typing import Dict, Any, List, Optional
-from services.shared.schemas import (
-    RouteDecision, ComponentScores, ReasonSimple, DecisionResponse
-)
+from typing import Any, Dict
+
+from db.connection import SessionLocal
+from db.models import AuditLog, Case, Decision, Document, ReviewItem, RuleVersion
 from services.ai.matcher import resolve_identity
 from services.ai.scam import classify_message
-from db.connection import SessionLocal
-from db.models import Case, Citizen, Document, RuleVersion, Decision, ReviewItem, AuditLog
+from services.shared.schemas import ComponentScores, DecisionResponse, ReasonSimple, RouteDecision
 
 MAX_AUTO_APPROVE_AMOUNT = 25000.0
 
 def evaluate_claim_pipeline(case_id: str) -> DecisionResponse:
     session = SessionLocal()
-    steps_taken = []
     try:
         case = session.query(Case).filter_by(id=case_id).first()
         if not case:
@@ -35,7 +33,7 @@ def evaluate_claim_pipeline(case_id: str) -> DecisionResponse:
         docs = session.query(Document).filter_by(case_id=case_id).all()
         missing_docs = []
         doc_types = {d.doc_type for d in docs}
-        
+
         if "cnic_front" not in doc_types:
             missing_docs.append("cnic_front")
         if "utility_bill" not in doc_types:
@@ -60,7 +58,7 @@ def evaluate_claim_pipeline(case_id: str) -> DecisionResponse:
         # Step 4: Rules Engine (Check active rule version)
         active_rule = session.query(RuleVersion).filter_by(status="active").order_by(RuleVersion.version.desc()).first()
         rule_version_num = active_rule.version if active_rule else 1
-        
+
         rules_passed = True
         missing_fields = []
         monthly_income = form_data.get("monthly_income", citizen.monthly_income)

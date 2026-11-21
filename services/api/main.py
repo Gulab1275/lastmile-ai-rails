@@ -4,13 +4,15 @@ The Last Mile: AI on Public Rails (Coder's Cup '26).
 Team: Mahandar (Backend Lead & AWS Infra), Naresh (Agents & DB), Gulab (Frontend & PWA).
 """
 from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 
 from services.api.config import settings
+from services.api.routes.ai import router as ai_router
 from services.api.routes.audit import router as audit_router
 from services.api.routes.auth import router as auth_router
 from services.api.routes.cases import router as cases_router
@@ -22,7 +24,6 @@ from services.api.routes.mock_routes import router as mock_router
 from services.api.routes.review import router as review_router
 from services.api.routes.rules import router as rules_router
 from services.api.routes.webhooks import router as webhooks_router
-from services.api.routes.ai import router as ai_router
 from services.api.security.rate_limit import limiter, rate_limit_custom_handler
 
 app = FastAPI(

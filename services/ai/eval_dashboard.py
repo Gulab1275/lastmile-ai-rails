@@ -5,8 +5,7 @@ and cost sweep curves for Gulab's frontend evaluation dashboard.
 """
 
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
-import numpy as np
+from typing import Any, Dict
 
 # Empirical benchmark measurements
 AI_LATENCY_BENCHMARKS = [
@@ -28,18 +27,18 @@ def get_evaluation_dashboard_metrics() -> Dict[str, Any]:
     # Threshold sweep cost curves
     thresholds = [0.01, 0.03, 0.05, 0.08, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40]
     sweep_curve = []
-    
+
     # Realistic simulation curve over 200 benchmark cases:
     for t in thresholds:
         auto_approves = int(200 * min(0.90, (t * 2.2) + 0.15))
         wrong_approves = int(max(0, (t - 0.04) * 85)) if t > 0.04 else 0
         human_reviews = int(max(10, 200 - auto_approves - (t * 50)))
         ask_proofs = max(5, 200 - auto_approves - human_reviews)
-        
+
         # Relative cost formula: 10 * wrong + 1 * human + 0.4 * ask_proof
         cost = (10.0 * wrong_approves) + (1.0 * human_reviews) + (0.4 * ask_proofs)
         avg_cost = round(cost / 200.0, 3)
-        
+
         sweep_curve.append({
             "threshold": t,
             "auto_approve_count": auto_approves,

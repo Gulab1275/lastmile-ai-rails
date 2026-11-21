@@ -10,9 +10,10 @@ Tests:
 - AI Telemetry Health
 """
 import io
-import pytest
-from PIL import Image, ImageDraw, ImageFilter
+
 from fastapi.testclient import TestClient
+from PIL import Image, ImageDraw, ImageFilter
+
 from services.api.main import app
 
 client = TestClient(app)
@@ -99,17 +100,17 @@ def test_ai_voice_tts_synthesis():
 def test_ai_voice_stt_multi_format_and_detection():
     """Verify audio format detection (WebM, WAV, MP3) and STT endpoint."""
     from services.ai.voice import detect_audio_format
-    
+
     # Check WebM detection
     name, mime = detect_audio_format(b"\x1aE\xdf\xa3dummy_webm_bytes")
     assert name == "input.webm"
     assert mime == "audio/webm"
-    
+
     # Check WAV detection
     name, mime = detect_audio_format(b"RIFFdummy_wav_bytes")
     assert name == "input.wav"
     assert mime == "audio/wav"
-    
+
     # Check filename override
     name, mime = detect_audio_format(b"anything", filename="speech.weba")
     assert name == "input.webm"
@@ -117,7 +118,7 @@ def test_ai_voice_stt_multi_format_and_detection():
 
 def test_ai_pgvector_semantic_embedding_engine():
     """Verify 384-dimensional dense semantic embedding engine and cosine similarity."""
-    from services.ai.embeddings import generate_embedding, cosine_similarity
+    from services.ai.embeddings import cosine_similarity, generate_embedding
 
     v_query = generate_embedding("What is the monthly income limit for widow relief?")
     v_policy = generate_embedding("Section 2.1: Households with monthly income below PKR 35,000 qualify for widow assistance.")

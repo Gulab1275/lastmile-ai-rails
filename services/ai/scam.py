@@ -4,10 +4,12 @@ Detects fake relief cash offers, OTP theft, and phishing links in Urdu, Roman Ur
 Uses scikit-learn TF-IDF + Calibrated Logistic Regression + Explainable Rule Features.
 """
 import re
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.calibration import CalibratedClassifierCV
+
 from services.shared.schemas import ScamLabel
 
 # Rule patterns and trigger explanations
@@ -52,7 +54,7 @@ class ScamClassifier:
         self.vectorizer = TfidfVectorizer(ngram_range=(1, 2), min_df=1)
         texts = [x[0] for x in TRAIN_DATA]
         labels = [x[1] for x in TRAIN_DATA]
-        
+
         X = self.vectorizer.fit_transform(texts)
         base_lr = LogisticRegression(C=1.0, max_iter=200)
         self.model = CalibratedClassifierCV(estimator=base_lr, cv=2)
