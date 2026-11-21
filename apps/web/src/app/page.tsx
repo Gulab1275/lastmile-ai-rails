@@ -17,6 +17,7 @@ export default function LoginPage() {
       const data = await login(username, password);
       localStorage.setItem("token", data.access_token);
       localStorage.setItem("role", data.role);
+            localStorage.setItem("user_id", data.user_id);
       setRole(data.role);
     } catch (e) {
       const err = e as ApiError;
