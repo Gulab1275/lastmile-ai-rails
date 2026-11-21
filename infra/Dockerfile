@@ -42,6 +42,8 @@ ENV PYTHONUNBUFFERED=1
 COPY --chown=rahbar:rahbar services/ /app/services/
 COPY --chown=rahbar:rahbar mock/ /app/mock/
 COPY --chown=rahbar:rahbar db/ /app/db/
+COPY --chown=rahbar:rahbar alembic.ini /app/alembic.ini
+COPY --chown=rahbar:rahbar migrations/ /app/migrations/
 # Let the non-root user create runtime folders (e.g. /app/audio_cache)
 RUN mkdir -p /app/audio_cache && chown rahbar:rahbar /app /app/audio_cache
 
