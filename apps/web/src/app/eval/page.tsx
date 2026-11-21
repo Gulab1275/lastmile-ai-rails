@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import AppShell from "@/components/AppShell";
+import AppShell from "@/components/appShell";
 import api, { type ApiError, type EvalSummary } from "@/lib/api";
 
 function CostChart({ data, best }: { data: EvalSummary["threshold_sweep_curve"]; best: number }) {
