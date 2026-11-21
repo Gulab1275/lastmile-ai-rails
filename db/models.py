@@ -166,14 +166,11 @@ class ApiKey(Base):
     key_prefix = Column(String(12), nullable=False, index=True)
     # SHA‑256 hash of the full key (hex string).
     key_hash = Column(String(64), nullable=False, unique=True, index=True)
-    # Owner (admin) user reference – optional if you want to track who created it.
-    owner_user_id = Column(String, ForeignKey("users.id"), nullable=True)
+    # Owner (admin) user reference – stores user ID from JWT token (identity source is JWT, no FK)
+    owner_user_id = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     last_used_at = Column(DateTime, nullable=True)
     revoked_at = Column(DateTime, nullable=True)
-
-    # Relationships (optional, useful for audit logs)
-    owner = relationship("User", backref="api_keys", foreign_keys=[owner_user_id])
 
     def is_active(self) -> bool:
         return self.revoked_at is None
