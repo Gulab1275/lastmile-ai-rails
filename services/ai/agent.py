@@ -10,14 +10,14 @@ Core Invariants:
 5. Strict Guarantee: The system NEVER automatically rejects a claim.
 """
 import uuid
-from typing import Dict, Any, List, Optional, TypedDict
-from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.memory import MemorySaver
+from typing import Any, Dict, List, Optional, TypedDict
 
-from services.shared.schemas import RouteDecision, ComponentScores, ReasonSimple
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, StateGraph
+
 from services.ai.matcher import resolve_identity
 from services.ai.scam import classify_message
-from services.ai.router import route_llm
+from services.shared.schemas import RouteDecision
 
 
 class ClaimState(TypedDict):
@@ -29,13 +29,13 @@ class ClaimState(TypedDict):
     claim_amount: float
     documents: List[Dict[str, Any]]
     message_text: Optional[str]
-    
+
     # ReAct Execution & Reasoning Chain
     thought_chain: List[Dict[str, Any]]
     tools_executed: List[str]
     current_step: str
     iteration_count: int
-    
+
     # Evaluated Components
     identity_score: float
     identity_details: Dict[str, Any]
@@ -45,7 +45,7 @@ class ClaimState(TypedDict):
     rules_passed: bool
     missing_items: List[str]
     components: Dict[str, float]
-    
+
     # Decision Engine Outputs & Guardrails
     overall_confidence: float
     p_wrong: float
@@ -84,20 +84,20 @@ def tool_ocr_document_check(documents: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     missing = []
     doc_types = {d.get("doc_type") for d in documents}
-    
+
     if "cnic_front" not in doc_types:
         missing.append("cnic_front")
     if "utility_bill" not in doc_types:
         missing.append("utility_bill")
-        
+
     blurry_docs = [d for d in documents if d.get("blur_score", 1000.0) < 90.0]
     is_blurry = len(blurry_docs) > 0
     ocr_score = 0.40 if is_blurry else (0.95 if documents and not missing else 0.50)
-    
+
     tamper_scores = [d.get("tamper_score", 0.0) for d in documents]
     max_tamper = max(tamper_scores, default=0.0)
     auth_score = max(0.0, 1.0 - max_tamper)
-    
+
     return {
         "tool": "ocr_document_check",
         "ocr_score": round(ocr_score, 3),
@@ -121,7 +121,7 @@ def tool_check_scam_threat(message_text: Optional[str]) -> Dict[str, Any]:
             "is_phishing": False,
             "reasons": []
         }
-        
+
     res = classify_message(message_text)
     scam_safety = round(1.0 - res.get("scam_probability", 0.0), 3)
     return {
@@ -145,7 +145,7 @@ def tool_evaluate_eligibility_rules(
     missing = []
     reasons = []
     rules_passed = True
-    
+
     if income is None:
         missing.append("monthly_income")
         rules_passed = False
@@ -293,7 +293,7 @@ def node_agent_investigate(state: ClaimState) -> Dict[str, Any]:
     """
     thoughts = list(state.get("thought_chain", []))
     tools_run = list(state.get("tools_executed", []))
-    
+
     # 1. Identity Tool
     id_res = tool_verify_identity(state["citizen_cnic"], state["citizen_name"])
     tools_run.append("verify_identity")
@@ -304,7 +304,7 @@ def node_agent_investigate(state: ClaimState) -> Dict[str, Any]:
         "action": "call_tool_verify_identity",
         "observation": f"Identity match: {id_res['score']*100:.1f}%, Status: {id_res['status']}."
     })
-    
+
     # 2. OCR & Tamper Tool
     ocr_res = tool_ocr_document_check(state.get("documents", []))
     tools_run.append("ocr_document_check")
@@ -315,11 +315,11 @@ def node_agent_investigate(state: ClaimState) -> Dict[str, Any]:
         "action": "call_tool_ocr_document_check",
         "observation": f"OCR Clarity: {ocr_res['ocr_score']*100:.1f}%, Blurry: {ocr_res['is_blurry']}, Tamper: {ocr_res['tamper_detected']}."
     })
-    
+
     # 3. Scam Threat Tool
     scam_res = tool_check_scam_threat(state.get("message_text"))
     tools_run.append("check_scam_threat")
-    
+
     # 4. Rules Tool
     rules_res = tool_evaluate_eligibility_rules(
         income=state.get("monthly_income"),
@@ -335,7 +335,7 @@ def node_agent_investigate(state: ClaimState) -> Dict[str, Any]:
         "action": "call_tool_evaluate_eligibility_rules",
         "observation": f"Eligibility: {rules_res['rules_passed']}, Missing: {rules_res['missing_items']}."
     })
-    
+
     # Aggregate component scores
     components = {
         "identity": round(id_res["score"], 3),
@@ -344,9 +344,9 @@ def node_agent_investigate(state: ClaimState) -> Dict[str, Any]:
         "rules_complete": round(rules_res["rules_score"], 3),
         "scam_safety": round(scam_res["scam_score"], 3)
     }
-    
+
     missing = list(set(ocr_res["missing_documents"] + rules_res["missing_items"]))
-    
+
     return {
         "current_step": "investigate",
         "identity_score": components["identity"],
@@ -373,7 +373,7 @@ def node_agent_router(state: ClaimState) -> Dict[str, Any]:
     amount = state.get("claim_amount", 0.0)
     missing = state.get("missing_items", [])
     thoughts = list(state.get("thought_chain", []))
-    
+
     # Route Decision Tree
     if p_wrong <= 0.05 and amount <= 25000.0 and not missing:
         route = RouteDecision.AUTO_APPROVE.value
@@ -432,7 +432,7 @@ def node_disburse(state: ClaimState) -> Dict[str, Any]:
     """
     thoughts = list(state.get("thought_chain", []))
     tools_run = list(state.get("tools_executed", []))
-    
+
     try:
         tx = tool_disburse_payment(
             case_id=state["case_id"],
@@ -529,12 +529,12 @@ def execute_agent_workflow(case_payload: Dict[str, Any], thread_id: str = None) 
         "claim_amount": case_payload.get("claim_amount", 12000.0),
         "documents": case_payload.get("documents", []),
         "message_text": case_payload.get("message_text"),
-        
+
         "thought_chain": [],
         "tools_executed": [],
         "current_step": "init",
         "iteration_count": 0,
-        
+
         "identity_score": 0.0,
         "identity_details": {},
         "ocr_score": 0.0,
@@ -543,7 +543,7 @@ def execute_agent_workflow(case_payload: Dict[str, Any], thread_id: str = None) 
         "rules_passed": False,
         "missing_items": [],
         "components": {},
-        
+
         "overall_confidence": 0.0,
         "p_wrong": 1.0,
         "route": "",

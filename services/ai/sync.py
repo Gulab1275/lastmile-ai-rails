@@ -9,9 +9,9 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from services.ai.forms import extract_claim_form
 from services.ai.agent import execute_agent_workflow
 from services.ai.anomaly import detect_claim_anomalies
+from services.ai.forms import extract_claim_form
 
 # In-memory idempotency register for synced offline batches
 _SYNC_IDEMPOTENCY_STORE: Dict[str, Dict[str, Any]] = {}
@@ -48,7 +48,7 @@ def process_offline_sync_batch(
 
     for item in queued_cases:
         idempotency_key = item.get("idempotency_key") or item.get("client_case_id") or uuid.uuid4().hex
-        
+
         # Check if already processed
         if idempotency_key in _SYNC_IDEMPOTENCY_STORE:
             duplicate_count += 1

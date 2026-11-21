@@ -1,16 +1,14 @@
 import hashlib
-import json
 import uuid
 from datetime import datetime
-from sqlalchemy import (
-    Column, String, Integer, Float, Boolean, DateTime,
-    ForeignKey, Text, JSON, Enum as SQLEnum
-)
+
+from sqlalchemy import JSON, Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
+
+from services.shared.schemas import CaseStatus, ConsentStatus, UserRole
+
 from .connection import Base
-from services.shared.schemas import (
-    UserRole, RouteDecision, CaseStatus, ConsentScope, ConsentStatus, ScamLabel
-)
+
 
 def generate_uuid() -> str:
     return str(uuid.uuid4())
@@ -147,6 +145,36 @@ class Decision(Base):
 
     case = relationship("Case", back_populates="decision")
 
+
+# ============================================================================
+# API Keys (Security)
+# ============================================================================
+
+class ApiKey(Base):
+    __tablename__ = "api_keys"
+    id = Column(String, primary_key=True, default=generate_uuid)
+    name = Column(String, nullable=False)
+    # Store only the prefix (e.g., "rk_demo_") to display; the full key is never persisted.
+    key_prefix = Column(String(12), nullable=False, index=True)
+    # SHA‑256 hash of the full key (hex string).
+    key_hash = Column(String(64), nullable=False, unique=True, index=True)
+    # Owner (admin) user reference – optional if you want to track who created it.
+    owner_user_id = Column(String, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_used_at = Column(DateTime, nullable=True)
+    revoked_at = Column(DateTime, nullable=True)
+
+    # Relationships (optional, useful for audit logs)
+    owner = relationship("User", backref="api_keys", foreign_keys=[owner_user_id])
+
+    def is_active(self) -> bool:
+        return self.revoked_at is None
+
+# End of file
+# ============================================================================
+# Review Items (Officer Queue)
+# ============================================================================
+
 class ReviewItem(Base):
     __tablename__ = "review_items"
 
@@ -184,7 +212,7 @@ class AuditLog(Base):
     def create_entry(cls, session, actor: str, action: str, target: str, result: str, request_id: str):
         last_entry = session.query(cls).order_by(cls.id.desc()).first()
         prev_hash = last_entry.current_hash if last_entry else "0" * 64
-        
+
         now = datetime.utcnow().isoformat()
         payload = f"{prev_hash}|{actor}|{action}|{target}|{result}|{request_id}|{now}"
         current_hash = hashlib.sha256(payload.encode()).hexdigest()

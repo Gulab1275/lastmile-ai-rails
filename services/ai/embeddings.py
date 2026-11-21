@@ -4,10 +4,11 @@ Generates deterministic, 384-dimensional dense semantic vectors compatible with
 pgvector vector(384) in Supabase PostgreSQL.
 Provides semantic cosine similarity across Urdu and English policy vocabulary.
 """
-import re
-import math
 import hashlib
+import math
+import re
 from typing import List, Union
+
 import numpy as np
 
 EMBEDDING_DIM = 384
@@ -20,27 +21,27 @@ POLICY_ANCHORS = [
     ("income", "آمدنی", "تنخواہ", "salary", "pkr", "روپے", "poverty", "threshold"),
     ("household", "افراد", "خاندان", "family", "members", "bache", "dependents"),
     ("disability", "معذور", "معذوری", "special_needs", "handicap"),
-    
+
     # Identification & Documents
     ("cnic", "شناختی", "شناختی_کارڈ", "nadra", "identity", "card", "biometric"),
     ("bill", "بجلی", "بل", "utility", "gas", "electricity", "document"),
     ("verification", "تصدیق", "authenticity", "clear", "photo", "blur"),
-    
+
     # Financial & Rails
     ("disbursement", "منظوری", "ادائیگی", "transfer", "payout", "grant", "funds"),
     ("raast", "راست", "state_bank", "account", "iban", "digital_payment"),
     ("limit", "حد", "زیادہ_سے_زیادہ", "maximum", "cap", "ceiling", "threshold"),
-    
+
     # Human Review & Safeguards
     ("officer", "افسر", "جائزہ", "review", "human", "queue", "investigation"),
     ("appeal", "اپیل", "درخواست", "complaint", "shikayat", "grievance"),
     ("no_rejection", "مسترد_نہیں", "zero_auto_reject", "guarantee", "protection"),
-    
+
     # Consent & Data Privacy
     ("consent", "رضامندی", "اختیار", "permission", "authorization", "scope"),
     ("revoke", "منسوخی", "واپس", "withdrawal", "opt_out", "delete", "terminate"),
     ("helper", "مددگار", "کمیونٹی", "community", "delegation", "agent"),
-    
+
     # Fraud & Anti-Scam
     ("scam", "اسکام", "جعلی", "فراڈ", "fake", "fraud", "phishing", "threat"),
     ("otp", "پن", "کوڈ", "pin", "password", "secret", "stolen", "hack"),
@@ -64,7 +65,7 @@ def generate_embedding(text: str, dim: int = EMBEDDING_DIM) -> List[float]:
     vec = np.zeros(dim, dtype=np.float32)
 
     # 1. Semantic anchor projections (first 160 dimensions)
-    anchor_span = min(len(POLICY_ANCHORS) * 8, dim // 2)
+    min(len(POLICY_ANCHORS) * 8, dim // 2)
     for i, anchor_group in enumerate(POLICY_ANCHORS):
         weight = 0.0
         for token in tokens:

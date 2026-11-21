@@ -5,9 +5,11 @@ Populates 12 bilingual policy chunks with 384-dimensional pgvector embeddings.
 import sys
 import uuid
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from sqlalchemy import text
+
 from db.connection import engine
 from services.ai.embeddings import generate_embedding
 

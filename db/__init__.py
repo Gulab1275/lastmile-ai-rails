@@ -2,11 +2,21 @@
 Database package for Rahbar.
 Managed by Naresh (Supabase Postgres & pgvector).
 """
-from .connection import get_db, engine, Base
+from .connection import Base, engine, get_db
 from .models import (
-    User, Citizen, Delegation, Consent, Case,
-    Document, Decision, RuleVersion, ReviewItem,
-    AuditLog, ScamMessage, EvalResult, PolicyChunk
+    AuditLog,
+    Case,
+    Citizen,
+    Consent,
+    Decision,
+    Delegation,
+    Document,
+    EvalResult,
+    PolicyChunk,
+    ReviewItem,
+    RuleVersion,
+    ScamMessage,
+    User,
 )
 
 __all__ = [

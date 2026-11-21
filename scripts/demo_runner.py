@@ -7,7 +7,6 @@ Run via: python scripts/demo_runner.py
 """
 
 import sys
-import time
 import uuid
 from pathlib import Path
 
@@ -15,6 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from fastapi.testclient import TestClient
+
 from services.api.main import app
 
 client = TestClient(app)
@@ -82,7 +82,7 @@ def run_demo():
     print_step(3, "Helper Mode & Consent-First Gateway", "Challenge 06: Consent & Take-Back")
     citizen_id = "cit_widow_001"
     h_helper = {"Authorization": f"Bearer {tokens['helper_shazia']}"}
-    
+
     # Helper grants consent on behalf of citizen with citizen agreement
     scopes = ["identity", "income", "bills", "helper_acting"]
     for sc in scopes:
@@ -124,7 +124,7 @@ def run_demo():
     # Step 5: Three Cases Through Deterministic Decision Engine
     # -------------------------------------------------------------
     print_step(5, "Decision Engine: Three Representative Cases", "Challenge 01: The Cost of Being Wrong & Weakest Link")
-    
+
     # Case A: Clean Claim -> Auto-Approve
     print(f"\n{BOLD}--> CASE A: Clean Claim (Widow under threshold with valid documents){RESET}")
     case_a_payload = {
@@ -215,7 +215,7 @@ def run_demo():
     # -------------------------------------------------------------
     print_step(7, "Zero-Downtime Rule Publishing & Digital Twin", "Challenge 04: Rules That Change Without Code Deploy")
     h_admin = {"Authorization": f"Bearer {tokens['admin_ayesha']}"}
-    
+
     # Simulate draft rule change: Lower income threshold to 30,000 PKR
     draft_rules = {
         "version": 99,
@@ -248,7 +248,7 @@ def run_demo():
     )
     assert r_withdraw.status_code == 200
     print(f"  [+] Revoked Consent Scope: {CYAN}income{RESET} for citizen {citizen_id}")
-    
+
     # Next call attempting to read income must be blocked immediately
     r_check = client.get(f"/api/v1/consent/status/{citizen_id}", headers=h_helper)
     remaining_active = [scope for scope, info in r_check.json().get("consents", {}).items() if info.get("granted")]

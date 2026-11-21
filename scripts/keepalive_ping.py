@@ -13,6 +13,7 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+
 from sqlalchemy import text
 
 # Add project root
@@ -27,7 +28,7 @@ def ping_database() -> bool:
     session = SessionLocal()
     try:
         start_time = time.time()
-        result = session.execute(text("SELECT 1 AS heartbeat, version() AS pg_ver;")).fetchone()
+        session.execute(text("SELECT 1 AS heartbeat, version() AS pg_ver;")).fetchone()
         latency_ms = (time.time() - start_time) * 1000
 
         # Check table count

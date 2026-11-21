@@ -4,16 +4,16 @@ Provisions tables, extensions, and initial admin rule version.
 """
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from sqlalchemy import text
-from db.connection import engine, Base, SessionLocal
+
+from db.connection import Base, SessionLocal, engine
 from db.models import (
-    User, Citizen, Delegation, Consent, Case,
-    Document, Decision, RuleVersion, ReviewItem,
-    AuditLog, ScamMessage, EvalResult, PolicyChunk
+    RuleVersion,
 )
-from services.shared.schemas import UserRole
+
 
 def init_database():
     print("[1/3] Connecting to Supabase PostgreSQL...")

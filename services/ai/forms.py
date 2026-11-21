@@ -3,11 +3,14 @@ Structured Form Extraction Pipeline (Task N8 / Challenge 07: Works for Everyone)
 Extracts validated claim fields (CNIC, name, household size, income, phone)
 from unstructured conversational Urdu / English speech transcripts.
 """
-import re
 import json
-from typing import Dict, Any, List, Optional
+import re
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
+
 from services.ai.router import route_llm
+
 
 class ExtractedClaimForm(BaseModel):
     full_name: Optional[str] = Field(None, description="Citizen full name")

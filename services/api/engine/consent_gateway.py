@@ -138,7 +138,6 @@ class ConsentGateway:
         try:
             from db.connection import SessionLocal
             from db.models import Consent as DBConsent
-            from services.shared.schemas import ConsentStatus
             with SessionLocal() as db_session:
                 db_rec = db_session.query(DBConsent).filter_by(citizen_id=citizen_id, scope=scope.value).first()
                 if db_rec:

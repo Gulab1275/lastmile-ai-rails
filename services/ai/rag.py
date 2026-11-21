@@ -3,15 +3,18 @@ Policy Q&A and Supabase pgvector RAG Pipeline (Challenge 07: Public Rails).
 Answers citizen and helper questions directly from official relief policy documents with citations.
 Powered by Supabase pgvector semantic similarity search and the multi-tier Groq LLM router.
 """
-import re
 import math
+import re
 from collections import Counter
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
 from sqlalchemy import text
+
 from db.connection import SessionLocal
 from db.models import PolicyChunk
+from services.ai.embeddings import cosine_similarity, generate_embedding
 from services.ai.router import route_llm
-from services.ai.embeddings import generate_embedding, cosine_similarity
+
 
 def compute_bm25_ranks(query: str, documents: List[str], k1: float = 1.5, b: float = 0.75) -> List[int]:
     """
@@ -148,15 +151,15 @@ def search_policy_chunks(query: str, limit: int = 3) -> List[Dict[str, Any]]:
 
     session = SessionLocal()
     results = []
-    
+
     # 1. Primary: Native Supabase pgvector Cosine Distance Query
     try:
         sql = text("""
-            SELECT 
-                id, 
-                document_name, 
-                page_number, 
-                content, 
+            SELECT
+                id,
+                document_name,
+                page_number,
+                content,
                 1 - (embedding <=> CAST(:q_emb AS vector)) AS similarity
             FROM policy_chunks
             ORDER BY embedding <=> CAST(:q_emb AS vector) ASC
@@ -171,7 +174,7 @@ def search_policy_chunks(query: str, limit: int = 3) -> List[Dict[str, Any]]:
                 "similarity": round(float(r[4]), 4) if r[4] is not None else 0.50,
                 "retrieval_mode": "supabase_pgvector"
             })
-    except Exception as e:
+    except Exception:
         # Fallback to ORM chunks query with in-memory vector comparison
         try:
             chunks = session.query(PolicyChunk).all()

@@ -7,8 +7,9 @@ Enforces non-negotiable matching rules:
 3. Different CNICs are NEVER merged under any circumstances.
 """
 import re
-from typing import Dict, Any, Tuple
-from rapidfuzz import fuzz, distance
+from typing import Any, Dict, Tuple
+
+from rapidfuzz import distance, fuzz
 
 # Common Pakistani name prefixes, variants, and honorifics
 NAME_VARIANTS = {
@@ -59,7 +60,7 @@ def compute_name_similarity(name1: str, name2: str) -> float:
     # Token-set handles reversed name orders (e.g. "Ali Muhammad" vs "Muhammad Ali")
     token_set_sim = fuzz.token_sort_ratio(n1, n2) / 100.0
     jaro_sim = distance.JaroWinkler.similarity(n1, n2)
-    
+
     # Weighted average giving high weight to token set
     return round(0.6 * token_set_sim + 0.4 * jaro_sim, 4)
 
@@ -70,7 +71,7 @@ def resolve_identity(input_claim: Dict[str, Any], registry_record: Dict[str, Any
     """
     input_cnic = clean_cnic(input_claim.get("cnic", ""))
     registry_cnic = clean_cnic(registry_record.get("cnic", ""))
-    
+
     input_name = input_claim.get("full_name", "")
     registry_name = registry_record.get("full_name", "")
 
