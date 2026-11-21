@@ -5,27 +5,26 @@ to handle phonetic variations, slang, and intentional evasion.
 """
 
 import re
-from typing import Dict
 
 # Phonetic and colloquial mappings for Pakistani SMS / WhatsApp communication
 PHONETIC_REPLACEMENTS = [
     # Repeated characters (e.g., 'soooch' -> 'soch', 'feeees' -> 'fees')
     (r"([a-zA-Z])\1{2,}", r"\1\1"),
-    
+
     # Financial / payment terms
     (r"\b(paisa|paisay|pesay|pese|paise|pesa)\b", "rupaye"),
     (r"\b(rupy|rupiye|rupaiye|rupees|rs\.?|pkr)\b", "rupaye"),
     (r"\b(feez|fess|chargis|taxx|tex)\b", "fee"),
     (r"\b(advans|adwance|adwans)\b", "advance"),
     (r"\b(easypaisa|easy_paisa|jazzcash|jazz_cash)\b", "easypaisa"),
-    
+
     # Urgency & Call to action
     (r"\b(fawran|forun|forn|fooran|jldi|jaldi|urgnt|urgent)\b", "foran"),
     (r"\b(bhejo|bhejein|bhejain|bhejna|snd|sand)\b", "bhejo"),
     (r"\b(kren|krain|karein|kro|karo)\b", "karein"),
     (r"\b(milega|milyga|miley ga|milenge|mily gy)\b", "milega"),
     (r"\b(raabta|rabta|contact|call)\b", "rabta"),
-    
+
     # Social protection & government programs
     (r"\b(ehsas|ehasas|ihsas|ihsaas)\b", "ehsaas"),
     (r"\b(benazir|benezir|bisp)\b", "benazir"),
@@ -33,7 +32,7 @@ PHONETIC_REPLACEMENTS = [
     (r"\b(hukumat|hakomat|gov|govt)\b", "hukumat"),
     (r"\b(sarif|sareef|costumer|customer)\b", "sarif"),
     (r"\b(mubarak|mubarik|mobarak|mbrk)\b", "mubarak"),
-    
+
     # Authentication & credentials
     (r"\b(passwrd|pswd|pin_code|pincode)\b", "pin"),
     (r"\b(shanakhti|shanakht|cnic_no)\b", "cnic"),

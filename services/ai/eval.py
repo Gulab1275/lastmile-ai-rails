@@ -5,9 +5,10 @@ Runs threshold sweep over synthetic cases and saves results to Supabase `eval_re
 """
 import sys
 import uuid
-import numpy as np
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any, Dict
+
+import numpy as np
 
 # Add project root
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
@@ -52,7 +53,7 @@ def run_threshold_sweep(run_id: str = None) -> Dict[str, Any]:
             # Simulated component confidence
             id_score, _, _ = resolve_identity({"cnic": c.cnic, "full_name": c.full_name}, {"cnic": c.cnic, "full_name": c.full_name})
             has_missing = c.monthly_income is None
-            
+
             comp_scores = [id_score, 0.95 if not has_missing else 0.50, 0.98, 1.0 if not has_missing else 0.30, 1.0]
             weakest = min(comp_scores)
             p_wrong = round(1.0 - weakest, 4)

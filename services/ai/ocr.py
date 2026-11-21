@@ -7,10 +7,15 @@ Performs:
 """
 import io
 import re
+from typing import Any, Dict, List
+
 import numpy as np
 from PIL import Image, ImageChops, ImageEnhance
-from typing import Dict, Any, List, Optional
-import pytesseract
+
+try:
+    import pytesseract
+except ImportError:
+    pytesseract = None
 
 BLUR_THRESHOLD = 90.0
 
@@ -23,7 +28,7 @@ def compute_blur_score(image: Image.Image) -> float:
     arr = np.array(gray, dtype=np.float64)
     if arr.shape[0] < 3 or arr.shape[1] < 3:
         return 0.0
-    
+
     # 3x3 Discrete Laplacian kernel
     laplacian = (
         -4 * arr[1:-1, 1:-1]
@@ -56,7 +61,7 @@ def compute_tamper_score(image: Image.Image) -> float:
 
         diff_arr = np.array(diff.convert("L"), dtype=np.float64)
         mean_diff = float(np.mean(diff_arr))
-        
+
         # Normalized tamper score between 0.0 and 1.0
         tamper_prob = min(1.0, mean_diff / 50.0)
         return round(tamper_prob, 3)
@@ -112,7 +117,7 @@ def extract_documents(files: List[bytes]) -> Dict[str, Any]:
     for file_bytes in files:
         try:
             image = Image.open(io.BytesIO(file_bytes))
-            
+
             # 1. Blur check
             b_score = compute_blur_score(image)
             blur_scores.append(b_score)

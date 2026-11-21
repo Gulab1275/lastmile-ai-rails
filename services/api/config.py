@@ -2,10 +2,33 @@
 Configuration settings for Rahbar API.
 Loads environment variables safely with prototype-safe defaults.
 """
+import json
 import os
 from typing import List, Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DEFAULT_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://rahbar.duckdns.org",
+    "https://rahbar-backend.duckdns.org",
+    "https://rahbar-pwa.vercel.app",
+]
+
+
+def _get_allowed_origins() -> List[str]:
+    raw = os.getenv("ALLOWED_ORIGINS")
+    if not raw:
+        return DEFAULT_ALLOWED_ORIGINS
+    try:
+        parsed = json.loads(raw)
+        if isinstance(parsed, list):
+            return [str(o) for o in parsed if str(o) != "*"]
+    except (json.JSONDecodeError, ValueError):
+        pass
+    # Fallback to comma-separated list
+    return [o.strip() for o in raw.split(",") if o.strip() and o.strip() != "*"]
 
 
 class Settings(BaseSettings):
@@ -30,13 +53,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     ALGORITHM: str = "HS256"
 
-    ALLOWED_ORIGINS: List[str] = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "https://rahbar.duckdns.org",
-        "https://rahbar-pwa.vercel.app",
-        "*"
-    ]
+    ALLOWED_ORIGINS: List[str] = _get_allowed_origins()
 
     AUDIT_CHECKPOINT_KEY: Optional[str] = os.getenv("AUDIT_CHECKPOINT_KEY", None)
 

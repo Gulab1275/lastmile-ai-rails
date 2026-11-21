@@ -3,7 +3,7 @@
 # Domain: rahbar.duckdns.org (or configured via environment)
 # ==============================================================================
 
-{$DOMAIN:rahbar.duckdns.org} {
+ rahbar-backend.duckdns.org {
     # Reverse proxy to FastAPI API service
     reverse_proxy api:8000 {
         header_up Host {host}

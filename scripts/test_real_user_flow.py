@@ -9,9 +9,9 @@ Simulates realistic end-user interactions across 6 distinct personas:
 6. Auditor (Cryptographic Audit Ledger Verification)
 """
 import sys
-import json
-import requests
 from pathlib import Path
+
+import requests
 
 # Add project root to path
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -31,7 +31,7 @@ def log_step(step: str, detail: str = ""):
 
 def test_persona_widow():
     log_header("Persona 1: Widow Intake (Parveen Bibi) — Voice, Form & Auto-Approval")
-    
+
     # 1. Citizen registers / logs in
     log_step("Citizen logs in to receive auth token")
     login_res = requests.post(
@@ -39,7 +39,7 @@ def test_persona_widow():
         json={"username": "citizen_parveen", "password": "password123"}
     )
     if login_res.status_code != 200:
-        reg_res = requests.post(
+        requests.post(
             f"{BASE_URL}/api/v1/auth/register",
             json={
                 "username": "citizen_parveen",
@@ -52,10 +52,10 @@ def test_persona_widow():
             f"{BASE_URL}/api/v1/auth/login",
             json={"username": "citizen_parveen", "password": "password123"}
         )
-    
+
     token = login_res.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
-    print(f"       -> Logged in successfully as 'citizen_parveen'. Access token received.")
+    print("       -> Logged in successfully as 'citizen_parveen'. Access token received.")
 
     # 2. Conversational Urdu Voice Transcript Extraction
     log_step("Real conversational Urdu speech received from microphone")
@@ -64,13 +64,13 @@ def test_persona_widow():
         "میرے 4 بچے ہیں اور ماہانہ آمدنی 25,000 روپے ہے۔ بیوہ کفالت امداد کے لیے درخواست ہے۔"
     )
     print(f"       Spoken Urdu: \"{raw_speech}\"")
-    
+
     extract_res = requests.post(
         f"{BASE_URL}/api/v1/ai/extract-form",
         json={"text": raw_speech}
     )
     extracted = extract_res.json()
-    print(f"       -> Structured Pydantic Extraction:")
+    print("       -> Structured Pydantic Extraction:")
     print(f"          * Name:           {extracted.get('full_name')}")
     print(f"          * CNIC:           {extracted.get('cnic')}")
     print(f"          * Monthly Income: PKR {extracted.get('monthly_income', 0):,}")
@@ -132,7 +132,7 @@ def test_persona_widow():
 
 def test_persona_blurry_edge_case():
     log_header("Persona 2: Edge-Case Citizen (Sakina Mai) — Blurry ID & Safe Hand-Off")
-    
+
     log_step("Simulating upload of heavily degraded / blurred CNIC card")
     sample_blurry_path = ROOT_DIR / "seed/sample_docs/cnic_blurry.png"
     if sample_blurry_path.exists():
@@ -156,7 +156,7 @@ def test_persona_blurry_edge_case():
 
 def test_persona_shopkeeper():
     log_header("Persona 3: Shopkeeper (Abdul Sattar) — Real Scam SMS Verification")
-    
+
     # 1. Malicious Scam SMS
     phishing_sms = (
         "مبارک ہو! آپ کو بے نظیر انکم سپورٹ پروگرام سے 50,000 روپے کی امداد جاری ہو چکی ہے۔ "
@@ -164,7 +164,7 @@ def test_persona_shopkeeper():
     )
     log_step("Checking suspicious SMS received on shopkeeper's phone")
     print(f"       Message: \"{phishing_sms[:75]}...\"")
-    
+
     res1 = requests.post(f"{BASE_URL}/api/v1/ai/scam-check", json={"text": phishing_sms})
     data1 = res1.json()
     print(f"       -> Classification:  {data1.get('label', '').upper()}")
@@ -204,7 +204,7 @@ def test_persona_policy_seeker():
     data1 = res1.json()
     print(f"       -> Retrieval Engine:        {data1.get('retrieval_mode', 'hybrid_rrf_pgvector').upper()}")
     print(f"       -> Official Answer (Urdu):\n          {data1.get('answer', '')[:180]}...")
-    print(f"       -> Sources & Citations:")
+    print("       -> Sources & Citations:")
     for s in data1.get("sources", []):
         print(f"          * Document: {s.get('document_name')} | Page: {s.get('page_number')} (Similarity: {s.get('similarity', 0.0):.2f})")
 
@@ -214,13 +214,13 @@ def test_persona_policy_seeker():
     res2 = requests.post(f"{BASE_URL}/api/v1/ai/ask", json={"question": en_q})
     data2 = res2.json()
     print(f"       -> Official Answer (English):\n          {data2.get('answer', '')[:180]}...")
-    print(f"       -> Sources & Citations:")
+    print("       -> Sources & Citations:")
     for s in data2.get("sources", []):
         print(f"          * Document: {s.get('document_name')} | Page: {s.get('page_number')} (Similarity: {s.get('similarity', 0.0):.2f})")
 
 def test_persona_helper_consent():
     log_header("Persona 5: Community Helper (Shazia Akram) — Delegated Consent & Privacy")
-    
+
     # Login as Helper
     log_step("Community Helper logs in")
     res = requests.post(
@@ -266,11 +266,11 @@ def test_persona_helper_consent():
     consents_map = status_after.json().get("consents", {})
     income_scope = consents_map.get("income", {})
     print(f"       -> Income scope granted: {income_scope.get('granted')} | Revoked at: {income_scope.get('revoked_at')}")
-    print(f"       -> Privacy Guarantee: Scope is marked revoked immediately!")
+    print("       -> Privacy Guarantee: Scope is marked revoked immediately!")
 
 def test_persona_auditor():
     log_header("Persona 6: Government Auditor — Cryptographic Hash Chain Verification")
-    
+
     # 1. Auditor logs in
     log_step("Auditor logs in with RBAC auditor privileges")
     login_res = requests.post(
@@ -297,7 +297,7 @@ def test_persona_auditor():
     entries = res.json()
     for i, e in enumerate(entries[:5]):
         print(f"       Block #{i+1:02d} | Action: {e.get('action'):<24} | Hash: {e.get('current_hash', '')[:16]}... | Prev: {e.get('prev_hash', '')[:16]}...")
-    
+
     # Query Supabase DB directly to verify dual-persistence
     log_step("Cross-verifying ledger blocks against Supabase Postgres directly")
     from db.connection import SessionLocal
@@ -306,7 +306,7 @@ def test_persona_auditor():
         db_audit_count = db.query(AuditLog).count()
         db_case_count = db.query(Case).count()
         db_citizen_count = db.query(Citizen).count()
-        print(f"       -> Supabase Live DB Verification:")
+        print("       -> Supabase Live DB Verification:")
         print(f"          * Audit Log entries in Supabase: {db_audit_count}")
         print(f"          * Cases in Supabase:             {db_case_count}")
         print(f"          * Citizens in Supabase:          {db_citizen_count}")
@@ -316,7 +316,7 @@ def main():
     print("   RAHBAR (رہبر) — END-TO-END REAL USER SIMULATION")
     print("   Testing all 6 hackathon user personas against live API & Supabase")
     print("=" * 70)
-    
+
     try:
         test_persona_widow()
         test_persona_blurry_edge_case()
@@ -324,7 +324,7 @@ def main():
         test_persona_policy_seeker()
         test_persona_helper_consent()
         test_persona_auditor()
-        
+
         print("\n" + "=" * 70)
         print("  ALL 6 REAL USER SCENARIOS EXECUTED & FULLY VERIFIED!")
         print("=" * 70)

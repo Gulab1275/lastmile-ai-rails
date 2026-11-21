@@ -10,6 +10,7 @@ Implements:
 """
 
 from typing import Any, Dict, List, Optional
+
 import numpy as np
 from sklearn.ensemble import IsolationForest
 
@@ -84,7 +85,7 @@ def detect_claim_anomalies(
     # 1. Deterministic Heuristics
     cnic = str(claim.get("cnic", "")).strip()
     phone = str(claim.get("phone", "")).strip().replace("-", "").replace(" ", "")
-    helper_id = claim.get("helper_id")
+    claim.get("helper_id")
     requested_amount = float(claim.get("requested_amount") or 10000.0)
     monthly_income = float(claim.get("monthly_income") or 25000.0)
     helper_velocity = int(claim.get("helper_velocity_24h") or 1)
@@ -132,7 +133,7 @@ def detect_claim_anomalies(
     # 2. Machine Learning Outlier Detection (IsolationForest)
     features = extract_claim_features(claim)
     features_2d = features.reshape(1, -1)
-    
+
     # isolation forest decision_function: lower means more abnormal
     raw_score = float(_ISO_FOREST.decision_function(features_2d)[0])
     prediction = int(_ISO_FOREST.predict(features_2d)[0])  # -1 is anomaly, 1 is inlier

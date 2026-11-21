@@ -41,6 +41,11 @@ ENV PYTHONUNBUFFERED=1
 # Copy application code (owned by rahbar)
 COPY --chown=rahbar:rahbar services/ /app/services/
 COPY --chown=rahbar:rahbar mock/ /app/mock/
+COPY --chown=rahbar:rahbar db/ /app/db/
+COPY --chown=rahbar:rahbar alembic.ini /app/alembic.ini
+COPY --chown=rahbar:rahbar migrations/ /app/migrations/
+# Let the non-root user create runtime folders (e.g. /app/audio_cache)
+RUN mkdir -p /app/audio_cache && chown rahbar:rahbar /app /app/audio_cache
 
 # Drop privileges
 USER rahbar
@@ -50,4 +55,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8000/api/v1/health || exit 1
 
-CMD ["uvicorn", "services.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+CMD ["/home/rahbar/.local/bin/uvicorn", "services.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]

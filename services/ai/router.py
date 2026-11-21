@@ -4,12 +4,13 @@ Tier 1: Groq (qwen/qwen3.8-27b / openai/gpt-oss-120b) - primary, ultra-fast, mul
 Tier 2: Google Gemini (gemini-1.5-flash) - secondary fallback.
 Tier 3: Deterministic Safety Fallback - offline / zero-rate-limit guaranteed fallback.
 """
-import os
-import json
 import hashlib
+import json
+import os
 import time
-from typing import Dict, Any, List, Optional
 from pathlib import Path
+from typing import Any, Dict, List
+
 from dotenv import load_dotenv
 
 # Load environment
@@ -34,7 +35,7 @@ def call_groq(messages: List[Dict[str, str]], temperature: float = 0.2) -> Dict[
     if not GROQ_API_KEY:
         raise ValueError("GROQ_API_KEY not configured")
     client = Groq(api_key=GROQ_API_KEY)
-    
+
     last_err = None
     for model_name in GROQ_MODELS:
         try:
@@ -58,18 +59,18 @@ def call_gemini(messages: List[Dict[str, str]], temperature: float = 0.2) -> Dic
     import urllib.request
     if not GEMINI_API_KEY or not GEMINI_API_KEY.startswith("AIzaSy"):
         raise ValueError("GEMINI_API_KEY is not a valid Google AI Studio key (must start with AIzaSy)")
-    
+
     contents = []
     for msg in messages:
         role = "user" if msg["role"] in ["user", "system"] else "model"
         contents.append({"role": role, "parts": [{"text": msg["content"]}]})
-    
+
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
     payload = json.dumps({
         "contents": contents,
         "generationConfig": {"temperature": temperature, "maxOutputTokens": 1024}
     }).encode("utf-8")
-    
+
     req = urllib.request.Request(
         url,
         data=payload,

@@ -15,8 +15,8 @@ Validates the entire demo script across all 5 roles and 8 hackathon challenges:
 12. Observability Metrics & Cost Sweep Curves
 """
 
-import uuid
 from fastapi.testclient import TestClient
+
 from services.api.main import app
 
 client = TestClient(app)

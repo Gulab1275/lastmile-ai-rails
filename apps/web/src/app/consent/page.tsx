@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { UserCheck, Wallet, Receipt, Users, Volume2 } from "lucide-react";
+import Link from "next/link";
+import { UserCheck, Wallet, Receipt, Users, Volume2, ShieldX, ShieldCheck } from "lucide-react";
 import AppShell from "@/components/appShell";
 import api, { type ApiError, type ConsentScope, type ConsentStatus } from "@/lib/api";
-import { getActiveCitizenId, speak } from "@/lib/session";
+import { getActiveCitizenId, getSession, speak } from "@/lib/session";
 
 const SCOPES: {
   scope: ConsentScope; icon: React.ReactNode;
@@ -20,11 +21,21 @@ const SCOPES: {
     descUr: "آپ کا مددگار آپ کی جگہ فارم بھر سکتا ہے۔", descEn: "Your helper can fill forms on your behalf." },
 ];
 
+type Probe =
+  | { kind: "allowed"; caseId: string }
+  | { kind: "blocked"; err: ApiError }
+  | { kind: "none" }
+  | { kind: "error"; err: ApiError };
+
 export default function ConsentPage() {
+  const [role, setRole] = useState("");
   const [citizenId, setCitizenId] = useState("");
   const [status, setStatus] = useState<ConsentStatus | null>(null);
   const [busy, setBusy] = useState<string>("");
   const [error, setError] = useState("");
+  const [withdrew, setWithdrew] = useState(false);
+  const [probe, setProbe] = useState<Probe | null>(null);
+  const [probing, setProbing] = useState(false);
 
   const load = useCallback(async (id: string) => {
     try {
@@ -38,15 +49,18 @@ export default function ConsentPage() {
   useEffect(() => {
     const id = getActiveCitizenId();
     setCitizenId(id);
+    setRole(getSession()?.role ?? "");
     if (id) load(id);
   }, [load]);
 
   async function toggle(scope: ConsentScope, isOn: boolean) {
     setBusy(scope);
     setError("");
+    setProbe(null);
     try {
       if (isOn) await api.withdrawConsent(citizenId, scope);
       else await api.grantConsent(citizenId, scope);
+      setWithdrew(isOn);
       await load(citizenId);
     } catch (e) {
       const err = e as ApiError;
@@ -56,9 +70,32 @@ export default function ConsentPage() {
     }
   }
 
+  // Challenge 06: try to read this family's case the way a helper would.
+  async function checkAccess() {
+    setProbing(true);
+    setProbe(null);
+    try {
+      const mine = (await api.listCases()).filter((c) => c.citizen_id === citizenId);
+      if (mine.length === 0) { setProbe({ kind: "none" }); return; }
+      await api.getCase(mine[0].id);
+      setProbe({ kind: "allowed", caseId: mine[0].id });
+    } catch (e) {
+      const err = e as ApiError;
+      setProbe(err.status === 403 ? { kind: "blocked", err } : { kind: "error", err });
+    } finally {
+      setProbing(false);
+    }
+  }
+
   return (
     <AppShell title="میرا ڈیٹا · My Data & Consent">
       {error && <p className="bg-red-100 text-red-700 rounded-2xl p-3 font-bold">{error}</p>}
+
+      {withdrew && (
+        <p className="bg-amber-100 text-amber-900 rounded-2xl p-3 font-bold">
+          اجازت واپس لے لی گئی۔ اب مددگار یہ ڈیٹا نہیں دیکھ سکتا۔ · Consent withdrawn. From now on anyone reading this data is blocked instantly (HTTP 403).
+        </p>
+      )}
 
       <div className="grid gap-4">
         {SCOPES.map((s) => {
@@ -111,9 +148,46 @@ export default function ConsentPage() {
         <p className="font-bold text-emerald-900">
           اس وقت فعال · Currently shared: {status?.active_scopes.length ?? 0}
         </p>
-        <p className="text-sm text-emerald-800">
-          Every change is written to the tamper-proof audit log.
-        </p>
+        <p className="text-sm text-emerald-800">Every change is written to the tamper-proof audit log.</p>
+      </div>
+
+      {/* ---- Challenge 06: proof that withdrawn consent really blocks access ---- */}
+      <div className="bg-white rounded-3xl shadow p-5 space-y-3 border-2 border-sky-300">
+        <p className="text-xl font-bold">رسائی کی جانچ · Access check</p>
+        {role === "helper" ? (
+          <>
+            <p className="text-gray-600">
+              Withdraw “Share my identity” above, then press the button. The server must refuse to show this family’s case.
+            </p>
+            <button onClick={checkAccess} disabled={probing || !citizenId} className="w-full h-14 rounded-2xl bg-sky-600 text-white text-lg font-bold disabled:opacity-40">
+              {probing ? "..." : "Try to read this family’s case"}
+            </button>
+            {probe?.kind === "blocked" && (
+              <div className="rounded-2xl bg-red-100 text-red-900 p-4 flex gap-3">
+                <ShieldX className="w-12 h-12 shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-2xl font-bold">HTTP {probe.err.status} — ACCESS BLOCKED</p>
+                  {probe.err.code && <p className="font-mono text-sm">{probe.err.code}</p>}
+                  {probe.err.message_ur && <p className="text-lg">{probe.err.message_ur}</p>}
+                  <p>{probe.err.message_en}</p>
+                  <p className="text-sm">The blocked attempt is recorded in the audit log.</p>
+                </div>
+              </div>
+            )}
+            {probe?.kind === "allowed" && (
+              <div className="rounded-2xl bg-emerald-100 text-emerald-900 p-4 flex gap-3 items-center">
+                <ShieldCheck className="w-12 h-12 shrink-0" />
+                <p className="font-bold">Allowed — consent is active, so case {probe.caseId} can be read.</p>
+              </div>
+            )}
+            {probe?.kind === "none" && <p className="bg-amber-100 rounded-2xl p-3">This family has no case yet. Create one in <Link href="/apply" className="underline font-bold">Apply</Link> first.</p>}
+            {probe?.kind === "error" && <p className="bg-red-100 text-red-700 rounded-2xl p-3 font-bold">{probe.err.message_en ?? "Could not run the check"}</p>}
+          </>
+        ) : (
+          <p className="text-gray-600">
+            After you withdraw consent, your helper is blocked instantly. To see it: log in as <b>helper_shazia</b>, open Families → Parveen Bibi → Consent, and press “Try to read this family’s case”. The server answers <b>HTTP 403</b>.
+          </p>
+        )}
       </div>
     </AppShell>
   );

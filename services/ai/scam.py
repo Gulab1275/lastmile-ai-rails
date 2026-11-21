@@ -8,12 +8,14 @@ Enhanced in Production Security Hardening Mission 2:
 - Official anti-scam warning detection and utility bill dampening.
 """
 import re
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.calibration import CalibratedClassifierCV
-from services.shared.schemas import ScamLabel
+
 from services.ai.normalizer import normalize_roman_urdu
+from services.shared.schemas import ScamLabel
 
 # Rule patterns and trigger explanations
 SCAM_INDICATORS = [
@@ -82,7 +84,7 @@ class ScamClassifier:
         self.vectorizer = TfidfVectorizer(ngram_range=(1, 2), min_df=1)
         texts = [x[0] for x in TRAIN_DATA]
         labels = [x[1] for x in TRAIN_DATA]
-        
+
         X = self.vectorizer.fit_transform(texts)
         base_lr = LogisticRegression(C=1.0, max_iter=200)
         self.model = CalibratedClassifierCV(estimator=base_lr, cv=2, n_jobs=1)
