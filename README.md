@@ -43,6 +43,7 @@ As required by the hackathon rubric, here is the transparent breakdown of real p
 | **Scam Detection** | **REAL** Calibrated Logistic Regression + TF-IDF with explainable tags | None | Protects shopkeepers against fake relief payment SMS scams. |
 | **Document OCR & Tamper** | **REAL** Tesseract + Laplacian blur variance + ELA tamper scoring | None | Computer vision verification for low-quality photos. |
 | **Conversational Form Extraction** | **REAL** Pydantic-validated parsing from Urdu/English transcripts | None | Transforms unstructured speech into structured claim records. |
+| **Semantic Policy RAG (Task N9)** | **REAL** Supabase pgvector 384-D cosine distance search + bilingual citations | None | Authoritative policy answers citing document name and page number. |
 | **Autonomous LangGraph Agent** | **REAL** StateGraph workflow with MemorySaver session checkpointing | None | Manages intake, checks, rules, and token-gated payouts. |
 | **Anomaly Detection (Task N13)**| **REAL** Scikit-learn IsolationForest + helper velocity checks | None | Detects repeat claim bursts, income discrepancies, and fraud. |
 | **Scam Map Intelligence** | **REAL** Regional threat clustering (Karachi/Sindh GPS hotspots) | None | Geo-spatial threat heatmap and tactical taxonomy for shopkeepers. |
@@ -214,9 +215,9 @@ curl http://localhost:8000/api/v1/health
 ### 7.10 AI, Voice & Autonomous Agent Endpoints
 - `POST /api/v1/ai/scam-check`: Real-time SMS/WhatsApp scam classification with calibrated confidence and trigger reasons.
 - `POST /api/v1/ai/ocr`: Laplacian blur gate (<90 rejected), ELA tamper scoring, and regex CNIC/bill extraction.
-- `POST /api/v1/ai/voice/stt`: Groq Whisper large-v3 speech-to-text in Urdu and English.
+- `POST /api/v1/ai/voice/stt`: Groq Whisper large-v3 speech-to-text in Urdu and English with silence hallucination filter.
 - `POST /api/v1/ai/voice/tts`: Edge-TTS Urdu neural speech synthesis (`ur-PK-UzmaNeural`) with disk caching.
-- `POST /api/v1/ai/ask`: Official policy guidelines RAG Q&A with document and page citations.
+- `POST /api/v1/ai/ask`: Official policy guidelines RAG Q&A with Supabase `pgvector` 384-D cosine distance search and exact document citations.
 - `POST /api/v1/ai/extract-form`: Pydantic structured output conversion from conversational speech transcripts.
 - `POST /api/v1/ai/agent/run`: LangGraph checkpointed relief claim workflow with gated payout token enforcement.
 - `POST /api/v1/ai/anomaly-check`: IsolationForest anomaly detector flagging repeat bursts, income outliers, and helper velocity spikes.
@@ -227,13 +228,14 @@ curl http://localhost:8000/api/v1/health
 
 ### 7.11 Interactive PWA Web Application (`/app`)
 - `GET /app`: Full single-page interactive PWA dashboard in Urdu RTL (`Noto Nastaliq Urdu`) + Tailwind CSS.
-  - **Tab 1: Widow Voice Intake** — Microphone simulation, Whisper transcription, document blur scores, and instant decision engine output.
+  - **Tab 1: Widow Voice Intake** — Microphone recording with live Web Audio volume visualizer, Whisper transcription, document blur scores, and spoken AI agent reply.
   - **Tab 2: Community Helper Mode** — 40-family 2-tap switcher, offline simulation toggle, and granular consent scope cards.
   - **Tab 3: Shopkeeper Scam Filter & Heatmap** — Phishing SMS classifier and Karachi regional GPS cluster threat heatmap.
   - **Tab 4: Officer Review Queue** — Human-in-the-loop triage table with one-click approve/reject actions and handoff packets.
   - **Tab 5: Admin Digital Twin** — Real-time eligibility rule slider simulation and live rule publishing without server restarts.
   - **Tab 6: Auditor Ledger Explorer** — Tamper-evident SHA-256 hash-chained block explorer.
   - **Tab 7: Model Observability Dashboard** — Empirical accuracy, optimal auto-approval threshold curve ($p \le 0.05$), and LPU speed metrics.
+  - **Tab 8: Policy RAG Q&A** — Bilingual semantic policy exploration powered by Supabase `pgvector`, quick prompt chips, citations, and Edge-TTS spoken playback.
 - `GET /static/manifest.json`: Web app manifest for standalone mobile/desktop PWA installation.
 - `GET /static/sw.js`: Service worker implementing offline network-first asset caching.
 
@@ -243,7 +245,7 @@ curl http://localhost:8000/api/v1/health
 
 The test suite covers 100% of the platform and backend deliverables:
 - `tests/test_web_app.py`: 4 tests verifying `/app` single-page dashboard serving, root redirects, PWA `manifest.json`, offline service worker `sw.js`, and demo audio sample assets.
-- `tests/test_ai_services.py`: 15 automated tests for STT/TTS with WebM/WAV detection, OCR blur gate, scam detection, RAG policy Q&A, form extraction, LangGraph ReAct agent with tool calling and thought chains, IsolationForest anomalies, scam map clusters, eval metrics, and offline batch deduplication.
+- `tests/test_ai_services.py`: 17 automated tests for STT/TTS with WebM/WAV detection, OCR blur gate, scam detection, 384-D semantic embeddings, Supabase `pgvector` policy RAG in English & Urdu, form extraction, LangGraph ReAct agent with tool calling and thought chains, IsolationForest anomalies, scam map clusters, eval metrics, and offline batch deduplication.
 - `tests/test_auth_rbac.py`: JWT login, refresh tokens, and server-side RBAC enforcement (HTTP 403).
 - `tests/test_rules_engine.py`: Versioned eligibility rules, condition firing traces, dynamic publishing.
 - `tests/test_decision_engine.py`: Weakest-link confidence calculation ($\min(\text{components})$), cost-matrix thresholds, no auto-rejection guarantee.
@@ -257,7 +259,7 @@ The test suite covers 100% of the platform and backend deliverables:
 To run:
 ```bash
 python -m pytest tests/ -v
-# Output: 44 passed in 6.26s (100% passing)
+# Output: 46 passed in 8.08s (100% passing)
 ```
 
 ### 8.1 Official Hackathon Judging Walkthrough
