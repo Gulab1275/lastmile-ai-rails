@@ -12,6 +12,10 @@ def test_consent_grant_and_check():
     gateway = ConsentGateway()
     citizen_id = "cit_123"
 
+    # Reset any existing persistent state from prior test runs
+    if gateway.check_consent(citizen_id, ConsentScope.IDENTITY):
+        gateway.withdraw_consent(citizen_id, ConsentScope.IDENTITY)
+
     assert gateway.check_consent(citizen_id, ConsentScope.IDENTITY) is False
 
     record = gateway.grant_consent(citizen_id, ConsentScope.IDENTITY)
