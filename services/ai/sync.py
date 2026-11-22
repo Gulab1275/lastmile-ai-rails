@@ -84,21 +84,50 @@ def process_offline_sync_batch(
                 })
                 continue
 
+            # Section 4 Guard: Identify citizen and verify consent before ANY protected processing
             citizen_id = item.get("citizen_id") or citizen_data.get("citizen_id")
-            if citizen_id:
-                has_consent = consent_gateway.check_consent(
-                    citizen_id=citizen_id,
-                    scope=ConsentScope.HELPER_ACTING,
-                    acting_helper_id=helper_id
-                )
-                if not has_consent:
-                    failed_count += 1
-                    results.append({
-                        "idempotency_key": idempotency_key,
-                        "status": "SYNC_FAILED_CONSENT_REVOKED",
-                        "error": f"Active consent for scope HELPER_ACTING not found or revoked for citizen {citizen_id}."
-                    })
-                    continue
+            if not citizen_id and cnic:
+                from db.connection import SessionLocal
+                from db.models import Citizen as DBCitizen
+                try:
+                    with SessionLocal() as db_session:
+                        matched_citizens = db_session.query(DBCitizen).filter_by(cnic=cnic).all()
+                        if len(matched_citizens) == 1:
+                            citizen_id = matched_citizens[0].id
+                        elif len(matched_citizens) > 1:
+                            failed_count += 1
+                            results.append({
+                                "idempotency_key": idempotency_key,
+                                "status": "SYNC_FAILED_AMBIGUOUS_IDENTITY",
+                                "error": "Multiple citizen records matched CNIC. Ambiguous identity cannot be synced."
+                            })
+                            continue
+                except Exception:
+                    pass
+
+            if not citizen_id:
+                failed_count += 1
+                results.append({
+                    "idempotency_key": idempotency_key,
+                    "status": "SYNC_FAILED_IDENTITY_UNVERIFIED",
+                    "error": "Missing or unverifiable citizen identity. Offline sync requires verified citizen registration."
+                })
+                continue
+
+            # Always enforce active consent for the verified citizen
+            has_consent = consent_gateway.check_consent(
+                citizen_id=citizen_id,
+                scope=ConsentScope.HELPER_ACTING,
+                acting_helper_id=helper_id
+            )
+            if not has_consent:
+                failed_count += 1
+                results.append({
+                    "idempotency_key": idempotency_key,
+                    "status": "SYNC_FAILED_CONSENT_REVOKED",
+                    "error": f"Active consent for scope HELPER_ACTING not found or revoked for citizen {citizen_id}."
+                })
+                continue
 
             case_id = f"case_sync_{uuid.uuid4().hex[:8]}"
 
