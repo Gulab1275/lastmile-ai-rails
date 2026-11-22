@@ -7,7 +7,7 @@
 **An AI-on-Public-Rails Digital Relief Platform Built for Non-Literate Citizens, Field Helpers, and Sovereign Oversight**
 
 [![CI](https://github.com/Naresh-Kumar17/lastmile-ai-rails/actions/workflows/ci.yml/badge.svg)](https://github.com/Naresh-Kumar17/lastmile-ai-rails/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/Tests-456%2F456%20Passed-16A34A?style=flat-square&logo=pytest)](https://github.com/Naresh-Kumar17/lastmile-ai-rails/actions)
+[![Tests](https://img.shields.io/badge/Tests-462%2F462%20Passed-16A34A?style=flat-square&logo=pytest)](https://github.com/Naresh-Kumar17/lastmile-ai-rails/actions)
 [![AWS](https://img.shields.io/badge/AWS-EC2%20Deployed-FF9900?style=flat-square&logo=amazon-aws&logoColor=white)](https://rahbar-backend.duckdns.org)
 [![Next.js](https://img.shields.io/badge/Next.js-14.2%20App%20Router-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%20Asynchronous-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
@@ -171,10 +171,11 @@ The system comes pre-seeded with accounts covering all 5 user roles (Password: `
 | Role | Username | Password | Purpose & Capabilities |
 | :--- | :--- | :--- | :--- |
 | **Citizen (Widow)** | `citizen_parveen` | `password123` | Submit claims via voice, track status, view/withdraw granular consent. |
-| **Community Helper** | `helper_tariq` | `password123` | Manage 40 families, switch context, draft claims, upload documents. |
-| **Department Officer**| `officer_rashid` | `password123` | Review borderline claims, triage queues, approve or reject with written reason. |
-| **Administrator** | `admin_system` | `password123` | Edit eligibility rulebooks, simulate Digital Twin, manage API keys. |
-| **Auditor** | `auditor_zainab` | `password123` | Verify SHA-256 hash chain integrity, inspect tamper alerts, audit history. |
+| **Citizen (Shopkeeper)** | `citizen_tariq` | `password123` | Phishing check, check SMS spam, track relief grant applications. |
+| **Community Helper** | `helper_shazia` | `password123` | Manage 40 families, switch context, draft claims, upload documents. |
+| **Department Officer**| `officer_aslam` | `password123` | Review borderline claims, triage queues, approve or reject with written reason. |
+| **Administrator** | `admin_ayesha` | `password123` | Edit eligibility rulebooks, simulate Digital Twin, manage API keys. |
+| **Auditor** | `auditor_iqbal` | `password123` | Verify SHA-256 hash chain integrity, inspect tamper alerts, audit history. |
 
 ---
 
@@ -198,7 +199,7 @@ lastmile-ai-rails/
 │   ├── ai/                    # Whisper STT, Edge-TTS, RAG, Form Parser, Scam Classifier
 │   ├── api/                   # FastAPI Gateway, RBAC security, rules engine, consent gateway
 │   └── shared/                # Pydantic contract schemas shared across all services
-└── tests/                     # 456 Automated tests (Adversarial, Security, Integration, AI)
+└── tests/                     # 462 Automated tests (Adversarial, Security, Integration, AI)
 ```
 
 ---
@@ -288,7 +289,7 @@ docker-compose -f infra/docker-compose.yml up --build
 
 ## 10. Automated Testing & Quality Assurance
 
-The codebase includes **456 automated tests** covering adversarial edge cases, cryptographic verification, prompt injection resistance, and end-to-end integration:
+The codebase includes **462 automated tests** covering adversarial edge cases, cryptographic verification, prompt injection resistance, and end-to-end integration:
 
 ```bash
 # Run complete test suite
@@ -306,7 +307,7 @@ cd apps/web && npm run lint && npm run build
 ================================ test session starts ================================
 platform win32 -- Python 3.11.9, pytest-9.1.1, pluggy-1.6.0
 rootdir: E:\last-mile-ai-rails
-collected 456 items
+collected 462 items
 
 tests/adversarial/test_agent_tool_safety.py ..........                        [  2%]
 tests/adversarial/test_consent_authorization_hardening.py ...........         [  7%]
@@ -317,12 +318,13 @@ tests/adversarial/test_mission_8a_3_remediation.py ..............             [ 
 tests/adversarial/test_rag_policy_attacks.py ..........                       [ 28%]
 tests/adversarial/test_voice_confusion.py ..........                          [ 42%]
 tests/independent_verification/test_phase3_prompt_injection_30.py .......... [ 57%]
-tests/test_ai_services.py ....................                                [ 91%]
+tests/test_audit_chain_regression.py ......                                   [ 92%]
+tests/test_ai_services.py ....................                                [ 93%]
 tests/test_auth_rbac.py ......                                                [ 94%]
 tests/test_decision_engine.py .....                                           [ 96%]
 tests/test_web_app.py ....                                                    [100%]
 
-======================= 456 passed, 1 warning in 37.88s =======================
+======================= 462 passed, 1 warning in 30.37s =======================
 ```
 
 ---
