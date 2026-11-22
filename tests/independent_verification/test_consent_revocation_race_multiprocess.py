@@ -17,16 +17,20 @@ def worker_b_revoker_process(citizen_id: str, scope: ConsentScope, barrier, retu
     try:
         gw_b = ConsentGateway()
         # Wait for Worker A to begin protected data retrieval
-        barrier.wait()
+        barrier.wait(timeout=10)
 
-        # Worker B revokes consent in PostgreSQL
-        gw_b.withdraw_consent(citizen_id, scope, actor_id="worker_b", actor_role=RoleEnum.CITIZEN)
+        # Worker B simulates authenticated citizen revoking consent in PostgreSQL
+        gw_b.withdraw_consent(citizen_id, scope, actor_id=citizen_id, actor_role=RoleEnum.CITIZEN)
         return_dict["revocation_committed"] = True
 
         # Signal Worker A that revocation is committed
-        barrier.wait()
+        barrier.wait(timeout=10)
     except Exception as e:
         return_dict["worker_b_error"] = str(e)
+        try:
+            barrier.abort()
+        except Exception:
+            pass
 
 
 def test_multiprocess_consent_revocation_race_blocks_in_progress_worker():
@@ -57,10 +61,10 @@ def test_multiprocess_consent_revocation_race_blocks_in_progress_worker():
     assert gw_a.check_consent(citizen_id, scope) is True
 
     # Signal Worker B to execute revocation mid-flight
-    barrier.wait()
+    barrier.wait(timeout=10)
 
     # Wait for Worker B to commit revocation to PostgreSQL
-    barrier.wait()
+    barrier.wait(timeout=10)
     p_b.join(timeout=10)
 
     assert shared_state.get("revocation_committed") is True, f"Worker B failed: {shared_state.get('worker_b_error')}"

@@ -32,12 +32,12 @@ def test_deleting_newest_record_detected_via_signed_checkpoint():
     e2 = ledger.append("admin", RoleEnum.ADMIN, "CHK_ACTION_B", "RES_CHK_B", {"seq": 2})
 
     # Create signed checkpoint anchoring the tip
-    checkpoint = ledger.create_signed_checkpoint(secret_key="airgap-audit-key-test")
+    checkpoint = ledger.create_signed_checkpoint(secret_key="airgap-audit-key-test-min-32chars-suite")
     assert checkpoint["height"] >= 2
     assert checkpoint["head_hash"] == e2.current_hash
 
     # Verify checkpoint passes against untampered database
-    check_res = ledger.verify_checkpoint(checkpoint, secret_key="airgap-audit-key-test")
+    check_res = ledger.verify_checkpoint(checkpoint, secret_key="airgap-audit-key-test-min-32chars-suite")
     assert check_res["is_valid"] is True
 
     # Attacker deletes the newest record (e2) from PostgreSQL
@@ -60,7 +60,7 @@ def test_deleting_newest_record_detected_via_signed_checkpoint():
 
     try:
         # Checkpoint verification MUST detect the deletion of the newest record
-        tamper_res = ledger.verify_checkpoint(checkpoint, secret_key="airgap-audit-key-test")
+        tamper_res = ledger.verify_checkpoint(checkpoint, secret_key="airgap-audit-key-test-min-32chars-suite")
         assert tamper_res["is_valid"] is False
         assert tamper_res["reason"] == "LEDGER_TRUNCATION_DETECTED"
         assert "Newest record(s) were deleted" in tamper_res["detail"]
@@ -78,14 +78,14 @@ def test_modifying_historical_record_and_recalculating_hashes_detected_via_check
     internal linkage is mathematically consistent, but the signed checkpoint detects the head_hash mismatch.
     """
     ledger = AuditLogLedger()
-    checkpoint = ledger.create_signed_checkpoint(secret_key="airgap-audit-key-test")
+    checkpoint = ledger.create_signed_checkpoint(secret_key="airgap-audit-key-test-min-32chars-suite")
 
     # Simulate an attacker who has forged rows in DB and recalculated head_hash
     forged_checkpoint = dict(checkpoint)
     forged_checkpoint["head_hash"] = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
 
     # Checkpoint signature check catches forgery
-    tamper_sig = ledger.verify_checkpoint(forged_checkpoint, secret_key="airgap-audit-key-test")
+    tamper_sig = ledger.verify_checkpoint(forged_checkpoint, secret_key="airgap-audit-key-test-min-32chars-suite")
     assert tamper_sig["is_valid"] is False
     assert tamper_sig["reason"] == "CHECKPOINT_SIGNATURE_INVALID"
 
@@ -116,12 +116,12 @@ def test_records_after_checkpoint_detected():
     Verifies that ledger tracks and reports records appended after the latest signed checkpoint.
     """
     ledger = AuditLogLedger()
-    checkpoint = ledger.create_signed_checkpoint(secret_key="airgap-audit-key-test")
+    checkpoint = ledger.create_signed_checkpoint(secret_key="airgap-audit-key-test-min-32chars-suite")
 
     # Append record after checkpoint
     ledger.append("admin", RoleEnum.ADMIN, "POST_CHK_ACTION", "RES_POST", {"step": "after_chk"})
 
-    res = ledger.verify_checkpoint(checkpoint, secret_key="airgap-audit-key-test")
+    res = ledger.verify_checkpoint(checkpoint, secret_key="airgap-audit-key-test-min-32chars-suite")
     assert res["is_valid"] is True
     assert res["records_after_checkpoint"] >= 1
 

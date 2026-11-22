@@ -18,7 +18,19 @@ from sqlalchemy.engine import Engine
 
 # Ensure repository root is on sys.path for test discovery in CI
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-os.environ.setdefault("DATABASE_URL", "sqlite:///test_local.db")
+
+# Task 4 & Task 1: Dedicated clean test database and distinct cryptographic keys
+isolated_db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "test_isolated_suite.db"))
+if os.path.exists(isolated_db_path):
+    try:
+        os.remove(isolated_db_path)
+    except Exception:
+        pass
+
+os.environ["DATABASE_URL"] = f"sqlite:///{isolated_db_path}"
+os.environ["SECRET_KEY"] = "test-fixture-suite-jwt-secret-key-min32chars-token"
+os.environ["APPROVAL_TOKEN_SECRET"] = "test-fixture-suite-approval-token-secret-distinct-min32chars"
+os.environ["AUDIT_CHECKPOINT_KEY"] = "test-fixture-suite-audit-checkpoint-key-distinct-min32chars"
 
 from db.connection import Base, engine  # noqa: E402
 from services.api.main import app  # noqa: E402
@@ -40,6 +52,7 @@ Base.metadata.create_all(bind=engine)
 # Seed audit ledger with Genesis block if empty
 from services.api.engine.audit_log import audit_log  # noqa: E402
 
+audit_log._entries.clear()
 audit_log._sync_from_db()
 
 

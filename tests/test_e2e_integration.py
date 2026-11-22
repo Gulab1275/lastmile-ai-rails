@@ -25,13 +25,20 @@ def test_full_e2e_relief_claim_lifecycle(client: TestClient, officer_headers: di
     citizen_headers = {"Authorization": f"Bearer {citizen_token}"}
     citizen_id = login_resp.json()["user_id"]
 
-    # Step 2: Grant Granular Consent
+    # Step 2: Grant Granular Consent (Income and Documents explicitly authorized)
     cns_resp = client.post("/api/v1/consent/grant", json={
         "citizen_id": citizen_id,
         "scope": "income"
     }, headers=citizen_headers)
     assert cns_resp.status_code == 200
     assert cns_resp.json()["granted"] is True
+
+    cns_doc_resp = client.post("/api/v1/consent/grant", json={
+        "citizen_id": citizen_id,
+        "scope": "documents"
+    }, headers=citizen_headers)
+    assert cns_doc_resp.status_code == 200
+    assert cns_doc_resp.json()["granted"] is True
 
     # Step 3: Create Relief Claim Case
     create_resp = client.post("/api/v1/cases", json={

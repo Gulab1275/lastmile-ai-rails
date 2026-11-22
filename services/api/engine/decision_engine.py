@@ -11,6 +11,7 @@ import hmac
 import os
 from typing import Any, Dict, List, Optional
 
+from services.api.config import settings
 from services.api.engine.rules_engine import rules_engine
 from services.shared.schemas import (
     ComponentScores,
@@ -20,13 +21,33 @@ from services.shared.schemas import (
     RouteDecision,
 )
 
-SECRET_KEY = os.getenv("SECRET_KEY", "rahbar-super-secret-development-key-change-in-production-min32chars")
+
+def _get_approval_secret() -> str:
+    """Returns the securely configured secret key for approval tokens. Fails closed if missing."""
+    custom = os.getenv("APPROVAL_TOKEN_SECRET") or getattr(settings, "APPROVAL_TOKEN_SECRET", None)
+    if not custom or not str(custom).strip():
+        raise RuntimeError(
+            "CRITICAL_SECURITY_ERROR: APPROVAL_TOKEN_SECRET is not configured. "
+            "Silent fallback to SECRET_KEY is strictly prohibited. Approval tokens cannot be issued."
+        )
+    key_str = str(custom).strip()
+    if len(key_str) < 32:
+        raise RuntimeError(
+            f"CRITICAL_SECURITY_ERROR: APPROVAL_TOKEN_SECRET must be at least 32 characters (got {len(key_str)})."
+        )
+    if key_str == settings.SECRET_KEY:
+        raise RuntimeError(
+            "CRITICAL_SECURITY_ERROR: Cryptographic key separation violation. "
+            "APPROVAL_TOKEN_SECRET must be distinct from SECRET_KEY."
+        )
+    return key_str
 
 
 def generate_approval_token(case_id: str, rule_version: int, confidence: float) -> str:
     """Generates a verifiable HMAC-SHA256 approval token for gated disbursement."""
+    secret = _get_approval_secret()
     data = f"{case_id}:{rule_version}:{confidence:.4f}".encode("utf-8")
-    return hmac.new(SECRET_KEY.encode("utf-8"), data, hashlib.sha256).hexdigest()
+    return hmac.new(secret.encode("utf-8"), data, hashlib.sha256).hexdigest()
 
 
 def verify_approval_token(token: str, case_id: str, rule_version: int, confidence: float) -> bool:
