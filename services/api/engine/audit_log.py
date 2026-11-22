@@ -46,8 +46,9 @@ def calculate_hash(
 
 
 class AuditLogLedger:
+    _lock = threading.RLock()
+
     def __init__(self):
-        self._lock = threading.Lock()
         self._entries: List[AuditLogEntry] = []
         self._sync_from_db()
 
@@ -156,59 +157,59 @@ class AuditLogLedger:
         from db.connection import SessionLocal
         from db.models import AuditLog as DBAuditLog
 
-        try:
-            with SessionLocal() as db_session:
-                # Advisory transaction lock guarantees strict sequential serialization across worker processes
-                if db_session.bind and db_session.bind.dialect.name == "postgresql":
-                    db_session.execute(text(f"SELECT pg_advisory_xact_lock({AUDIT_LOCK_ID});"))
-
-                latest_db = db_session.query(DBAuditLog).order_by(DBAuditLog.id.desc()).first()
-                prev = latest_db.current_hash if latest_db else GENESIS_PREV_HASH
-
-                current_h = calculate_hash(
-                    prev_hash=prev,
-                    timestamp=now.isoformat(),
-                    actor_id=actor_id,
-                    actor_role=actor_role_str,
-                    action=action,
-                    resource_id=resource_id,
-                    details=details_dict
-                )
-
-                db_entry = DBAuditLog(
-                    prev_hash=prev,
-                    current_hash=current_h,
-                    actor=f"{actor_id}:{actor_role_str}",
-                    action=action,
-                    target=resource_id,
-                    result="SUCCESS",
-                    request_id=entry_id,
-                    timestamp=now,
-                    details=details_dict
-                )
-                db_session.add(db_entry)
-                db_session.commit()
-        except Exception as e:
-            # Task 2 requirement: Database outage does not silently lose required audit events
-            raise RuntimeError(f"Audit log persistence failure: database unavailable ({str(e)})")
-
-        entry = AuditLogEntry(
-            id=entry_id,
-            prev_hash=prev,
-            timestamp=now,
-            actor_id=actor_id,
-            actor_role=actor_role,
-            action=action,
-            resource_id=resource_id,
-            details=details_dict,
-            current_hash=current_h
-        )
         with self._lock:
+            try:
+                with SessionLocal() as db_session:
+                    # Advisory transaction lock guarantees strict sequential serialization across worker processes
+                    if db_session.bind and db_session.bind.dialect.name == "postgresql":
+                        db_session.execute(text(f"SELECT pg_advisory_xact_lock({AUDIT_LOCK_ID});"))
+
+                    latest_db = db_session.query(DBAuditLog).order_by(DBAuditLog.id.desc()).first()
+                    prev = latest_db.current_hash if latest_db else GENESIS_PREV_HASH
+
+                    current_h = calculate_hash(
+                        prev_hash=prev,
+                        timestamp=now.isoformat(),
+                        actor_id=actor_id,
+                        actor_role=actor_role_str,
+                        action=action,
+                        resource_id=resource_id,
+                        details=details_dict
+                    )
+
+                    db_entry = DBAuditLog(
+                        prev_hash=prev,
+                        current_hash=current_h,
+                        actor=f"{actor_id}:{actor_role_str}",
+                        action=action,
+                        target=resource_id,
+                        result="SUCCESS",
+                        request_id=entry_id,
+                        timestamp=now,
+                        details=details_dict
+                    )
+                    db_session.add(db_entry)
+                    db_session.commit()
+            except Exception as e:
+                # Task 2 requirement: Database outage does not silently lose required audit events
+                raise RuntimeError(f"Audit log persistence failure: database unavailable ({str(e)})")
+
+            entry = AuditLogEntry(
+                id=entry_id,
+                prev_hash=prev,
+                timestamp=now,
+                actor_id=actor_id,
+                actor_role=actor_role,
+                action=action,
+                resource_id=resource_id,
+                details=details_dict,
+                current_hash=current_h
+            )
             if self._entries and self._entries[-1].current_hash != prev:
                 self._sync_from_db()
             else:
                 self._entries.append(entry)
-        return entry
+            return entry
 
     def get_entries(
         self,
@@ -412,10 +413,27 @@ class AuditLogLedger:
         Fails closed when AUDIT_CHECKPOINT_KEY is missing (hardcoded fallbacks prohibited).
         """
         key_str = secret_key or os.getenv("AUDIT_CHECKPOINT_KEY")
-        if not key_str:
+        if not key_str or not str(key_str).strip():
             raise ValueError(
-                "AUDIT_CHECKPOINT_KEY is missing. Hardcoded key fallback is strictly prohibited. "
-                "A cryptographically secure signing key must be injected via external environment or KMS."
+                "AUDIT_CHECKPOINT_KEY is missing. Hardcoded fallback prohibited: "
+                "a cryptographically secure signing key must be injected via external environment or KMS."
+            )
+        key_str = str(key_str).strip()
+        if len(key_str) < 32:
+            raise ValueError(
+                f"CRITICAL_SECURITY_ERROR: AUDIT_CHECKPOINT_KEY must be at least 32 characters (got {len(key_str)})."
+            )
+        from services.api.config import settings
+        if key_str == settings.SECRET_KEY:
+            raise ValueError(
+                "CRITICAL_SECURITY_ERROR: Cryptographic key separation violation: "
+                "AUDIT_CHECKPOINT_KEY cannot be identical to SECRET_KEY."
+            )
+        app_secret = os.getenv("APPROVAL_TOKEN_SECRET") or getattr(settings, "APPROVAL_TOKEN_SECRET", None)
+        if app_secret and key_str == str(app_secret).strip():
+            raise ValueError(
+                "CRITICAL_SECURITY_ERROR: Cryptographic key separation violation: "
+                "AUDIT_CHECKPOINT_KEY cannot be identical to APPROVAL_TOKEN_SECRET."
             )
         key = key_str.encode("utf-8")
 
@@ -466,11 +484,12 @@ class AuditLogLedger:
         Fails closed when AUDIT_CHECKPOINT_KEY is missing.
         """
         key_str = secret_key or os.getenv("AUDIT_CHECKPOINT_KEY")
-        if not key_str:
+        if not key_str or not str(key_str).strip():
             raise ValueError(
-                "AUDIT_CHECKPOINT_KEY is missing. Cannot verify checkpoint signature without signing key."
+                "AUDIT_CHECKPOINT_KEY is missing. Hardcoded fallback prohibited: "
+                "cannot verify checkpoint signature without signing key."
             )
-        key = key_str.encode("utf-8")
+        key = key_str.strip().encode("utf-8")
 
         # 1. Verify signature of the checkpoint itself
         msg = f"{checkpoint['checkpoint_id']}:{checkpoint['height']}:{checkpoint['head_hash']}:{checkpoint['timestamp']}".encode("utf-8")
@@ -515,6 +534,7 @@ class AuditLogLedger:
             "is_valid": True,
             "checkpoint_height": checkpoint["height"],
             "current_height": chain_status.total_records,
+            "records_after_checkpoint": chain_status.total_records - checkpoint["height"],
             "head_hash_verified": True
         }
 
