@@ -16,7 +16,8 @@ def _compile_check_constraint_sqlite(element, compiler, **kw):
         return (
             "CONSTRAINT check_valid_cnic_format CHECK ("
             "cnic GLOB '[0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]' "
-            "OR (length(cnic) = 13 AND cnic NOT GLOB '*[^0-9]*')"
+            "OR (length(cnic) = 13 AND cnic NOT GLOB '*[^0-9]*') "
+            "OR cnic GLOB '[0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9]-X'"
             ")"
         )
     return compiler.visit_check_constraint(element, **kw)
@@ -295,3 +296,31 @@ class EvalResult(Base):
     metric_value = Column(Float, nullable=False)
     metadata_json = Column(JSON, default=dict)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+# ============================================================================
+# Legacy CNIC Remediation Proposals (Maker-Checker Persistent Store)
+# ============================================================================
+
+class LegacyCnicProposal(Base):
+    """
+    Persistent Maker-Checker proposals for legacy CNIC remediation.
+    Replaces ephemeral in-memory dictionary to ensure multi-worker visibility,
+    restart resilience, and atomic concurrency control.
+    """
+    __tablename__ = "legacy_cnic_proposals"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    citizen_id = Column(String, ForeignKey("citizens.id"), nullable=False, index=True)
+    old_cnic = Column(String(15), nullable=False)
+    proposed_cnic = Column(String(15), nullable=False)
+    maker_officer_id = Column(String, nullable=False)
+    maker_notes = Column(Text, nullable=False)
+    physical_document_ref = Column(String, nullable=False, index=True)
+    status = Column(String(20), nullable=False, default="PENDING_APPROVAL", index=True)  # PENDING_APPROVAL, APPROVED, REJECTED
+    checker_supervisor_id = Column(String, nullable=True)
+    supervisor_notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    approved_at = Column(DateTime, nullable=True)
+
+    citizen = relationship("Citizen")
+
