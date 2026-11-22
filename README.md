@@ -8,6 +8,7 @@
 
 [![CI](https://github.com/Naresh-Kumar17/lastmile-ai-rails/actions/workflows/ci.yml/badge.svg)](https://github.com/Naresh-Kumar17/lastmile-ai-rails/actions/workflows/ci.yml)
 [![Tests](https://img.shields.io/badge/Tests-462%2F462%20Passed-16A34A?style=flat-square&logo=pytest)](https://github.com/Naresh-Kumar17/lastmile-ai-rails/actions)
+[![Vercel](https://img.shields.io/badge/Vercel-Frontend%20Live-black?style=flat-square&logo=vercel)](https://lastmile-ai-rails.vercel.app)
 [![AWS](https://img.shields.io/badge/AWS-EC2%20Deployed-FF9900?style=flat-square&logo=amazon-aws&logoColor=white)](https://rahbar-backend.duckdns.org)
 [![Next.js](https://img.shields.io/badge/Next.js-14.2%20App%20Router-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%20Asynchronous-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
@@ -21,7 +22,7 @@
 
 > **PROTOTYPE ONLY**: All identity verifications, banking payouts, and citizen records utilize synthetic mock data. No real personal data or live financial rails are connected.
 
-[Live Backend API](https://rahbar-backend.duckdns.org) · [Swagger Documentation](https://rahbar-backend.duckdns.org/docs) · [Architecture Guide](docs/JUDGING_WALKTHROUGH.md) · [Security Audits](docs/audit_reports/)
+[Live Web Application](https://lastmile-ai-rails.vercel.app) · [Live Backend API](https://rahbar-backend.duckdns.org) · [Swagger Documentation](https://rahbar-backend.duckdns.org/docs) · [Architecture Guide](docs/JUDGING_WALKTHROUGH.md) · [Security Audits](docs/audit_reports/)
 
 ---
 
@@ -331,7 +332,8 @@ tests/test_web_app.py ....                                                    [1
 
 ## 11. Live Deployment & Links
 
-- **Live Backend API**: [`https://rahbar-backend.duckdns.org`](https://rahbar-backend.duckdns.org)
+- **Live Web Application (Vercel)**: [`https://lastmile-ai-rails.vercel.app`](https://lastmile-ai-rails.vercel.app)
+- **Live Backend API (AWS EC2)**: [`https://rahbar-backend.duckdns.org`](https://rahbar-backend.duckdns.org)
 - **Interactive Swagger Documentation**: [`https://rahbar-backend.duckdns.org/docs`](https://rahbar-backend.duckdns.org/docs)
 - **Judging Walkthrough**: [`docs/JUDGING_WALKTHROUGH.md`](docs/JUDGING_WALKTHROUGH.md)
 - **GitHub Actions CI/CD**: [`https://github.com/Naresh-Kumar17/lastmile-ai-rails/actions`](https://github.com/Naresh-Kumar17/lastmile-ai-rails/actions)
