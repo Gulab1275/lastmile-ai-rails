@@ -15,6 +15,7 @@ DEFAULT_ALLOWED_ORIGINS = [
     "https://rahbar.duckdns.org",
     "https://rahbar-backend.duckdns.org",
     "https://rahbar-pwa.vercel.app",
+    "https://lastmile-ai-rails.vercel.app",
 ]
 
 

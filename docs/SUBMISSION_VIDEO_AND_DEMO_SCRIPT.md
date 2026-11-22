@@ -2,7 +2,8 @@
 
 > **Coder's Cup '26 — AI-Powered Digital Public Infrastructure Rails for The Last Mile**  
 > **Team**: Mahandar Khatri · Naresh Kumar · Gulab  
-> **Production Live URL**: [https://rahbar-backend.duckdns.org](https://rahbar-backend.duckdns.org)  
+> **Live Frontend (Vercel)**: [https://lastmile-ai-rails.vercel.app](https://lastmile-ai-rails.vercel.app)  
+> **Production API (AWS EC2)**: [https://rahbar-backend.duckdns.org](https://rahbar-backend.duckdns.org)  
 > **Target Video Duration**: 3 to 5 Minutes  
 > **Target Score**: 100/100 (Full coverage of all 8 Hackathon Challenges & 4 Creative Features)
 
@@ -13,7 +14,7 @@
 - [ ] **Resolution**: 1080p (1920x1080) at 60 fps (using OBS, Loom, or Screen Studio).
 - [ ] **Audio**: Clear microphone with zero background noise.
 - [ ] **Browser Tabs Prepared**:
-  1. `http://localhost:3000` (or Vercel deployed frontend) — Citizen Home & Persona Selector.
+  1. `https://lastmile-ai-rails.vercel.app` (or `http://localhost:3000`) — Citizen Home & Persona Selector.
   2. `http://localhost:3000/apply` — Urdu Voice Intake & Document Upload.
   3. `http://localhost:3000/scam` & `/scam-map` — Real-Time Scam Radar & Karachi Heatmap.
   4. `http://localhost:3000/families` — Helper Multi-Family Hub & Granular Consent.
