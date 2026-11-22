@@ -23,14 +23,20 @@ export default function PrototypeBanner() {
     <div className="bg-[#E8A33D] text-[#17302B] text-xs border-b border-[#C77700] z-50 relative">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full min-h-[34px] px-3 py-1.5 font-bold text-center flex items-center justify-center gap-1.5 hover:bg-[#d9942e] transition"
+        className="w-full min-h-[34px] px-3 py-1.5 font-bold text-center flex items-center justify-between gap-1.5 hover:bg-[#d9942e] transition"
         aria-expanded={open}
         type="button"
       >
-        <AlertTriangle className="w-4 h-4 shrink-0 text-[#17302B]" />
-        <span>PROTOTYPE — not an official government service · پروٹوٹائپ (سرکاری سروس نہیں)</span>
-        <span className="underline ml-1">تفصیل / What is real?</span>
-        {open ? <ChevronUp className="w-3.5 h-3.5 ml-1" /> : <ChevronDown className="w-3.5 h-3.5 ml-1" />}
+        <div className="flex items-center gap-1.5 mx-auto sm:mx-0">
+          <AlertTriangle className="w-4 h-4 shrink-0 text-[#17302B]" />
+          <span>PROTOTYPE — not an official government service · پروٹوٹائپ (سرکاری سروس نہیں)</span>
+          <span className="underline ml-1">تفصیل / What is real?</span>
+          {open ? <ChevronUp className="w-3.5 h-3.5 ml-1" /> : <ChevronDown className="w-3.5 h-3.5 ml-1" />}
+        </div>
+        <div className="hidden sm:flex items-center gap-2 text-[10px] font-mono">
+          <span className="bg-[#17302B]/15 px-2 py-0.5 rounded-full font-semibold">AWS EC2 Sovereign Rails</span>
+          <span className="bg-[#17302B]/15 px-2 py-0.5 rounded-full font-semibold">SHA-256 Audit Intact</span>
+        </div>
       </button>
       {open && (
         <div className="bg-white text-[#17302B] p-4 grid gap-4 sm:grid-cols-2 border-b border-[#E2DDD3] text-xs animate-fade-up">
