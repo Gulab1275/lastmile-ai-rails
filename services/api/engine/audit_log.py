@@ -101,7 +101,7 @@ class AuditLogLedger:
                 else:
                     loaded = []
                     for r in rows:
-                        parts = r.actor.split(":", 1)
+                        parts = r.actor.rsplit(":", 1)
                         role_str = parts[1] if len(parts) > 1 else "system"
                         try:
                             role = RoleEnum(role_str)
@@ -231,7 +231,7 @@ class AuditLogLedger:
                 if db_rows:
                     result = []
                     for r in db_rows:
-                        parts = r.actor.split(":", 1)
+                        parts = r.actor.rsplit(":", 1)
                         role_str = parts[1] if len(parts) > 1 else "system"
                         try:
                             role = RoleEnum(role_str)
@@ -277,9 +277,15 @@ class AuditLogLedger:
                         head_hash=self._entries[-1].current_hash,
                     )
                 actor_role_str = entry.actor_role.value if isinstance(entry.actor_role, RoleEnum) else str(entry.actor_role)
+                if hasattr(entry.timestamp, "tzinfo") and entry.timestamp.tzinfo is not None:
+                    ts_str = entry.timestamp.replace(tzinfo=None).isoformat()
+                elif hasattr(entry.timestamp, "isoformat"):
+                    ts_str = entry.timestamp.isoformat()
+                else:
+                    ts_str = str(entry.timestamp)
                 calculated = calculate_hash(
                     prev_hash=entry.prev_hash,
-                    timestamp=entry.timestamp.isoformat() if hasattr(entry.timestamp, "isoformat") else str(entry.timestamp),
+                    timestamp=ts_str,
                     actor_id=entry.actor_id,
                     actor_role=actor_role_str,
                     action=entry.action,
@@ -324,13 +330,20 @@ class AuditLogLedger:
                             )
 
                         # Check 2: recalculate current_hash
-                        actor_parts = entry.actor.split(":", 1)
+                        actor_parts = entry.actor.rsplit(":", 1)
                         actor_id = actor_parts[0]
                         actor_role = actor_parts[1] if len(actor_parts) > 1 else "system"
 
+                        if hasattr(entry.timestamp, "tzinfo") and entry.timestamp.tzinfo is not None:
+                            ts_str = entry.timestamp.replace(tzinfo=None).isoformat()
+                        elif hasattr(entry.timestamp, "isoformat"):
+                            ts_str = entry.timestamp.isoformat()
+                        else:
+                            ts_str = str(entry.timestamp)
+
                         calculated = calculate_hash(
                             prev_hash=entry.prev_hash,
-                            timestamp=entry.timestamp.isoformat(),
+                            timestamp=ts_str,
                             actor_id=actor_id,
                             actor_role=actor_role,
                             action=entry.action,
@@ -376,14 +389,20 @@ class AuditLogLedger:
                     head_hash=self._entries[-1].current_hash
                 )
             actor_role_str = entry.actor_role.value if isinstance(entry.actor_role, RoleEnum) else str(entry.actor_role)
+            if hasattr(entry.timestamp, "tzinfo") and entry.timestamp.tzinfo is not None:
+                ts_str = entry.timestamp.replace(tzinfo=None).isoformat()
+            elif hasattr(entry.timestamp, "isoformat"):
+                ts_str = entry.timestamp.isoformat()
+            else:
+                ts_str = str(entry.timestamp)
             calculated = calculate_hash(
                 prev_hash=entry.prev_hash,
-                timestamp=entry.timestamp.isoformat(),
+                timestamp=ts_str,
                 actor_id=entry.actor_id,
                 actor_role=actor_role_str,
                 action=entry.action,
                 resource_id=entry.resource_id,
-                details=entry.details
+                details=entry.details or {}
             )
             if calculated != entry.current_hash:
                 return AuditChainVerificationResponse(

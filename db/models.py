@@ -227,13 +227,19 @@ class AuditLog(Base):
 
     @classmethod
     def create_entry(cls, session, actor: str, action: str, target: str, result: str, request_id: str, details: dict = None):
-        from services.api.engine.audit_log import GENESIS_PREV_HASH, calculate_hash
+        from sqlalchemy import text
+
+        from services.api.engine.audit_log import AUDIT_LOCK_ID, GENESIS_PREV_HASH, calculate_hash
+
+        # Advisory transaction lock guarantees strict sequential serialization across worker processes
+        if session.bind and session.bind.dialect.name == "postgresql":
+            session.execute(text(f"SELECT pg_advisory_xact_lock({AUDIT_LOCK_ID});"))
 
         last_entry = session.query(cls).order_by(cls.id.desc()).first()
         prev_hash = last_entry.current_hash if last_entry else GENESIS_PREV_HASH
 
         now_dt = datetime.utcnow()
-        parts = actor.split(":", 1)
+        parts = actor.rsplit(":", 1)
         actor_id = parts[0]
         actor_role = parts[1] if len(parts) > 1 else "admin"
         details_dict = details or {}
