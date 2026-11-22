@@ -8,6 +8,7 @@
 
 [![CI](https://github.com/Naresh-Kumar17/lastmile-ai-rails/actions/workflows/ci.yml/badge.svg)](https://github.com/Naresh-Kumar17/lastmile-ai-rails/actions/workflows/ci.yml)
 [![Tests](https://img.shields.io/badge/Tests-456%2F456%20Passed-16A34A?style=flat-square&logo=pytest)](https://github.com/Naresh-Kumar17/lastmile-ai-rails/actions)
+[![AWS](https://img.shields.io/badge/AWS-EC2%20Deployed-FF9900?style=flat-square&logo=amazon-aws&logoColor=white)](https://rahbar-backend.duckdns.org)
 [![Next.js](https://img.shields.io/badge/Next.js-14.2%20App%20Router-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%20Asynchronous-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16%20Append--Only-336791?style=flat-square&logo=postgresql)](https://www.postgresql.org/)
@@ -175,7 +176,39 @@ lastmile-ai-rails/
 
 ---
 
-## 8. Quickstart Guide
+## 8. AWS Cloud Infrastructure & Production Deployment
+
+The Rahbar sovereign backend is deployed live on **AWS EC2** (`https://rahbar-backend.duckdns.org`), fully orchestrated with multi-container Docker Compose and automated TLS reverse-proxying.
+
+```mermaid
+flowchart LR
+    Client["Client Traffic (HTTPS :443)"] --> Caddy["Caddy Reverse Proxy (infra/Caddyfile)<br/>• Automated Let's Encrypt TLS<br/>• HSTS & Security Headers<br/>• Port 80/443 Ingress"]
+    Caddy -->|"Proxy :8000"| FastAPI["FastAPI Sovereign Engine (infra/Dockerfile)<br/>• Asynchronous API Gateway<br/>• Non-Root Container Execution<br/>• Tesseract OCR & Whisper Rails"]
+    FastAPI --> DB[("PostgreSQL 16 Storage<br/>• Append-Only Audit Triggers<br/>• Supavisor Connection Pooling")]
+
+    subgraph AWSCloud ["AWS Infrastructure (t3.small EC2 Instance)"]
+        Caddy
+        FastAPI
+        DB
+    end
+```
+
+### Infrastructure Components (`infra/`)
+- **`infra/setup_ec2.sh`**: Automated OS provisioning script built for **Amazon Linux 2023, Ubuntu, and RHEL**. Installs Docker, containerd, Docker Compose v2, and sets up systemd service daemons with zero manual intervention.
+- **`infra/Caddyfile`**: Production edge gateway handling automated SSL/TLS provisioning, HTTP/2, request header forwarding (`X-Forwarded-Proto`, `X-Real-IP`), and strict security headers (`HSTS`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`).
+- **`infra/docker-compose.yml`**: Multi-service container orchestration isolating the internal application network (`app-net`) and exposing only secure ports 80 and 443 to the public internet.
+- **`infra/Dockerfile`**: Multi-stage production container image bundling Python 3.11, Tesseract OCR language packages (Urdu & English), FFmpeg audio processing utilities, and security-hardened non-root user execution.
+- **`infra/deploy.sh`**: Zero-downtime rolling deployment script that pulls the latest release from `origin/main`, rebuilds containers with `--pull`, starts the stack, and polls `/api/v1/health` with automated rollbacks on failure.
+
+### AWS Pre-Production Security Architecture (`docs/missions/MISSION_8A_7_AWS_INFRASTRUCTURE_READINESS_REPORT.md`)
+1. **AWS Secrets Manager Integration**: Strict decoupling of secrets (`rahbar/staging/*`) via IAM least-privilege task execution roles, ensuring zero secrets reside in source code or container images.
+2. **AWS KMS Key Management**: Dedicated Customer Master Key (`alias/rahbar-audit-checkpoint-key`) enforcing asymmetric cryptographic signing of audit checkpoints with explicit IAM denial on key deletion.
+3. **AWS S3 Object Lock (Compliance Mode)**: External write-once-read-many (WORM) storage for immutable 7-year audit retention, guaranteeing non-repudiation against internal or external tampering.
+4. **Supavisor Transaction-Mode Pooling**: Connection pooling on port `6543` protecting database capacity under high-concurrency disaster intake spikes.
+
+---
+
+## 9. Quickstart Guide
 
 ### Prerequisites
 - Python 3.11+
@@ -221,7 +254,7 @@ docker-compose -f infra/docker-compose.yml up --build
 
 ---
 
-## 9. Automated Testing & Quality Assurance
+## 10. Automated Testing & Quality Assurance
 
 The codebase includes **456 automated tests** covering adversarial edge cases, cryptographic verification, prompt injection resistance, and end-to-end integration:
 
@@ -262,7 +295,7 @@ tests/test_web_app.py ....                                                    [1
 
 ---
 
-## 10. Live Deployment & Links
+## 11. Live Deployment & Links
 
 - **Live Backend API**: [`https://rahbar-backend.duckdns.org`](https://rahbar-backend.duckdns.org)
 - **Interactive Swagger Documentation**: [`https://rahbar-backend.duckdns.org/docs`](https://rahbar-backend.duckdns.org/docs)
@@ -271,7 +304,7 @@ tests/test_web_app.py ....                                                    [1
 
 ---
 
-## 11. License & Attribution
+## 12. License & Attribution
 
 Developed for **Coder's Cup '26** at FAST-NUCES Karachi.  
 Licensed under the [MIT License](LICENSE).
