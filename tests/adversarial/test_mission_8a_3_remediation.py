@@ -20,18 +20,17 @@ Validates:
 import os
 import threading
 import uuid
+
+import jwt
 import pytest
 from fastapi.testclient import TestClient
-import jwt
 
 from services.api.config import Settings, settings
-from services.api.engine.audit_log import AuditLogLedger, audit_log, calculate_hash
+from services.api.engine.audit_log import AuditLogLedger, audit_log
 from services.api.engine.consent_gateway import consent_gateway
 from services.api.engine.decision_engine import generate_approval_token, verify_approval_token
-from services.api.main import app
 from services.api.security.auth import create_access_token
 from services.shared.schemas import ConsentScope, RoleEnum
-
 
 # ==============================================================================
 # 1. TASK 1: CRYPTOGRAPHIC KEY SEPARATION TESTS
@@ -60,10 +59,11 @@ def test_jwt_key_cannot_validate_approval_token(monkeypatch):
     token = generate_approval_token("case_test_cross", 1, 0.92)
 
     # Attempt verification using a forged token generated with SECRET_KEY
-    import hashlib, hmac
+    import hashlib
+    import hmac
     forged_token = hmac.new(
         settings.SECRET_KEY.encode("utf-8"),
-        f"case_test_cross:1:0.9200".encode("utf-8"),
+        "case_test_cross:1:0.9200".encode("utf-8"),
         hashlib.sha256
     ).hexdigest()
 
@@ -92,10 +92,11 @@ def test_checkpoint_key_cannot_validate_approval_token():
     chk_key = os.getenv("AUDIT_CHECKPOINT_KEY") or getattr(settings, "AUDIT_CHECKPOINT_KEY", None)
     assert chk_key is not None
 
-    import hashlib, hmac
+    import hashlib
+    import hmac
     checkpoint_forged = hmac.new(
         chk_key.encode("utf-8"),
-        f"case_chk_cross:1:0.8800".encode("utf-8"),
+        "case_chk_cross:1:0.8800".encode("utf-8"),
         hashlib.sha256
     ).hexdigest()
 
@@ -281,9 +282,10 @@ def test_helper_and_officer_cannot_upload_without_citizen_documents_consent(
     consent_gateway.withdraw_consent(cit_id, ConsentScope.DOCUMENTS, actor_id=cit_id, actor_role=RoleEnum.CITIZEN)
 
     # Create draft case directly
+    from datetime import datetime
+
     from services.api.routes.cases import _CASES_DB
     from services.shared.schemas import CaseResponse, CaseStatus
-    from datetime import datetime
 
     case_id = f"cas_unauth_test_{uuid.uuid4().hex[:6]}"
     _CASES_DB[case_id] = CaseResponse(

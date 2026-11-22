@@ -344,7 +344,8 @@ async def propose_legacy_cnic_correction(
     Does NOT update the citizen's CNIC in the database yet.
     """
     from db.connection import SessionLocal
-    from db.models import Citizen as DBCitizen, LegacyCnicProposal
+    from db.models import Citizen as DBCitizen
+    from db.models import LegacyCnicProposal
 
     if req.verified_cnic.endswith("-X"):
         raise HTTPException(
@@ -449,7 +450,8 @@ async def approve_legacy_cnic_correction(
     Only upon approval is the citizen record updated in PostgreSQL and recorded in the audit ledger.
     """
     from db.connection import SessionLocal
-    from db.models import Citizen as DBCitizen, LegacyCnicProposal
+    from db.models import Citizen as DBCitizen
+    from db.models import LegacyCnicProposal
 
     with SessionLocal() as db_session:
         proposal = db_session.query(LegacyCnicProposal).filter_by(id=req.proposal_id).first()

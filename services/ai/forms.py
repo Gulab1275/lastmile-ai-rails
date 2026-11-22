@@ -27,7 +27,12 @@ URDU_HAZAAR_WORDS = {
     "pandrah": 15000.0, "solah": 16000.0, "satrah": 17000.0, "atharah": 18000.0, "unnees": 19000.0,
     "bees": 20000.0, "ikkees": 21000.0, "baees": 22000.0, "teyees": 23000.0, "chobees": 24000.0,
     "pachees": 25000.0, "chhabees": 26000.0, "sattaees": 27000.0, "athaees": 28000.0, "untees": 29000.0,
-    "tees": 30000.0, "chalees": 40000.0, "pachas": 50000.0, "pachaas": 50000.0
+    "tees": 30000.0, "chalees": 40000.0, "pachas": 50000.0, "pachaas": 50000.0,
+    "دس": 10000.0, "گیارہ": 11000.0, "بارہ": 12000.0, "تیرہ": 13000.0, "چودہ": 14000.0,
+    "پندرہ": 15000.0, "سولہ": 16000.0, "سترہ": 17000.0, "اٹھارہ": 18000.0, "انیس": 19000.0,
+    "بیس": 20000.0, "اکیس": 21000.0, "بائیس": 22000.0, "تئیس": 23000.0, "چوبیس": 24000.0,
+    "پچیس": 25000.0, "چھبیس": 26000.0, "ستائیس": 27000.0, "اٹھائیس": 28000.0, "انتیس": 29000.0,
+    "تیس": 30000.0, "چالیس": 40000.0, "پچاس": 50000.0
 }
 
 def extract_regex_heuristics(text: str) -> Dict[str, Any]:
@@ -70,18 +75,25 @@ def extract_regex_heuristics(text: str) -> Dict[str, Any]:
                     extracted["household_size"] = URDU_HH_WORDS[last_hw]
 
     # Income self-correction heuristic (e.g. 'pandrah hazaar nahi, pachees hazaar hai')
-    corr_match = re.search(r"(?:nahi|not|actually|sorry)[,\s]+([a-zA-Z]+)\s+hazaar", clean_text, re.IGNORECASE)
+    corr_match = re.search(r"(?:nahi|not|actually|sorry)[,\s]+([a-zA-Z\u0600-\u06FF]+)\s+(?:hazaar|ہزار)", clean_text, re.IGNORECASE)
     if corr_match:
         w = corr_match.group(1).lower()
         if w in URDU_HAZAAR_WORDS:
             extracted["monthly_income"] = URDU_HAZAAR_WORDS[w]
 
     if "monthly_income" not in extracted:
-        words = re.findall(r"\b([a-zA-Z]+)\s+hazaar", clean_text, re.IGNORECASE)
+        words = re.findall(r"\b([a-zA-Z\u0600-\u06FF]+)\s+(?:hazaar|ہزار)", clean_text, re.IGNORECASE)
         if words:
             last_w = words[-1].lower()
             if last_w in URDU_HAZAAR_WORDS:
                 extracted["monthly_income"] = URDU_HAZAAR_WORDS[last_w]
+
+    # Full Name heuristic (e.g. "Mera naam Parveen hai", "Mera name Fatima hai", "میرا نام پروین ہے")
+    name_match = re.search(r"(?:mera\s+naam|mera\s+name|my\s+name\s+is|میرا\s+نام)\s+([A-Za-z\u0600-\u06FF\s]+?)(?:\s+hai|\s+he|\s+ہے۔?|,|\.|$)", clean_text, re.IGNORECASE)
+    if name_match:
+        cand = name_match.group(1).strip()
+        if cand and len(cand.split()) <= 4:
+            extracted["full_name"] = cand
 
     if "monthly_income" not in extracted:
         # Income heuristic (e.g., "25000 آمدنی", "income 30000", "20 ہزار روپے", "aamdani 20000")
@@ -89,8 +101,8 @@ def extract_regex_heuristics(text: str) -> Dict[str, Any]:
         if inc_match:
             val = inc_match.group(1) or inc_match.group(2)
             extracted["monthly_income"] = float(val)
-        elif re.search(r"(\d{1,2})\s*ہزار", clean_text):
-            k_match = re.search(r"(\d{1,2})\s*ہزار", clean_text)
+        elif re.search(r"(\d{1,3})\s*(?:hazaar|k|ہزار)\b", clean_text, re.IGNORECASE):
+            k_match = re.search(r"(\d{1,3})\s*(?:hazaar|k|ہزار)\b", clean_text, re.IGNORECASE)
             extracted["monthly_income"] = float(k_match.group(1)) * 1000.0
 
     return extracted

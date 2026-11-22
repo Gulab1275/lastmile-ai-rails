@@ -59,7 +59,9 @@ def test_l05_all_online_providers_fail_deterministic_safety_guarantee():
     """L05: Every upstream cloud provider fails; system delivers deterministic offline response without crashing."""
     messages = [{"role": "user", "content": "Test all fail"}]
 
-    with patch("services.ai.router.call_groq") as mock_groq, \
+    with patch("services.ai.router.GROQ_API_KEY", "gsk_test"), \
+         patch("services.ai.router.GEMINI_API_KEY", "AIzaSy_test"), \
+         patch("services.ai.router.call_groq") as mock_groq, \
          patch("services.ai.router.call_gemini") as mock_gemini:
         mock_groq.side_effect = ConnectionError("No internet to Groq")
         mock_gemini.side_effect = ConnectionError("No internet to Gemini")
@@ -75,11 +77,13 @@ def test_l06_response_caching_accelerates_identical_prompts():
     """L06: Second identical prompt returns from cache with zero upstream latency."""
     messages = [{"role": "user", "content": "Unique prompt for caching test"}]
 
-    res1 = route_llm(messages, use_cache=True)
-    res2 = route_llm(messages, use_cache=True)
+    with patch("services.ai.router.GROQ_API_KEY", "gsk_test"), \
+         patch("services.ai.router.call_groq", return_value={"content": "cached answer", "model": "llama-3"}):
+        res1 = route_llm(messages, use_cache=True)
+        res2 = route_llm(messages, use_cache=True)
 
-    assert res2.get("cached") is True
-    assert res1["content"] == res2["content"]
+        assert res2.get("cached") is True
+        assert res1["content"] == res2["content"]
 
 
 def test_l07_llm_health_check_returns_structured_diagnostics():

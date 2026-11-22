@@ -9,24 +9,20 @@ Validates P0 and P1 security remediations:
 6. P1 Audit ledger TRUNCATE trigger and checkpoint verification.
 """
 import copy
-import hashlib
-import hmac
-import os
 import uuid
+
 import pytest
-from datetime import datetime
 from fastapi.testclient import TestClient
 
-from db.connection import SessionLocal, engine, Base
-from db.models import Citizen, LegacyCnicProposal, AuditLog as DBAuditLog
-from services.api.config import settings, _get_validated_secret_key
-from services.api.engine.audit_log import audit_log, calculate_hash
-from services.api.engine.decision_engine import generate_approval_token, verify_approval_token
-from services.api.engine.consent_gateway import consent_gateway
-from services.api.main import app
-from services.api.security.auth import create_access_token
-from services.shared.schemas import RoleEnum, ConsentScope, ConsentStatus, DocumentAttachment
+from db.connection import SessionLocal
+from db.models import Citizen, LegacyCnicProposal
 from services.ai.sync import process_offline_sync_batch
+from services.api.config import _get_validated_secret_key
+from services.api.engine.audit_log import audit_log
+from services.api.engine.consent_gateway import consent_gateway
+from services.api.engine.decision_engine import generate_approval_token, verify_approval_token
+from services.api.main import app
+from services.shared.schemas import ConsentScope, RoleEnum
 
 client = TestClient(app)
 
