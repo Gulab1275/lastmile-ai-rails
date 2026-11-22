@@ -64,7 +64,10 @@ export default function AppShell({ children, title }: { children: React.ReactNod
   const sync = useCallback(async (userId: string) => {
     try {
       const n = await flushQueue(userId);
-      if (n > 0) setSyncMsg(`${n} آف لائن فارم بھیج دیے گئے · ${n} offline form(s) synced`);
+      if (n > 0) {
+        setSyncMsg(`${n} آف لائن فارم بھیج دیے گئے · ${n} offline form(s) synced`);
+        setTimeout(() => setSyncMsg(""), 6000);
+      }
     } catch {
       /* will retry on next reconnect */
     }
@@ -84,11 +87,15 @@ export default function AppShell({ children, title }: { children: React.ReactNod
     if (navigator.onLine) sync(s.userId);
     const up = () => { setOnline(true); sync(s.userId); };
     const down = () => setOnline(false);
+    const onCitizenChanged = () => setActing(getActiveCitizenName());
+
     window.addEventListener("online", up);
     window.addEventListener("offline", down);
+    window.addEventListener("active_citizen_changed", onCitizenChanged);
     return () => {
       window.removeEventListener("online", up);
       window.removeEventListener("offline", down);
+      window.removeEventListener("active_citizen_changed", onCitizenChanged);
     };
   }, [router, sync]);
 
