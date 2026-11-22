@@ -39,7 +39,7 @@ export default function DocumentsPage() {
         speak("کاغذ صاف اور اصلی ہے، تصدیق کامیاب رہی", "ur-PK");
       }
     } catch (e) {
-      setError((e as ApiError).message_ur ?? (e as ApiError).message_en ?? "Could not check the document");
+      setError((e as ApiError).message_ur ?? (e as ApiError).message_en ?? "Could not check document");
     } finally {
       setBusy(false);
     }
@@ -49,24 +49,24 @@ export default function DocumentsPage() {
 
   return (
     <AppShell title="کاغذ جانچ · Document Verification">
-      <Card className="p-5 space-y-2">
-        <h2 className="text-xl font-bold text-[#0B4F43]">دستاویز کی خودکار جانچ · Document Blur & Tamper Check</h2>
-        <p className="text-sm text-[#5B6F6A]">
+      <Card className="p-5 space-y-1.5">
+        <h2 className="text-xl font-bold font-heading text-slate-900">دستاویز کی خودکار جانچ · Blur & Tamper Verification</h2>
+        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
           شناختی کارڈ یا بجلی کے بل کی تصویر اپ لوڈ کریں۔ کمپیوٹر ویژن تصویر کا فوکس (Blur)، دستاویزی ترمیم (Tamper) اور تحریر کی درستی جانچتا ہے۔
         </p>
       </Card>
 
       {/* Upload Zone */}
-      <Card className="p-6 space-y-4 text-center">
-        <label className="block p-6 rounded-2xl border-2 border-dashed border-[#0B4F43]/40 bg-[#F7F4EE] hover:bg-[#DDEFE9]/30 text-[#0B4F43] font-bold cursor-pointer transition shadow-sm">
-          <div className="w-14 h-14 rounded-2xl bg-[#DDEFE9] text-[#0B4F43] flex items-center justify-center mx-auto mb-2">
-            <Camera className="w-7 h-7" />
+      <Card className="p-5 sm:p-6 space-y-4 text-center">
+        <label className="block p-6 sm:p-8 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 hover:bg-emerald-50/50 hover:border-[#0B4F43] cursor-pointer transition">
+          <div className="w-12 h-12 rounded-xl bg-emerald-100 text-[#0B4F43] flex items-center justify-center mx-auto mb-2">
+            <Camera className="w-6 h-6" />
           </div>
-          <span className="text-base block">
-            {file ? `✓ ${file.name}` : "تصویر منتخب کریں یا کیمرے سے کھینچیں · Choose or Snap Photo"}
+          <span className="text-sm sm:text-base font-bold text-slate-900 block">
+            {file ? `✓ ${file.name}` : "تصویر منتخب کریں یا کیمرے سے کھینچیں · Choose Photo"}
           </span>
-          <span className="text-xs text-[#5B6F6A] font-normal block mt-1">
-            CNIC, Electricity Bill, or Income Certificate (JPG, PNG)
+          <span className="text-xs text-slate-500 block mt-1">
+            CNIC or Electricity Bill (JPG, PNG)
           </span>
           <input
             type="file"
@@ -86,11 +86,8 @@ export default function DocumentsPage() {
             <img
               src={preview}
               alt="preview"
-              className="max-h-60 mx-auto rounded-2xl border-2 border-[#E2DDD3] shadow-md object-contain"
+              className="max-h-56 mx-auto rounded-xl border border-slate-200 shadow-sm object-contain"
             />
-            <div className="absolute top-2 right-2 bg-black/70 text-white text-[11px] px-2 py-0.5 rounded-lg flex items-center gap-1">
-              <Eye className="w-3.5 h-3.5" /> پریویو
-            </div>
           </div>
         )}
 
@@ -98,120 +95,107 @@ export default function DocumentsPage() {
           variant="primary"
           onClick={check}
           disabled={!file || busy}
-          className="w-full flex items-center justify-center gap-2"
+          className="w-full"
         >
           {busy ? (
             <>
-              <RefreshCw className="w-5 h-5 animate-spin" /> دستاویز کی جانچ ہو رہی ہے...
+              <RefreshCw className="w-4 h-4 animate-spin" /> جانچ ہو رہی ہے...
             </>
           ) : (
             <>
-              <Upload className="w-5 h-5" /> جانچیں · Check Document
+              <Upload className="w-4 h-4" /> جانچیں · Check Document
             </>
           )}
         </Button>
 
-        <p className="text-[11px] text-[#5B6F6A]">
-          ٹیسٹنگ ٹپ: فائل کے نام میں &ldquo;blur&rdquo; یا &ldquo;fake&rdquo; رکھ کر ڈیمو سسٹم کے مختلف نتائج دیکھ سکتے ہیں۔
+        <p className="text-[11px] text-slate-500">
+          ٹیسٹنگ مشورہ: فائل کے نام میں &ldquo;blur&rdquo; یا &ldquo;fake&rdquo; رکھ کر سسٹم کا برتاؤ دیکھ سکتے ہیں۔
         </p>
       </Card>
 
       {error && (
-        <div className="bg-[#FEE2E2] border border-[#F87171] text-[#991B1B] rounded-2xl p-4 font-bold text-sm">
+        <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-xl p-4 font-medium text-xs">
           {error}
         </div>
       )}
 
-      {/* Visual Blur Gate Alert & Diagnosis */}
+      {/* Results Section */}
       {res && (
-        <div className="space-y-4 animate-fade-up">
-          {/* Prominent Blur Gate Alert */}
+        <div className="space-y-4">
+          {/* Blur Gate Alert */}
           {res.is_blurry ? (
-            <div className="bg-[#FEF3C7] border-2 border-[#C77700] rounded-3xl p-5 space-y-3 shadow-soft">
+            <div className="bg-amber-50 border border-amber-300 rounded-2xl p-5 space-y-3">
               <div className="flex items-center justify-between">
-                <StatusBadge status="need_proof" labelUr="دھندلی تصویر" labelEn="Blurry Photo" />
+                <StatusBadge status="need_proof" labelUr="تصویر دھندلی ہے" labelEn="Blurry Photo" />
                 <button
                   onClick={() => speak("تصویر دھندلی ہے، براہ کرم بہتر روشنی میں دوبارہ تصویر لیں", "ur-PK")}
                   type="button"
-                  className="min-h-[36px] min-w-[36px] rounded-xl bg-white text-[#92400E] flex items-center justify-center border border-[#FCD34D]"
+                  className="p-2 rounded-lg bg-white text-amber-900 border border-amber-200 text-xs flex items-center gap-1 shadow-sm"
                   aria-label="Listen warning"
                 >
-                  <Volume2 className="w-4 h-4" />
+                  <Volume2 className="w-3.5 h-3.5" /> سنیں
                 </button>
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-[#C77700]/10 text-[#C77700] flex items-center justify-center shrink-0">
-                  <AlertTriangle className="w-7 h-7" />
+                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-[#92400E]">تصویر دھندلی ہے — دوبارہ لیں</h3>
-                  <p className="text-sm text-[#78350F] mt-0.5">
+                  <h3 className="text-lg font-bold text-amber-950 font-heading">تصویر دھندلی ہے — دوبارہ لیں</h3>
+                  <p className="text-xs text-amber-900 mt-0.5">
                     The photo is blurry and text cannot be extracted reliably. Please retake it in steady light.
                   </p>
                 </div>
               </div>
-
-              <div className="bg-white rounded-2xl p-3 border border-[#FCD34D] text-xs text-[#78350F] space-y-1">
-                <p className="font-bold">بہتر تصویر کے لیے مشورے:</p>
-                <ul className="list-disc ps-4 space-y-0.5">
-                  <li>کیمرے کو کاغذ کے بالکل سامنے سیدھا پکڑیں۔</li>
-                  <li>کافی روشنی میں تصویر بنائیں تاکہ پرچھائیں نہ پڑے۔</li>
-                  <li>کاغذ کے چاروں کونے فریم کے اندر ہونے چاہئیں۔</li>
-                </ul>
-              </div>
             </div>
           ) : tampered ? (
-            <div className="bg-[#FEE2E2] border-2 border-[#B3261E] rounded-3xl p-5 space-y-3 shadow-soft">
+            <div className="bg-rose-50 border border-rose-300 rounded-2xl p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <StatusBadge status="scam" labelUr="مشکوک ترمیم" labelEn="Tamper Detected" />
                 <button
                   onClick={() => speak("کاغذ میں ممکنہ ترمیم کا شبہ ہے، یہ افسر کو بھیجا جائے گا", "ur-PK")}
                   type="button"
-                  className="min-h-[36px] min-w-[36px] rounded-xl bg-white text-[#B3261E] flex items-center justify-center border border-[#FCA5A5]"
+                  className="p-2 rounded-lg bg-white text-rose-900 border border-rose-200 text-xs flex items-center gap-1 shadow-sm"
                   aria-label="Listen warning"
                 >
-                  <Volume2 className="w-4 h-4" />
+                  <Volume2 className="w-3.5 h-3.5" /> سنیں
                 </button>
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-[#B3261E]/10 text-[#B3261E] flex items-center justify-center shrink-0">
-                  <ShieldAlert className="w-7 h-7" />
+                <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-800 flex items-center justify-center shrink-0">
+                  <ShieldAlert className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-[#7F1D1D]">کاغذ میں تبدیلی کا شبہ ہے</h3>
-                  <p className="text-sm text-[#991B1B] mt-0.5">
+                  <h3 className="text-lg font-bold text-rose-950 font-heading">کاغذ میں تبدیلی کا شبہ ہے</h3>
+                  <p className="text-xs text-rose-900 mt-0.5">
                     Possible digital editing detected. It will be routed to a human officer for manual verification.
                   </p>
                 </div>
               </div>
-
-              <div className="bg-white rounded-2xl p-3 border border-[#FCA5A5] text-xs text-[#7F1D1D]">
-                <p className="font-bold">پالیسی گارنٹی: ہمارا سسٹم کبھی بھی خودکار مسترد نہیں کرتا۔ افسر اصلی کاغذات کی خود جانچ کرے گا۔</p>
-              </div>
             </div>
           ) : (
-            <div className="bg-[#DDEFE9] border-2 border-[#1F8A5B] rounded-3xl p-5 space-y-3 shadow-soft">
+            <div className="bg-emerald-50 border border-emerald-300 rounded-2xl p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <StatusBadge status="approved" labelUr="کاغذ صاف ہے" labelEn="Clean & Sharp" />
                 <button
                   onClick={() => speak("کاغذ صاف اور اصلی ہے، تصدیق کامیاب رہی", "ur-PK")}
                   type="button"
-                  className="min-h-[36px] min-w-[36px] rounded-xl bg-white text-[#0B4F43] flex items-center justify-center border border-[#A7F3D0]"
+                  className="p-2 rounded-lg bg-white text-emerald-900 border border-emerald-200 text-xs flex items-center gap-1 shadow-sm"
                   aria-label="Listen confirmation"
                 >
-                  <Volume2 className="w-4 h-4" />
+                  <Volume2 className="w-3.5 h-3.5" /> سنیں
                 </button>
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-[#1F8A5B]/10 text-[#1F8A5B] flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="w-7 h-7" />
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-[#0B4F43]">کاغذ صاف اور اصلی لگتا ہے</h3>
-                  <p className="text-sm text-[#17302B] mt-0.5">
+                  <h3 className="text-lg font-bold text-emerald-950 font-heading">کاغذ صاف اور اصلی لگتا ہے</h3>
+                  <p className="text-xs text-emerald-800 mt-0.5">
                     The document looks sharp and genuine. OCR extracted details successfully.
                   </p>
                 </div>
@@ -219,86 +203,69 @@ export default function DocumentsPage() {
             </div>
           )}
 
-          {/* Detailed Scores & Field Confidences */}
+          {/* Technical Scores Card */}
           <Card className="p-5 space-y-4">
-            <h4 className="font-bold text-sm uppercase text-[#0B4F43]">تکنیکی پیمانے · Technical Verification Metrics</h4>
+            <h4 className="font-bold text-xs uppercase tracking-wider text-slate-500">
+              تکنیکی پیمائش · Quality Metrics
+            </h4>
 
-            {/* Sharpness Score Meter */}
+            {/* Sharpness Meter */}
             <div className="space-y-1.5">
-              <div className="flex justify-between text-xs font-bold">
-                <span className="text-[#17302B]">
-                  تصویر کا نکھار (Sharpness Score) {res.is_blurry ? "— ناکافی" : "— تسلی بخش"}
-                </span>
-                <span className={res.is_blurry ? "text-[#C77700]" : "text-[#1F8A5B]"}>
+              <div className="flex justify-between text-xs font-semibold">
+                <span className="text-slate-700">تصویر کا نکھار (Sharpness):</span>
+                <span className={res.is_blurry ? "text-amber-700" : "text-emerald-700 font-mono"}>
                   {Math.round(res.blur_score)} / 500
                 </span>
               </div>
-              <div className="h-3 bg-[#E2DDD3] rounded-full overflow-hidden">
+              <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
                 <div
-                  className={`h-full transition-all duration-500 ${
-                    res.is_blurry ? "bg-[#C77700]" : "bg-[#1F8A5B]"
-                  }`}
+                  className={`h-full transition-all duration-500 ${res.is_blurry ? "bg-amber-500" : "bg-emerald-600"}`}
                   style={{ width: `${Math.min(100, (res.blur_score / 500) * 100)}%` }}
                 />
               </div>
-              <p className="text-[10px] text-[#5B6F6A]">کم از کم قابل قبول نکھار: 100.0</p>
             </div>
 
-            {/* Tamper Score Meter */}
+            {/* Tamper Risk Meter */}
             <div className="space-y-1.5">
-              <div className="flex justify-between text-xs font-bold">
-                <span className="text-[#17302B]">
-                  ترمیم کا شبہ (Tamper Risk) {tampered ? "— بلند خطرہ" : "— محفوظ"}
-                </span>
-                <span className={tampered ? "text-[#B3261E]" : "text-[#1F8A5B]"}>
+              <div className="flex justify-between text-xs font-semibold">
+                <span className="text-slate-700">ترمیم کا شبہ (Tamper Risk):</span>
+                <span className={tampered ? "text-rose-700 font-mono" : "text-emerald-700 font-mono"}>
                   {Math.round(res.tamper_score * 100)}%
                 </span>
               </div>
-              <div className="h-3 bg-[#E2DDD3] rounded-full overflow-hidden">
+              <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
                 <div
-                  className={`h-full transition-all duration-500 ${
-                    tampered ? "bg-[#B3261E]" : "bg-[#1F8A5B]"
-                  }`}
+                  className={`h-full transition-all duration-500 ${tampered ? "bg-rose-600" : "bg-emerald-600"}`}
                   style={{ width: `${Math.min(100, res.tamper_score * 100)}%` }}
                 />
               </div>
             </div>
 
-            {/* Field Confidence Dots & Extracted Values */}
+            {/* Field Confidence Grid */}
             {Object.keys(res.fields).length > 0 && (
-              <div className="pt-2 border-t border-[#E2DDD3] space-y-2">
-                <p className="font-bold text-xs text-[#0B4F43]">
-                  کاغذ سے نکالی گئی معلومات اور فیلڈ اعتماد (Field OCR Confidence):
+              <div className="pt-3 border-t border-slate-100 space-y-2">
+                <p className="font-bold text-xs text-slate-900">
+                  کاغذ سے نکالی گئی معلومات (Extracted Fields & OCR Confidence):
                 </p>
                 <div className="grid gap-2">
                   {Object.entries(res.fields).map(([k, val]) => {
                     const c = res.field_confidences[k] ?? 1.0;
                     const isHigh = c >= 0.8;
                     const isMid = c >= 0.5 && c < 0.8;
-                    const dotColor = isHigh ? "bg-[#1F8A5B]" : isMid ? "bg-[#C77700]" : "bg-[#B3261E]";
 
                     return (
                       <div
                         key={k}
-                        className="bg-[#F7F4EE] rounded-xl p-3 flex items-center justify-between text-xs border border-[#E2DDD3]"
+                        className="bg-slate-50 rounded-xl p-3 flex items-center justify-between text-xs border border-slate-200"
                       >
                         <div className="flex items-center gap-2">
                           <span
-                            className={`w-2.5 h-2.5 rounded-full ${dotColor} shrink-0`}
-                            title={`Confidence: ${Math.round(c * 100)}%`}
+                            className={`w-2 h-2 rounded-full shrink-0 ${isHigh ? "bg-emerald-500" : isMid ? "bg-amber-500" : "bg-rose-500"}`}
                           />
-                          <span className="font-bold text-[#17302B] capitalize">{k.replace("_", " ")}:</span>
-                          <span className="text-[#17302B] font-mono">{String(val)}</span>
+                          <span className="font-semibold text-slate-700 capitalize">{k.replace("_", " ")}:</span>
+                          <span className="font-mono text-slate-900" dir="ltr">{String(val)}</span>
                         </div>
-                        <span
-                          className={`font-mono font-bold px-2 py-0.5 rounded-md ${
-                            isHigh
-                              ? "bg-[#DDEFE9] text-[#065F46]"
-                              : isMid
-                              ? "bg-[#FEF3C7] text-[#92400E]"
-                              : "bg-[#FEE2E2] text-[#7F1D1D]"
-                          }`}
-                        >
+                        <span className="font-mono font-semibold text-slate-600">
                           {Math.round(c * 100)}%
                         </span>
                       </div>

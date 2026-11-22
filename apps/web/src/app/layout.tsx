@@ -1,16 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Noto_Nastaliq_Urdu, Noto_Naskh_Arabic } from "next/font/google";
+import { Inter, Noto_Naskh_Arabic } from "next/font/google";
 import "./globals.css";
 import SwRegister from "@/components/SwRegister";
 import PrototypeBanner from "@/components/PrototypeBanner";
 import { UIProvider } from "@/lib/uiContext";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
-
-const nastaliq = Noto_Nastaliq_Urdu({
-  subsets: ["arabic"],
-  weight: ["400", "700"],
-  variable: "--font-nastaliq",
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
   display: "swap",
 });
 
@@ -38,8 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ur" dir="rtl" className="h-full">
       <body
-        className={`${inter.variable} ${nastaliq.variable} ${naskh.variable} font-sans antialiased min-h-screen text-[#17302B] bg-[#F7F4EE]`}
-        style={{ lineHeight: 1.8 }}
+        className={`${inter.variable} ${naskh.variable} font-sans antialiased min-h-screen text-slate-900 bg-slate-50 selection:bg-teal-100 selection:text-teal-900`}
       >
         <UIProvider>
           <SwRegister />

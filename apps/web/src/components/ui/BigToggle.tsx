@@ -22,27 +22,27 @@ export function BigToggle({
   return (
     <div
       onClick={() => !disabled && onChange(!checked)}
-      className={`min-h-[58px] p-4 rounded-2xl border-2 flex items-center justify-between cursor-pointer transition select-none ${
+      className={`p-4 rounded-xl border flex items-center justify-between cursor-pointer transition select-none ${
         checked
-          ? "bg-[#DDEFE9]/70 border-[#1F8A5B] text-[#065F46]"
-          : "bg-white border-[#E2DDD3] text-[#5B6F6A] hover:bg-slate-50"
+          ? "bg-emerald-50/70 border-emerald-300 text-emerald-950"
+          : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
       } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
     >
-      <div className="space-y-0.5">
-        <p className="font-bold text-sm text-[#17302B]">
-          {labelUr} <span className="text-xs text-[#5B6F6A]">· {labelEn}</span>
+      <div className="space-y-0.5 pe-3">
+        <p className="font-bold text-sm text-slate-900 leading-snug">
+          {labelUr} <span className="text-xs text-slate-500 font-normal">({labelEn})</span>
         </p>
-        {descUr && <p className="text-xs text-[#5B6F6A]">{descUr}</p>}
+        {descUr && <p className="text-xs text-slate-500">{descUr}</p>}
       </div>
 
       {/* Snap Switch */}
       <div
-        className={`w-14 h-8 flex items-center rounded-full p-1 transition-colors duration-200 ease-in-out shrink-0 ${
-          checked ? "bg-[#1F8A5B]" : "bg-[#E2DDD3]"
+        className={`w-12 h-6 flex items-center rounded-full p-0.5 transition-colors duration-200 ease-in-out shrink-0 ${
+          checked ? "bg-emerald-600" : "bg-slate-300"
         }`}
       >
         <div
-          className={`bg-white w-6 h-6 rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${
+          className={`bg-white w-5 h-5 rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${
             checked ? "translate-x-6 rtl:-translate-x-6" : "translate-x-0"
           }`}
         />

@@ -3,15 +3,14 @@
 import { useEffect, useState } from "react";
 import AppShell from "@/components/appShell";
 import { Card } from "@/components/ui/Card";
-import { StatusBadge } from "@/components/ui/StatusBadge";
 import api, { type ApiError, type Hotspot, type ScamMap } from "@/lib/api";
 
-const COLOR: Record<string, string> = { CRITICAL: "#B3261E", HIGH: "#E8A33D", MODERATE: "#C77700" };
+const COLOR: Record<string, string> = { CRITICAL: "#DC2626", HIGH: "#D97706", MODERATE: "#CA8A04" };
 const pretty = (s: string) => s.replace(/_/g, " ");
 const shortName = (d: string) => d.split(" (")[0];
 
 function KarachiMap({ spots, rank }: { spots: Hotspot[]; rank: Map<string, number> }) {
-  const W = 540, H = 340, P = 45;
+  const W = 540, H = 320, P = 45;
   const lats = spots.map((s) => s.latitude);
   const lngs = spots.map((s) => s.longitude);
   const [la0, la1, lo0, lo1] = [Math.min(...lats), Math.max(...lats), Math.min(...lngs), Math.max(...lngs)];
@@ -22,14 +21,13 @@ function KarachiMap({ spots, rank }: { spots: Hotspot[]; rank: Map<string, numbe
     <div className="w-full overflow-x-auto">
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        className="w-full min-w-[500px] bg-[#E0F2FE]/40 rounded-2xl border border-[#BAE6FD]"
+        className="w-full min-w-[500px] bg-sky-50/50 rounded-xl border border-sky-200"
         style={{ direction: "ltr" }}
         role="img"
         aria-label="Karachi relief scam hotspots distribution map"
       >
-        {/* Arabian Sea coastline outline aesthetic */}
         <path
-          d={`M 0 ${H - 20} Q ${W * 0.3} ${H - 80} ${W * 0.7} ${H - 30} T ${W} ${H - 60}`}
+          d={`M 0 ${H - 20} Q ${W * 0.3} ${H - 70} ${W * 0.7} ${H - 30} T ${W} ${H - 50}`}
           fill="none"
           stroke="#93C5FD"
           strokeWidth={2}
@@ -41,42 +39,38 @@ function KarachiMap({ spots, rank }: { spots: Hotspot[]; rank: Map<string, numbe
 
         {spots.map((s) => (
           <g key={s.district}>
-            {/* Pulsing Threat Radius */}
             <circle
               cx={x(s.longitude)}
               cy={y(s.latitude)}
-              r={14 + s.threat_intensity * 18}
+              r={12 + s.threat_intensity * 14}
               fill={COLOR[s.threat_level]}
-              fillOpacity={0.25}
+              fillOpacity={0.2}
             />
-            {/* Center Pin Circle */}
             <circle
               cx={x(s.longitude)}
               cy={y(s.latitude)}
-              r={13}
+              r={11}
               fill={COLOR[s.threat_level]}
               stroke="#FFFFFF"
               strokeWidth={2}
             />
-            {/* Rank Number */}
             <text
               x={x(s.longitude)}
-              y={y(s.latitude) + 4.5}
+              y={y(s.latitude) + 4}
               textAnchor="middle"
-              fontSize={12}
+              fontSize={11}
               fontWeight="bold"
               fill="#FFFFFF"
             >
               {rank.get(s.district)}
             </text>
-            {/* District Label */}
             <text
               x={x(s.longitude)}
-              y={y(s.latitude) + 32}
+              y={y(s.latitude) + 26}
               textAnchor="middle"
               fontSize={11}
               fontWeight="bold"
-              fill="#17302B"
+              fill="#0F172A"
             >
               {shortName(s.district)}
             </text>
@@ -98,7 +92,7 @@ export default function ScamMapPage() {
   if (!d) {
     return (
       <AppShell title="فراڈ نقشہ · Scam Map">
-        {error ? <p className="text-[#B3261E] font-bold p-4 bg-[#FEE2E2] rounded-2xl">{error}</p> : <p className="p-4">لوڈ ہو رہا ہے...</p>}
+        {error ? <p className="text-rose-700 font-bold p-4 bg-rose-50 rounded-xl">{error}</p> : <p className="p-4 text-xs text-slate-500">لوڈ ہو رہا ہے...</p>}
       </AppShell>
     );
   }
@@ -111,97 +105,97 @@ export default function ScamMapPage() {
 
   return (
     <AppShell title="فراڈ نقشہ · Scam Heatmap">
-      {/* Citizen Advisory Banner */}
-      <div className="bg-[#FEE2E2] border-2 border-[#B3261E] rounded-3xl p-5 space-y-1.5 shadow-soft">
-        <p className="text-xl font-bold text-[#7F1D1D]">{d.summary.citizen_protection_advice_ur}</p>
-        <p className="text-sm text-[#991B1B]">{d.summary.citizen_protection_advice_en}</p>
+      {/* Citizen Advisory */}
+      <div className="bg-rose-50 border border-rose-300 rounded-2xl p-5 space-y-1">
+        <p className="text-lg font-bold text-rose-950 font-heading">{d.summary.citizen_protection_advice_ur}</p>
+        <p className="text-xs text-rose-800">{d.summary.citizen_protection_advice_en}</p>
       </div>
 
-      {/* Overview Stat Cards */}
+      {/* Overview Cards */}
       <div className="grid grid-cols-3 gap-3 text-center">
         <Card className="p-4">
-          <p className="text-3xl font-bold text-[#0B4F43] font-mono">{d.total_active_clusters}</p>
-          <p className="text-xs text-[#5B6F6A] font-bold mt-0.5">Active Hotspots</p>
+          <p className="text-2xl sm:text-3xl font-bold text-[#0B4F43] font-mono">{d.total_active_clusters}</p>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">Active Areas</p>
         </Card>
         <Card className="p-4">
-          <p className="text-3xl font-bold text-[#0B4F43] font-mono">{d.total_analyzed_threats}</p>
-          <p className="text-xs text-[#5B6F6A] font-bold mt-0.5">Threats Analyzed</p>
+          <p className="text-2xl sm:text-3xl font-bold text-[#0B4F43] font-mono">{d.total_analyzed_threats}</p>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">Threats Analyzed</p>
         </Card>
         <Card className="p-4">
-          <p className="text-base font-bold text-[#B3261E] leading-tight truncate">
+          <p className="text-sm sm:text-base font-bold text-rose-700 leading-tight truncate">
             {shortName(d.summary.highest_risk_district)}
           </p>
-          <p className="text-xs text-[#5B6F6A] font-bold mt-0.5">Highest Risk Zone</p>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">Highest Risk</p>
         </Card>
       </div>
 
-      {/* Interactive Karachi Hotspot Map */}
+      {/* Map Card */}
       <Card className="p-5 space-y-3">
         <div className="flex items-center justify-between">
-          <p className="font-bold text-sm text-[#0B4F43]">
-            کراچی فراڈ کلسٹرز · Karachi Threat Map (Numbered by Risk Rank)
+          <p className="font-bold text-sm text-slate-900">
+            کراچی فراڈ کلسٹرز · Karachi Threat Map (By Risk Rank)
           </p>
-          <div className="flex gap-3 text-xs font-bold">
-            <span className="flex items-center gap-1 text-[#B3261E]">● Critical</span>
-            <span className="flex items-center gap-1 text-[#E8A33D]">● High</span>
-            <span className="flex items-center gap-1 text-[#C77700]">● Moderate</span>
+          <div className="flex gap-3 text-xs font-semibold">
+            <span className="flex items-center gap-1 text-rose-600">● Critical</span>
+            <span className="flex items-center gap-1 text-amber-600">● High</span>
+            <span className="flex items-center gap-1 text-yellow-600">● Moderate</span>
           </div>
         </div>
 
         <KarachiMap spots={karachi} rank={rank} />
       </Card>
 
-      {/* Highest Risk Areas List */}
+      {/* Areas List */}
       <Card className="p-5 space-y-3">
-        <p className="font-bold text-sm text-[#0B4F43]">تمام اضلاع بترتیب خطرہ · All Areas by Threat Intensity</p>
+        <p className="font-bold text-sm text-slate-900">تمام اضلاع بترتیب خطرہ · Areas by Threat Level</p>
         <div className="space-y-3">
           {ranked.map((h, i) => (
             <div key={h.district} className="space-y-1 text-xs">
               <div className="flex justify-between font-bold text-sm">
-                <span className="text-[#17302B]">{i + 1}. {h.district}</span>
+                <span className="text-slate-900">{i + 1}. {h.district}</span>
                 <span style={{ color: COLOR[h.threat_level] }}>{h.threat_level}</span>
               </div>
-              <div className="h-3 bg-[#E2DDD3] rounded-full overflow-hidden">
+              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full transition-all duration-500"
+                  className="h-full"
                   style={{ width: `${h.threat_intensity * 100}%`, backgroundColor: COLOR[h.threat_level] }}
                 />
               </div>
-              <p className="text-[11px] text-[#5B6F6A]">
-                {h.incident_count} reports recorded · Primary threat: <b>{pretty(h.primary_scam_type)}</b>
+              <p className="text-[11px] text-slate-500">
+                {h.incident_count} reports · Primary threat: <b>{pretty(h.primary_scam_type)}</b>
               </p>
             </div>
           ))}
         </div>
       </Card>
 
-      {/* Threat Category Distribution */}
+      {/* Category Breakdown */}
       <Card className="p-5 space-y-3">
-        <p className="font-bold text-sm text-[#0B4F43]">فراڈ کی اقسام · Scam Category Breakdown</p>
+        <p className="font-bold text-sm text-slate-900">فراڈ کی اقسام · Scam Category Breakdown</p>
         <div className="space-y-2">
           {Object.entries(d.category_distribution).map(([k, n]) => (
             <div key={k} className="flex items-center gap-3 text-xs">
-              <span className="w-40 font-bold capitalize text-[#17302B] truncate">{pretty(k)}</span>
-              <div className="flex-1 h-3 bg-[#E2DDD3] rounded-full overflow-hidden">
+              <span className="w-40 font-semibold capitalize text-slate-700 truncate">{pretty(k)}</span>
+              <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-[#0B4F43] transition-all duration-500"
+                  className="h-full bg-[#0B4F43]"
                   style={{ width: `${(n / catMax) * 100}%` }}
                 />
               </div>
-              <span className="w-8 text-end font-mono font-bold">{n}</span>
+              <span className="w-8 text-end font-mono font-bold text-slate-800">{n}</span>
             </div>
           ))}
         </div>
       </Card>
 
-      {/* Top Keywords Chips */}
+      {/* Keywords */}
       <Card className="p-5 space-y-2.5">
-        <p className="font-bold text-sm text-[#0B4F43]">دھوکے بازوں کے اہم الفاظ · Frequent Scam Keywords</p>
+        <p className="font-bold text-sm text-slate-900">دھوکے بازوں کے اہم الفاظ · Frequent Scam Keywords</p>
         <div className="flex flex-wrap gap-2">
           {d.top_keywords.map((k) => (
             <span
               key={k.keyword_en}
-              className="px-3 py-1 rounded-full bg-[#FEE2E2] text-[#7F1D1D] border border-[#F87171] font-bold text-xs"
+              className="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-800 border border-rose-200 font-medium text-xs"
             >
               {k.keyword_ur} · {k.keyword_en} ({k.frequency})
             </span>
@@ -209,20 +203,20 @@ export default function ScamMapPage() {
         </div>
       </Card>
 
-      {/* Temporal Trend Chart */}
+      {/* Daily Trends */}
       <Card className="p-5 space-y-3">
-        <p className="font-bold text-sm text-[#0B4F43]">
-          پچھلے {d.temporal_trends.length} دنوں میں روکے گئے حملے · Blocked Threat Trend
+        <p className="font-bold text-sm text-slate-900">
+          پچھلے {d.temporal_trends.length} دنوں میں روکے گئے حملے · Daily Blocked Trends
         </p>
-        <div className="flex items-end gap-2.5 h-36 pt-4" style={{ direction: "ltr" }}>
+        <div className="flex items-end gap-2.5 h-32 pt-4" style={{ direction: "ltr" }}>
           {d.temporal_trends.map((t) => (
             <div key={t.date} className="flex-1 flex flex-col items-center justify-end h-full">
               <span className="text-[11px] font-mono font-bold text-[#0B4F43] mb-1">{t.blocked_scams}</span>
               <div
-                className="w-full bg-[#1F8A5B] rounded-t-lg transition-all duration-500 hover:bg-[#0B4F43]"
+                className="w-full bg-emerald-600 rounded-t transition-all hover:bg-[#0B4F43]"
                 style={{ height: `${(t.blocked_scams / dayMax) * 100}%` }}
               />
-              <span className="text-[9px] text-[#5B6F6A] font-mono mt-1">{t.date.slice(5)}</span>
+              <span className="text-[9px] text-slate-400 font-mono mt-1">{t.date.slice(5)}</span>
             </div>
           ))}
         </div>

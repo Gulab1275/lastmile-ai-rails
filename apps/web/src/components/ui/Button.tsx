@@ -18,28 +18,27 @@ export function Button({
   ...props
 }: ButtonProps) {
   const base =
-    "font-bold rounded-2xl transition inline-flex items-center justify-center gap-2 select-none min-h-[48px] active:scale-[0.98]";
+    "font-bold rounded-xl transition inline-flex items-center justify-center gap-2 select-none active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[#0B4F43] leading-normal";
 
   const sizes = {
-    sm: "px-3 py-2 text-xs min-h-[40px]",
-    md: "px-5 py-3 text-sm min-h-[48px]",
-    lg: "px-6 py-3.5 text-base min-h-[54px]",
+    sm: "px-3.5 py-2 text-xs min-h-[38px]",
+    md: "px-5 py-2.5 text-sm min-h-[46px]",
+    lg: "px-6 py-3 text-base min-h-[52px]",
   };
 
   const variants = {
-    // Single primary action per screen: Amber #E8A33D with dark ink text #17302B
     primary:
-      "bg-[#E8A33D] text-[#17302B] hover:bg-[#D9942E] shadow-sm disabled:opacity-40 disabled:pointer-events-none",
+      "bg-[#D97706] text-slate-900 hover:bg-[#B45309] hover:text-white shadow-sm disabled:opacity-40 disabled:pointer-events-none",
     secondary:
-      "bg-[#0B4F43] text-white hover:bg-[#093e34] shadow-sm disabled:opacity-40 disabled:pointer-events-none",
+      "bg-[#0B4F43] text-white hover:bg-[#084137] shadow-sm disabled:opacity-40 disabled:pointer-events-none",
     neutral:
-      "bg-white border-2 border-[#E2DDD3] text-[#17302B] hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none",
+      "bg-white border border-slate-300 text-slate-800 hover:bg-slate-50 hover:border-slate-400 shadow-sm disabled:opacity-40 disabled:pointer-events-none",
     outline:
-      "bg-white border-2 border-[#E2DDD3] text-[#17302B] hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none",
+      "bg-white border border-slate-300 text-slate-800 hover:bg-slate-50 hover:border-slate-400 shadow-sm disabled:opacity-40 disabled:pointer-events-none",
     danger:
-      "bg-white border-2 border-[#B3261E] text-[#B3261E] hover:bg-[#FEE2E2] disabled:opacity-40 disabled:pointer-events-none",
+      "bg-white border border-rose-300 text-rose-700 hover:bg-rose-50 disabled:opacity-40 disabled:pointer-events-none",
     quiet:
-      "bg-transparent text-[#0B4F43] hover:bg-[#DDEFE9]/50 disabled:opacity-40 disabled:pointer-events-none",
+      "bg-transparent text-[#0B4F43] hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none",
   };
 
   return (
@@ -50,11 +49,11 @@ export function Button({
     >
       {loading ? (
         <span className="flex items-center gap-2">
-          <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+          <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
           </svg>
-          <span>لوڈ ہو رہا ہے...</span>
+          <span>{children}</span>
         </span>
       ) : (
         children

@@ -5,34 +5,30 @@ import { ShieldAlert, ShieldCheck, HelpCircle, Volume2, AlertOctagon, CheckCircl
 import AppShell from "@/components/appShell";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { StatusBadge } from "@/components/ui/StatusBadge";
 import api, { type ApiError, type ScamCheckResponse, type ScamLabel } from "@/lib/api";
 import { speak } from "@/lib/session";
 
-const LOOK: Record<ScamLabel, { bg: string; border: string; ur: string; en: string; icon: React.ReactNode; statusBadge: "scam" | "approved" | "need_proof" }> = {
+const LOOK: Record<ScamLabel, { bg: string; border: string; ur: string; en: string; icon: React.ReactNode }> = {
   scam: {
-    bg: "bg-[#FEE2E2] text-[#7F1D1D]",
-    border: "border-[#B3261E]",
+    bg: "bg-rose-50 text-rose-950",
+    border: "border-rose-300",
     ur: "خبردار! یہ جعلی / فراڈ میسج ہے",
     en: "CONFIRMED SCAM — Do not reply or send money",
-    icon: <ShieldAlert className="w-12 h-12 text-[#B3261E]" />,
-    statusBadge: "scam",
+    icon: <ShieldAlert className="w-10 h-10 text-rose-600 shrink-0" />,
   },
   legit: {
-    bg: "bg-[#DDEFE9] text-[#065F46]",
-    border: "border-[#1F8A5B]",
+    bg: "bg-emerald-50 text-emerald-950",
+    border: "border-emerald-300",
     ur: "یہ میسج محفوظ اور سرکاری لگتا ہے",
     en: "Official & Legitimate Communication",
-    icon: <ShieldCheck className="w-12 h-12 text-[#1F8A5B]" />,
-    statusBadge: "approved",
+    icon: <ShieldCheck className="w-10 h-10 text-emerald-600 shrink-0" />,
   },
   unsure: {
-    bg: "bg-[#FEF3C7] text-[#92400E]",
-    border: "border-[#C77700]",
+    bg: "bg-amber-50 text-amber-950",
+    border: "border-amber-300",
     ur: "سسٹم کو مکمل یقین نہیں — انسانی جانچ تجویز ہے",
     en: "Uncertain / Suspicious — Human review recommended",
-    icon: <HelpCircle className="w-12 h-12 text-[#C77700]" />,
-    statusBadge: "need_proof",
+    icon: <HelpCircle className="w-10 h-10 text-amber-600 shrink-0" />,
   },
 };
 
@@ -47,7 +43,6 @@ const EXAMPLES = [
   },
 ];
 
-// Highlight common risky scam triggers in Pakistan relief context
 const RISKY_KEYWORDS = [
   "fee", "فیس", "otp", "pin", "bit.ly", "http", "25,000", "50,000", "انعام", "مبارک",
   "bhaijain", "bhaijo", "payment", "link", "claim", "urgent", "فوری",
@@ -62,7 +57,7 @@ function highlightRiskyText(text: string) {
       return (
         <span
           key={idx}
-          className="bg-[#FEE2E2] text-[#991B1B] border border-[#F87171] px-1 py-0.5 rounded font-bold"
+          className="bg-rose-100 text-rose-800 border border-rose-300 px-1 py-0.5 rounded font-bold"
         >
           {w}
         </span>
@@ -91,7 +86,7 @@ export default function ScamPage() {
       speak(LOOK[r.label].ur, "ur-PK");
     } catch (e) {
       const err = e as ApiError;
-      setError(err.message_ur ?? err.message_en ?? "Could not check message with server");
+      setError(err.message_ur ?? err.message_en ?? "Could not check message");
     } finally {
       setLoading(false);
     }
@@ -102,29 +97,29 @@ export default function ScamPage() {
   return (
     <AppShell title="فراڈ چیکر · Relief Scam Guardian">
       <Card className="p-5 space-y-1.5">
-        <h2 className="text-xl font-bold text-[#0B4F43]">مشکوک میسج کی فوری جانچ · Check Suspicious SMS</h2>
-        <p className="text-sm text-[#5B6F6A]">
+        <h2 className="text-xl font-bold font-heading text-slate-900">مشکوک میسج کی فوری جانچ · Check Suspicious SMS</h2>
+        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
           کوئی بھی SMS یا WhatsApp میسج یہاں پیسٹ کریں۔ AI ماڈل فوری تجزیہ کر کے بتائے گا کہ کیا یہ دھوکہ یا فراڈ ہے۔
         </p>
       </Card>
 
-      <Card className="p-5 space-y-3">
+      <Card className="p-5 space-y-3.5">
         <textarea
-          className="w-full min-h-[130px] border-2 border-[#E2DDD3] rounded-2xl p-4 text-base bg-white text-[#17302B] focus:border-[#0F6B5A] focus:outline-none transition"
+          className="w-full min-h-[120px] border border-slate-300 rounded-xl p-3.5 text-sm bg-white text-slate-900 focus:border-[#0B4F43] focus:ring-1 focus:ring-[#0B4F43] focus:outline-none"
           placeholder="میسج یہاں پیسٹ کریں... / Paste SMS or WhatsApp message here..."
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
 
-        {/* Quick Example Buttons */}
-        <div className="flex flex-wrap gap-2 text-xs">
-          <span className="font-bold text-[#5B6F6A] self-center">آزمانے کے لیے نمونہ · Samples:</span>
+        {/* Quick Samples */}
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="font-semibold text-slate-500">آزمانے کے لیے نمونہ:</span>
           {EXAMPLES.map((ex, idx) => (
             <button
               key={idx}
               onClick={() => { setText(ex.text); setResult(null); setError(""); setEscalated(false); }}
               type="button"
-              className="px-3 py-1.5 rounded-xl bg-white border border-[#E2DDD3] text-[#0B4F43] font-bold hover:bg-[#DDEFE9] transition"
+              className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-medium transition"
             >
               {ex.label}
             </button>
@@ -136,7 +131,7 @@ export default function ScamPage() {
             variant="primary"
             onClick={check}
             disabled={loading || !text.trim()}
-            className="w-full text-base"
+            className="w-full"
           >
             {loading ? "ماڈل جانچ کر رہا ہے..." : "فراڈ چیک کریں · Analyze Message"}
           </Button>
@@ -144,78 +139,78 @@ export default function ScamPage() {
       </Card>
 
       {error && (
-        <div className="bg-[#FEE2E2] border border-[#F87171] text-[#991B1B] rounded-2xl p-4 font-bold text-sm">
+        <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-xl p-3.5 font-medium text-xs">
           {error}
         </div>
       )}
 
-      {/* Analysis Result Card */}
+      {/* Result Card */}
       {result && look && (
-        <div className={`rounded-3xl p-6 space-y-5 border-2 ${look.bg} ${look.border} shadow-lift animate-fade-up`}>
-          <div className="flex items-center justify-between gap-4">
+        <div className={`rounded-2xl p-5 sm:p-6 space-y-4 border ${look.bg} ${look.border} shadow-sm`}>
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               {look.icon}
-              <div>
-                <p className="text-2xl font-bold leading-tight">{look.ur}</p>
-                <p className="text-xs font-bold uppercase tracking-wider">{look.en}</p>
+              <div className="space-y-0.5">
+                <p className="text-xl font-bold font-heading leading-tight">{look.ur}</p>
+                <p className="text-xs uppercase tracking-wider font-semibold opacity-80">{look.en}</p>
               </div>
             </div>
             <button
               onClick={() => speak(look.ur, "ur-PK")}
               type="button"
-              className="min-h-[44px] min-w-[44px] rounded-2xl bg-white text-[#17302B] border border-[#E2DDD3] flex items-center justify-center shadow-sm hover:bg-slate-50 transition"
+              className="p-2 rounded-lg bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 text-xs flex items-center gap-1 shadow-sm shrink-0"
               aria-label="Listen verdict"
             >
-              <Volume2 className="w-5 h-5" />
+              <Volume2 className="w-4 h-4" /> سنیں
             </button>
           </div>
 
-          {/* Highlighted text card */}
-          <div className="bg-white rounded-2xl p-4 border border-[#E2DDD3] text-[#17302B] space-y-1.5 shadow-sm">
-            <p className="text-xs font-bold text-[#5B6F6A] uppercase">تجزیہ شدہ میسج · Analyzed Text (Risky terms highlighted):</p>
-            <p className="text-sm leading-relaxed">{highlightRiskyText(text)}</p>
+          {/* Highlighted text */}
+          <div className="bg-white rounded-xl p-4 border border-slate-200 text-slate-900 space-y-1 shadow-sm">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">تجزیہ شدہ عبارت · Analyzed Text:</p>
+            <p className="text-xs sm:text-sm leading-relaxed">{highlightRiskyText(text)}</p>
           </div>
 
-          {/* Critical Safety Guidance Banner */}
+          {/* Guidance Banner */}
           {result.label === "scam" && (
-            <div className="bg-[#991B1B] text-white rounded-2xl p-4 space-y-2 text-start shadow">
-              <div className="flex items-center gap-2 font-bold text-base">
-                <AlertOctagon className="w-6 h-6 shrink-0 text-[#FCD34D]" />
+            <div className="bg-rose-700 text-white rounded-xl p-4 space-y-2 text-xs shadow-sm">
+              <div className="flex items-center gap-2 font-bold text-sm">
+                <AlertOctagon className="w-5 h-5 text-amber-300 shrink-0" />
                 <span>حفاظتی ہدایات · DO NOT CLICK OR PAY</span>
               </div>
-              <ul className="list-disc ps-5 text-xs text-[#FEE2E2] space-y-1">
+              <ul className="list-disc ps-4 space-y-1 text-rose-100">
                 <li>کسی بھی نامعلوم لنک پر کلک نہ کریں اور اپنا شناختی کارڈ یا OTP نہ دیں۔</li>
-                <li>سرکاری احساس/بی آئی ایس پی امداد کی کوئی پیشگی فیس نہیں ہوتی۔ فیس مانگنے والا ہر میسج 100٪ دھوکہ ہے۔</li>
+                <li>سرکاری امداد کی کوئی پیشگی فیس نہیں ہوتی۔ فیس مانگنے والا ہر میسج 100٪ دھوکہ ہے۔</li>
                 <li>شکایت کے لیے پی ٹی اے ہیلپ لائن <b>8171</b> پر رابطہ کریں۔</li>
               </ul>
             </div>
           )}
 
-          {/* Reasons List */}
-          <div className="space-y-1.5 text-start">
-            <div className="flex justify-between items-center text-xs font-bold">
-              <span>ماڈل کے تجزیے کی وجوہات · Rationale</span>
+          {/* Rationale */}
+          <div className="space-y-1.5 text-xs">
+            <div className="flex justify-between items-center font-bold">
+              <span>ماڈل کے تجزیے کی وجوہات · Rationale:</span>
               <span className="font-mono">یقین: {Math.round(result.confidence * 100)}%</span>
             </div>
-            <ul className="list-disc ps-5 text-xs space-y-1 font-bold">
+            <ul className="list-disc ps-4 space-y-1 font-medium">
               {result.reasons.map((r, i) => (
                 <li key={i}>{r}</li>
               ))}
             </ul>
           </div>
 
-          {/* Unsure Verdict: Route to Human Officer */}
+          {/* Escalation Button for Unsure */}
           {result.label === "unsure" && (
-            <div className="bg-white rounded-2xl p-4 border border-[#C77700] space-y-3 shadow-sm">
-              <p className="text-sm font-bold text-[#92400E]">
+            <div className="bg-white rounded-xl p-4 border border-amber-300 space-y-2.5">
+              <p className="text-xs sm:text-sm font-bold text-amber-950">
                 انسانی ریلیف افسر کو جانچ کے لیے بھیجیں · Forward to Human Review
               </p>
-              <p className="text-xs text-[#5B6F6A]">
+              <p className="text-xs text-slate-600">
                 اگر آپ کو یقین نہیں ہے، تو آپ یہ میسج ہمارے ریلیف آفیسر کو بھیج سکتے ہیں تاکہ وہ سرکاری ریکارڈ سے تصدیق کر سکے۔
               </p>
               {escalated ? (
-                <div className="bg-[#DDEFE9] text-[#0B4F43] rounded-xl p-3 text-xs font-bold flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-[#1F8A5B]" /> میسج ریلیف افسر کو بھیج دیا گیا ہے (Ticket #SCAM-894)
+                <div className="bg-emerald-50 text-emerald-800 rounded-lg p-2.5 text-xs font-semibold flex items-center gap-2 border border-emerald-200">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> میسج ریلیف افسر کو بھیج دیا گیا ہے (Ticket #SCAM-894)
                 </div>
               ) : (
                 <Button
@@ -223,7 +218,7 @@ export default function ScamPage() {
                   size="sm"
                   onClick={() => setEscalated(true)}
                 >
-                  افسر کو بھیجیں · Forward to Officer <ArrowRight className="w-4 h-4" />
+                  افسر کو بھیجیں · Forward to Officer <ArrowRight className="w-3.5 h-3.5" />
                 </Button>
               )}
             </div>

@@ -45,13 +45,13 @@ export default function OfficerPage() {
     setError("");
     try {
       await api.decideReview(caseId, decision, approved, notes.trim());
-      setMsg(`کیس ${caseId} کا فیصلہ محفوظ ہو گیا اور آڈٹ لاگ میں لکھ دیا گیا · Decision recorded in tamper-proof audit log.`);
+      setMsg(`کیس ${caseId} کا فیصلہ محفوظ ہو گیا اور آڈٹ لاگ میں لکھ دیا گیا · Decision recorded in audit log.`);
       setNotes("");
       setOpen("");
       setConfirmRejectId(null);
       await load();
     } catch (e) {
-      setError((e as ApiError).message_en ?? "Could not save the decision");
+      setError((e as ApiError).message_en ?? "Could not save decision");
     } finally {
       setBusy(false);
     }
@@ -59,27 +59,29 @@ export default function OfficerPage() {
 
   return (
     <AppShell title="ریویو قطار · Officer Review Queue">
-      {/* Zero Auto-Reject Guiding Policy Banner */}
-      <Card className="p-5 border-2 border-[#1F8A5B] bg-[#DDEFE9]/30 flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-[#DDEFE9] text-[#0B4F43] flex items-center justify-center shrink-0">
-          <ShieldCheck className="w-7 h-7" />
+      {/* Zero Auto-Reject Banner */}
+      <Card className="p-5 border-emerald-300 bg-emerald-50/40 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-emerald-100 text-[#0B4F43] flex items-center justify-center shrink-0">
+          <ShieldCheck className="w-6 h-6" />
         </div>
-        <div>
-          <p className="font-bold text-[#0B4F43] text-base">زیرو خودکار مسترد پالیسی · Zero Auto-Reject Safety Invariant</p>
-          <p className="text-xs text-[#5B6F6A] mt-0.5">
-            سسٹم کبھی کسی شہری کو خودکار مسترد نہیں کرتا۔ کم اعتماد والے کیسز انسانی جائزے کے لیے یہاں ترجیحی اسکور کے مطابق ترتیب دیے گئے ہیں۔
+        <div className="space-y-0.5">
+          <p className="font-bold text-[#0B4F43] text-sm sm:text-base font-heading">
+            زیرو خودکار مسترد پالیسی · Zero Auto-Reject Invariant
+          </p>
+          <p className="text-xs text-slate-600 leading-relaxed">
+            کمپیوٹر کبھی کسی ضرورت مند شہری کو خود بخود مسترد نہیں کرتا۔ کم اعتماد والے تمام کیسز انسانی فیصلے کے لیے یہاں آتے ہیں۔
           </p>
         </div>
       </Card>
 
-      {msg && <p className="bg-[#DDEFE9] text-[#0B4F43] border border-[#1F8A5B] rounded-2xl p-4 font-bold text-sm shadow-sm">{msg}</p>}
-      {error && <p className="bg-[#FEE2E2] text-[#991B1B] border border-[#F87171] rounded-2xl p-4 font-bold text-sm shadow-sm">{error}</p>}
+      {msg && <p className="bg-emerald-50 text-emerald-900 border border-emerald-200 rounded-xl p-3.5 font-medium text-xs">{msg}</p>}
+      {error && <p className="bg-rose-50 text-rose-900 border border-rose-200 rounded-xl p-3.5 font-medium text-xs">{error}</p>}
 
       {items && items.length === 0 && (
-        <Card className="p-8 text-center space-y-3">
-          <CheckCircle2 className="w-12 h-12 text-[#1F8A5B] mx-auto" />
-          <p className="text-xl font-bold text-[#17302B]">قطار مکمل خالی ہے · Queue is empty</p>
-          <p className="text-sm text-[#5B6F6A]">تمام ریلیف کیسز خوش اسلوبی سے نمٹا دیے گئے ہیں۔</p>
+        <Card className="p-8 text-center space-y-2">
+          <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto" />
+          <p className="text-lg font-bold text-slate-900">قطار مکمل خالی ہے · Queue is empty</p>
+          <p className="text-xs text-slate-500">تمام ریلیف کیسز نمٹا دیے گئے ہیں۔</p>
         </Card>
       )}
 
@@ -87,7 +89,6 @@ export default function OfficerPage() {
         const isOpen = open === it.case_id;
         const breakdown = it.handoff_packet.component_breakdown || {};
         const entries = Object.entries(breakdown);
-        // Weakest link calculation
         const weakest = entries.length > 0
           ? entries.reduce((min, cur) => cur[1] < min[1] ? cur : min, entries[0])
           : null;
@@ -99,84 +100,84 @@ export default function OfficerPage() {
               onClick={() => { setOpen(isOpen ? "" : it.case_id); setError(""); setConfirmRejectId(null); }}
               type="button"
             >
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
-                  <p className="text-lg font-bold text-[#17302B]">{it.citizen_name}</p>
-                  <StatusBadge status="in_review" labelUr={`ترجیح ${it.priority_score.toFixed(1)}`} labelEn={`P ${it.priority_score.toFixed(1)}`} />
+                  <p className="text-base font-bold text-slate-900">{it.citizen_name}</p>
+                  <StatusBadge status="in_review" labelUr={`ترجیح ${it.priority_score.toFixed(1)}`} labelEn={`P${it.priority_score.toFixed(1)}`} />
                 </div>
-                <p className="text-xs text-[#5B6F6A] font-mono">
-                  CNIC: {it.cnic} · Claim: Rs {it.requested_amount.toLocaleString()} · Overall Confidence: {Math.round(it.confidence * 100)}%
+                <p className="text-xs text-slate-500 font-mono">
+                  CNIC: <span dir="ltr">{it.cnic}</span> · Claim: Rs {it.requested_amount.toLocaleString()} · Overall: {Math.round(it.confidence * 100)}%
                 </p>
               </div>
-              <div className="text-[#5B6F6A]">
+              <div className="text-slate-400">
                 {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
               </div>
             </button>
 
             {isOpen && (
-              <div className="border-t border-[#E2DDD3] pt-4 space-y-4 animate-fade-up">
+              <div className="border-t border-slate-100 pt-4 space-y-4 text-xs">
                 {/* Weakest Link Callout */}
                 {weakest && (
-                  <div className="bg-[#FFFBEB] border-2 border-[#E8A33D] rounded-2xl p-4 flex items-center justify-between gap-3 shadow-sm">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#FEF3C7] text-[#C77700] flex items-center justify-center shrink-0">
-                        <AlertTriangle className="w-6 h-6" />
-                      </div>
+                  <div className="bg-amber-50 border border-amber-300 rounded-xl p-3.5 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0" />
                       <div>
-                        <span className="text-[11px] font-bold text-[#C77700] uppercase tracking-wider block">سب سے کمزور جزو · Weakest Link</span>
-                        <p className="font-bold text-sm text-[#17302B]">
-                          {LABELS[weakest[0]]?.ur ?? weakest[0]} ({LABELS[weakest[0]]?.en ?? weakest[0]}): <span className="text-[#C77700] font-mono font-bold">{Math.round(weakest[1] * 100)}%</span>
+                        <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">سب سے کمزور جزو · Weakest Link</span>
+                        <p className="font-bold text-xs sm:text-sm text-slate-900">
+                          {LABELS[weakest[0]]?.ur ?? weakest[0]}: <span className="text-amber-800 font-mono font-bold">{Math.round(weakest[1] * 100)}%</span>
                         </p>
                       </div>
                     </div>
-                    <span className="text-xs font-bold bg-[#FEF3C7] text-[#92400E] px-3 py-1 rounded-xl">
-                      Requires Review
+                    <span className="text-[11px] font-bold bg-amber-200/60 text-amber-900 px-2.5 py-1 rounded">
+                      Review Needed
                     </span>
                   </div>
                 )}
 
                 {/* Handoff Packet Flags */}
-                <div className="bg-[#F7F4EE] rounded-2xl p-4 border border-[#E2DDD3] space-y-2">
-                  <p className="font-bold text-sm text-[#0B4F43]">افسر کے لیے تفصیلات · Handoff Packet Flags</p>
-                  <ul className="list-disc ps-5 text-xs text-[#17302B] space-y-1">
+                <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200 space-y-1.5">
+                  <p className="font-bold text-slate-900">افسر کے لیے تفصیلات · Handoff Packet Flags</p>
+                  <ul className="list-disc ps-4 space-y-0.5 text-slate-700">
                     {it.handoff_packet.flags.map((f) => (
                       <li key={f}>{f}</li>
                     ))}
                   </ul>
-                  <p className="text-xs text-[#5B6F6A] pt-1">
-                    <b>تجویز کردہ اقدام · Suggested Action:</b> {it.handoff_packet.suggested_action}
+                  <p className="text-slate-500 pt-1">
+                    <b>تجویز کردہ اقدام:</b> {it.handoff_packet.suggested_action}
                   </p>
                 </div>
 
-                {/* All 5 Component Breakdown Bars */}
-                <div className="space-y-2 bg-[#F7F4EE]/60 rounded-2xl p-4 border border-[#E2DDD3]">
-                  <p className="text-xs font-bold text-[#5B6F6A] uppercase mb-1">تمام اعتمادی اجزاء · 5-Point Component Breakdown</p>
+                {/* Component Breakdown Bars */}
+                <div className="space-y-2 bg-slate-50 rounded-xl p-3.5 border border-slate-200">
+                  <p className="font-bold text-slate-700 uppercase tracking-wider text-[11px] mb-1">
+                    تمام اعتمادی اجزاء · 5-Point Component Breakdown
+                  </p>
                   {entries.map(([k, v]) => {
                     const isWeak = weakest && weakest[0] === k;
                     return (
-                      <div key={k} className="flex items-center gap-2 text-xs">
-                        <span className={`w-40 truncate ${isWeak ? "font-bold text-[#C77700]" : "text-[#17302B]"}`}>
+                      <div key={k} className="flex items-center gap-2">
+                        <span className={`w-36 truncate ${isWeak ? "font-bold text-amber-800" : "text-slate-700"}`}>
                           {LABELS[k]?.ur ?? k}
                         </span>
-                        <div className="flex-1 h-3 bg-[#E2DDD3] rounded-full overflow-hidden">
+                        <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
                           <div
-                            className={`h-full transition-all duration-500 ${v < 0.6 ? "bg-[#C77700]" : "bg-[#1F8A5B]"}`}
+                            className={`h-full transition-all ${v < 0.6 ? "bg-amber-500" : "bg-emerald-600"}`}
                             style={{ width: `${Math.round(v * 100)}%` }}
                           />
                         </div>
-                        <span className="w-10 text-end font-mono font-bold">{Math.round(v * 100)}%</span>
+                        <span className="w-10 text-end font-mono font-semibold">{Math.round(v * 100)}%</span>
                       </div>
                     );
                   })}
                 </div>
 
-                {/* Mandatory Officer Notes */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-[#17302B]">
-                    لازمی افسر نوٹ (کم از کم 10 حروف) · Mandatory Written Reason (min 10 characters)
+                {/* Mandatory Notes */}
+                <div className="space-y-1">
+                  <label className="block font-semibold text-slate-700">
+                    لازمی تحریری نوٹ (کم از کم 10 حروف) · Mandatory Written Reason
                   </label>
                   <textarea
-                    className="w-full min-h-[90px] border-2 border-[#E2DDD3] rounded-2xl p-3 text-sm bg-white text-[#17302B] focus:border-[#0F6B5A] focus:outline-none transition"
+                    className="w-full min-h-[80px] border border-slate-300 rounded-xl p-3 text-xs bg-white text-slate-900 focus:border-[#0B4F43] focus:ring-1 focus:ring-[#0B4F43] focus:outline-none"
                     placeholder="فیصلے کی ٹھوس وجہ یہاں درج کریں... / Record official justification for audit..."
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
@@ -185,16 +186,17 @@ export default function OfficerPage() {
 
                 {/* Rejection Confirmation Step */}
                 {confirmRejectId === it.case_id ? (
-                  <div className="bg-[#FFFBEB] border-2 border-[#5B6F6A] rounded-2xl p-4 space-y-3">
-                    <p className="font-bold text-sm text-[#17302B]">
+                  <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 space-y-3">
+                    <p className="font-bold text-amber-950 text-sm">
                       کیا آپ واقعی اس کیس کو مسترد کرنا چاہتے ہیں؟ · Confirm Rejection
                     </p>
-                    <p className="text-xs text-[#5B6F6A]">
+                    <p className="text-slate-600">
                       مسترد کرنے پر تحریری وجہ آڈٹ لاگ میں محفوظ ہوگی اور شہری کو مطلع کیا جائے گا۔
                     </p>
                     <div className="flex gap-2">
                       <Button
                         variant="neutral"
+                        size="sm"
                         onClick={() => setConfirmRejectId(null)}
                         className="flex-1"
                       >
@@ -202,9 +204,10 @@ export default function OfficerPage() {
                       </Button>
                       <Button
                         variant="neutral"
+                        size="sm"
                         disabled={busy}
                         onClick={() => decide(it.case_id, "human_review", false)}
-                        className="flex-1 bg-[#5B6F6A] text-white hover:bg-[#475753]"
+                        className="flex-1 bg-slate-700 text-white hover:bg-slate-800"
                       >
                         {busy ? "محفوظ ہو رہا ہے..." : "ہاں، مسترد کریں · Confirm Reject"}
                       </Button>
@@ -212,29 +215,29 @@ export default function OfficerPage() {
                   </div>
                 ) : (
                   /* 3 Action Buttons */
-                  <div className="grid grid-cols-3 gap-2 font-bold text-sm pt-1">
-                    {/* 1. Approve (Positive Style: #1F8A5B) */}
+                  <div className="grid grid-cols-3 gap-2 pt-1 font-bold">
                     <Button
                       variant="secondary"
+                      size="sm"
                       disabled={busy}
                       onClick={() => decide(it.case_id, "auto_approve", true)}
-                      className="bg-[#1F8A5B] hover:bg-[#187049]"
+                      className="bg-emerald-600 hover:bg-emerald-700"
                     >
-                      <CheckCircle2 className="w-4 h-4" /> منظور · Approve
+                      <CheckCircle2 className="w-3.5 h-3.5" /> منظور · Approve
                     </Button>
 
-                    {/* 2. Ask More Proof (Warm Accent Style: #E8A33D) */}
                     <Button
                       variant="primary"
+                      size="sm"
                       disabled={busy}
                       onClick={() => decide(it.case_id, "ask_more_proof", false)}
                     >
-                      <FileQuestion className="w-4 h-4" /> ثبوت · Proof
+                      <FileQuestion className="w-3.5 h-3.5" /> ثبوت · Proof
                     </Button>
 
-                    {/* 3. Reject (Neutral Outlined Style: NOT RED) */}
                     <Button
                       variant="neutral"
+                      size="sm"
                       disabled={busy}
                       onClick={() => {
                         if (notes.trim().length < 10) {
@@ -243,9 +246,9 @@ export default function OfficerPage() {
                         }
                         setConfirmRejectId(it.case_id);
                       }}
-                      className="border-[#5B6F6A] text-[#17302B]"
+                      className="border-slate-300 text-slate-800"
                     >
-                      <AlertOctagon className="w-4 h-4 text-[#5B6F6A]" /> مسترد · Reject
+                      <AlertOctagon className="w-3.5 h-3.5 text-slate-500" /> مسترد · Reject
                     </Button>
                   </div>
                 )}

@@ -28,16 +28,26 @@ export function StepStones({
   className = "",
 }: StepStonesProps) {
   const total = milestones.length;
-  const progressPct = total > 1 ? (Math.min(currentStep, total - 1) / (total - 1)) * 100 : 0;
+  const currentMilestone = milestones[Math.min(currentStep, total - 1)] ?? milestones[0];
 
   return (
-    <div className={`bg-white rounded-3xl p-4 shadow-sm border border-[#E2DDD3] ${className}`}>
-      <div className="relative flex items-center justify-between px-3">
-        {/* The amber path line that draws itself */}
-        <div className="absolute inset-x-8 top-5 h-1.5 bg-[#E2DDD3] -z-0 rounded-full overflow-hidden">
+    <div className={`bg-white rounded-2xl p-4 border border-slate-200 shadow-sm ${className}`}>
+      {/* Mobile clean summary header */}
+      <div className="flex sm:hidden items-center justify-between pb-2 mb-2 border-b border-slate-100 text-xs">
+        <span className="font-bold text-[#0B4F43]">
+          مرحلہ {currentStep + 1} از {total}
+        </span>
+        <span className="font-medium text-slate-700">
+          {currentMilestone.labelUr} ({currentMilestone.labelEn})
+        </span>
+      </div>
+
+      {/* Progress Track */}
+      <div className="relative flex items-center justify-between px-2 pt-1 pb-1">
+        <div className="absolute inset-x-6 top-5 h-1 bg-slate-200 -z-0 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-[#0B4F43] via-[#E8A33D] to-[#E8A33D] transition-all duration-500 ease-out rounded-full"
-            style={{ width: `${progressPct}%` }}
+            className="h-full bg-[#0B4F43] transition-all duration-500 ease-out rounded-full"
+            style={{ width: `${(Math.min(currentStep, total - 1) / (total - 1)) * 100}%` }}
           />
         </div>
 
@@ -48,30 +58,23 @@ export function StepStones({
           return (
             <div key={m.id} className="relative z-10 flex flex-col items-center">
               <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300 ${
                   isCurrent
-                    ? "bg-[#0B4F43] text-[#E8A33D] ring-4 ring-[#E8A33D]/40 animate-pulse-stone scale-110 shadow-md"
+                    ? "bg-[#0B4F43] text-white ring-4 ring-[#0B4F43]/20 shadow"
                     : isCompleted
-                    ? "bg-[#1F8A5B] text-white shadow-sm"
-                    : "bg-white border-2 border-[#E2DDD3] text-[#5B6F6A]"
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "bg-white border-2 border-slate-300 text-slate-500"
                 }`}
               >
-                {isCompleted ? (
-                  <svg className="w-4 h-4 checkmark-draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                ) : (
-                  idx + 1
-                )}
+                {isCompleted ? "✓" : idx + 1}
               </div>
               <span
-                className={`text-xs mt-1.5 font-bold transition ${
-                  isCurrent ? "text-[#0B4F43]" : isCompleted ? "text-[#1F8A5B]" : "text-[#5B6F6A]"
+                className={`text-xs mt-1.5 font-medium transition hidden sm:block ${
+                  isCurrent ? "font-bold text-[#0B4F43]" : isCompleted ? "text-emerald-700" : "text-slate-500"
                 }`}
               >
                 {m.labelUr}
               </span>
-              <span className="text-[10px] text-[#5B6F6A] hidden sm:block">{m.labelEn}</span>
             </div>
           );
         })}
