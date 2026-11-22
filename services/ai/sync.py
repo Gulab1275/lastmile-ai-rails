@@ -9,9 +9,11 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from services.ai.forms import extract_claim_form
 from services.ai.agent import execute_agent_workflow
 from services.ai.anomaly import detect_claim_anomalies
+from services.ai.forms import extract_claim_form
+from services.api.engine.consent_gateway import consent_gateway
+from services.shared.schemas import ConsentScope
 
 # In-memory idempotency register for synced offline batches
 _SYNC_IDEMPOTENCY_STORE: Dict[str, Dict[str, Any]] = {}
@@ -48,7 +50,7 @@ def process_offline_sync_batch(
 
     for item in queued_cases:
         idempotency_key = item.get("idempotency_key") or item.get("client_case_id") or uuid.uuid4().hex
-        
+
         # Check if already processed
         if idempotency_key in _SYNC_IDEMPOTENCY_STORE:
             duplicate_count += 1
@@ -70,6 +72,62 @@ def process_offline_sync_batch(
                 for k, v in extracted_dict.items():
                     if v is not None and k not in citizen_data:
                         citizen_data[k] = v
+
+            # Task 1 & 3: Check legacy CNIC and helper acting consent at point-of-use
+            cnic = citizen_data.get("cnic", "")
+            if cnic and cnic.endswith("-X"):
+                failed_count += 1
+                results.append({
+                    "idempotency_key": idempotency_key,
+                    "status": "SYNC_FAILED_UNVERIFIED_LEGACY_CNIC",
+                    "error": f"Citizen has unverified legacy CNIC ({cnic}). Identity-dependent workflows restricted until manual caseworker verification."
+                })
+                continue
+
+            # Section 4 Guard: Identify citizen and verify consent before ANY protected processing
+            citizen_id = item.get("citizen_id") or citizen_data.get("citizen_id")
+            if not citizen_id and cnic:
+                from db.connection import SessionLocal
+                from db.models import Citizen as DBCitizen
+                try:
+                    with SessionLocal() as db_session:
+                        matched_citizens = db_session.query(DBCitizen).filter_by(cnic=cnic).all()
+                        if len(matched_citizens) == 1:
+                            citizen_id = matched_citizens[0].id
+                        elif len(matched_citizens) > 1:
+                            failed_count += 1
+                            results.append({
+                                "idempotency_key": idempotency_key,
+                                "status": "SYNC_FAILED_AMBIGUOUS_IDENTITY",
+                                "error": "Multiple citizen records matched CNIC. Ambiguous identity cannot be synced."
+                            })
+                            continue
+                except Exception:
+                    pass
+
+            if not citizen_id:
+                failed_count += 1
+                results.append({
+                    "idempotency_key": idempotency_key,
+                    "status": "SYNC_FAILED_IDENTITY_UNVERIFIED",
+                    "error": "Missing or unverifiable citizen identity. Offline sync requires verified citizen registration."
+                })
+                continue
+
+            # Always enforce active consent for the verified citizen
+            has_consent = consent_gateway.check_consent(
+                citizen_id=citizen_id,
+                scope=ConsentScope.HELPER_ACTING,
+                acting_helper_id=helper_id
+            )
+            if not has_consent:
+                failed_count += 1
+                results.append({
+                    "idempotency_key": idempotency_key,
+                    "status": "SYNC_FAILED_CONSENT_REVOKED",
+                    "error": f"Active consent for scope HELPER_ACTING not found or revoked for citizen {citizen_id}."
+                })
+                continue
 
             case_id = f"case_sync_{uuid.uuid4().hex[:8]}"
 

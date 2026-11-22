@@ -5,17 +5,17 @@ Populates Supabase with:
 2. 200 mock citizens (with intentional variants, duplicates, typos, and missing fields).
 3. 3 test cases for demonstrating the 3 decision routes.
 """
-import sys
-import random
 import hashlib
+import random
+import sys
 from pathlib import Path
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from db.connection import SessionLocal
-from db.models import User, Citizen, Case, Document, RuleVersion, Consent, AuditLog
-from services.shared.schemas import UserRole, CaseStatus, ConsentScope, ConsentStatus
+from db.models import AuditLog, Case, Citizen, Consent, Document, User
+from services.shared.schemas import CaseStatus, ConsentScope, ConsentStatus, UserRole
 
 FIRST_NAMES = ["Muhammad", "Mohammad", "Muhammed", "Mohd", "Ali", "Hassan", "Ahmed", "Fatima", "Ayesha", "Zainab", "Khadija", "Rashid", "Tariq", "Imran"]
 LAST_NAMES = ["Khan", "Ahmed", "Syed", "Shah", "Malik", "Chaudhry", "Bhatti", "Ansari", "Qureshi", "Abbasi"]
@@ -38,7 +38,7 @@ def seed_database():
             ("admin.tariq@rahbar.local", "Admin Tariq", UserRole.ADMIN.value),
             ("auditor.sarah@rahbar.local", "Auditor Sarah", UserRole.AUDITOR.value),
         ]
-        
+
         for email, name, role in demo_users:
             if not session.query(User).filter_by(email=email).first():
                 user = User(
@@ -55,13 +55,13 @@ def seed_database():
         existing_count = session.query(Citizen).count()
         if existing_count < 200:
             citizens_to_add = []
-            
+
             # 1. Generate 145 clean baseline citizens
             for i in range(existing_count + 1, 146):
                 fname = random.choice(FIRST_NAMES)
                 lname = random.choice(LAST_NAMES)
                 cnic = generate_cnic(random.randint(42101, 42501), random.randint(1000000, 9999999), random.randint(1, 9))
-                
+
                 # Intentional variants for names
                 variants = [f"{fname} {lname}"]
                 if fname in ["Muhammad", "Mohammad", "Muhammed"]:

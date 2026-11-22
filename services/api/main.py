@@ -3,11 +3,17 @@ Main FastAPI Application for Rahbar.
 The Last Mile: AI on Public Rails (Coder's Cup '26).
 Team: Mahandar (Backend Lead & AWS Infra), Naresh (Agents & DB), Gulab (Frontend & PWA).
 """
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 
 from services.api.config import settings
+from services.api.routes.admin.api_keys import router as admin_api_keys_router
+from services.api.routes.ai import router as ai_router
 from services.api.routes.audit import router as audit_router
 from services.api.routes.auth import router as auth_router
 from services.api.routes.cases import router as cases_router
@@ -16,10 +22,10 @@ from services.api.routes.decision import router as decision_router
 from services.api.routes.digital_twin import router as digital_twin_router
 from services.api.routes.health import router as health_router
 from services.api.routes.mock_routes import router as mock_router
+from services.api.routes.public import router as public_router
 from services.api.routes.review import router as review_router
 from services.api.routes.rules import router as rules_router
 from services.api.routes.webhooks import router as webhooks_router
-from services.api.routes.ai import router as ai_router
 from services.api.security.rate_limit import limiter, rate_limit_custom_handler
 
 app = FastAPI(
@@ -64,12 +70,45 @@ app.include_router(mock_router, prefix=api_prefix)
 app.include_router(digital_twin_router, prefix=api_prefix)
 app.include_router(webhooks_router, prefix=api_prefix)
 app.include_router(ai_router, prefix=api_prefix)
+app.include_router(admin_api_keys_router, prefix=api_prefix)
+app.include_router(public_router, prefix=api_prefix)
+
+# 4. Mount Static Directory & Serve Web App
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+
+@app.get("/app", include_in_schema=False)
+async def serve_app():
+    """Serves the interactive single-page PWA web dashboard."""
+    index_path = STATIC_DIR / "index.html"
+    if index_path.exists():
+        return FileResponse(str(index_path))
+    return {"error": "PWA Web App not found"}
+
+@app.get("/sw.js", include_in_schema=False)
+async def serve_sw():
+    """Serves the PWA Service Worker."""
+    sw_path = STATIC_DIR / "sw.js"
+    if sw_path.exists():
+        return FileResponse(str(sw_path), media_type="application/javascript")
+    return {"error": "sw.js not found"}
+
+@app.get("/manifest.json", include_in_schema=False)
+async def serve_manifest():
+    """Serves the PWA Web App Manifest."""
+    manifest_path = STATIC_DIR / "manifest.json"
+    if manifest_path.exists():
+        return FileResponse(str(manifest_path), media_type="application/json")
+    return {"error": "manifest.json not found"}
 
 # Root convenience redirect or status
 @app.get("/")
 async def root():
     return {
         "message": "Rahbar API Gateway is running.",
+        "app": "/app",
         "docs": "/docs",
         "health": f"{api_prefix}/health",
         "version": "1.0.0"

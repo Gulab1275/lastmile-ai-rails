@@ -3,12 +3,14 @@ Urdu Voice Pipeline (Challenge 07: Works for Everyone).
 Speech-to-Text: Whisper-large-v3 via Groq (handles Urdu natively).
 Text-to-Speech: edge-tts (Urdu: ur-PK-UzmaNeural / ur-PK-AsadNeural) with MD5 audio disk caching.
 """
-import os
-import io
 import asyncio
 import hashlib
+import io
+import os
+import re
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
 from dotenv import load_dotenv
 
 # Load environment
@@ -24,41 +26,155 @@ CACHE_DIR.mkdir(exist_ok=True)
 URDU_VOICE = "ur-PK-UzmaNeural"
 ENGLISH_VOICE = "en-US-JennyNeural"
 
-def transcribe(audio_bytes: bytes, language: str = "ur") -> Dict[str, Any]:
+# Whisper Context Priming Prompt (biases away from music/ambient noise)
+URDU_WHISPER_PROMPT = "پاکستانی شہری کی آواز، احساس و بے نظیر پروگرام، نام، شناختی کارڈ، آمدنی، بیوہ کا امدادی فارم۔"
+
+# Hallucination tokens emitted by Whisper on silence or background room noise
+SILENCE_HALLUCINATIONS = {
+    "موسیقا", "موسیقی", "موسیقی۔", "موسیقی!", "موسیقا۔", "موسیقی؟",
+    "[موسیقی]", "(موسیقی)", "[music]", "(music)", "music",
+    "thank you", "subtitles", "subtitle", "...", "۔۔۔", "آپ"
+}
+
+def detect_audio_format(audio_bytes: bytes, filename: Optional[str] = None) -> tuple[str, str]:
+    """Detects audio file extension and MIME type from header magic bytes or filename."""
+    if filename:
+        ext = filename.lower().split(".")[-1]
+        if ext in ("webm", "weba"):
+            return "input.webm", "audio/webm"
+        elif ext == "wav":
+            return "input.wav", "audio/wav"
+        elif ext == "ogg":
+            return "input.ogg", "audio/ogg"
+        elif ext in ("m4a", "mp4"):
+            return "input.m4a", "audio/m4a"
+        elif ext == "mp3":
+            return "input.mp3", "audio/mp3"
+
+    # Magic byte sniffing
+    if audio_bytes.startswith(b"\x1aE\xdf\xa3"):
+        return "input.webm", "audio/webm"
+    elif audio_bytes.startswith(b"RIFF"):
+        return "input.wav", "audio/wav"
+    elif audio_bytes.startswith(b"OggS"):
+        return "input.ogg", "audio/ogg"
+    elif b"ftyp" in audio_bytes[:16]:
+        return "input.m4a", "audio/m4a"
+
+    # Default to MP3
+    return "input.mp3", "audio/mp3"
+
+def analyze_audio_vad(audio_bytes: bytes) -> Dict[str, Any]:
+    """
+    Performs Voice Activity Detection (VAD) and RMS energy level calculation.
+    Detects flatline silence or faint room hum early before triggering external Whisper API.
+    """
+    if len(audio_bytes) < 64:
+        return {"has_voice": False, "rms_energy": 0.0, "reason": "Payload too small"}
+
+    # For uncompressed WAV audio
+    if audio_bytes.startswith(b"RIFF") and len(audio_bytes) > 44:
+        try:
+            import struct
+            pcm_data = audio_bytes[44:]
+            num_samples = len(pcm_data) // 2
+            if num_samples > 0:
+                stride = max(1, num_samples // 1000)
+                samples = struct.unpack(f"<{num_samples}h", pcm_data[:num_samples * 2])
+                sampled_sq = [float(s) ** 2 for s in samples[::stride]]
+                rms = (sum(sampled_sq) / len(sampled_sq)) ** 0.5
+                if rms < 80.0:
+                    return {"has_voice": False, "rms_energy": round(rms, 2), "reason": "Ambient silence below threshold"}
+                return {"has_voice": True, "rms_energy": round(rms, 2), "reason": "Vocal activity detected"}
+        except Exception:
+            pass
+
+    # Minimum payload size threshold for compressed webm/ogg/mp3
+    if len(audio_bytes) < 300:
+        return {"has_voice": False, "rms_energy": 0.0, "reason": "Recording too short (< 0.2s)"}
+
+    return {"has_voice": True, "rms_energy": 100.0, "reason": "Vocal stream payload acceptable"}
+
+def transcribe(
+    audio_bytes: bytes,
+    language: str = "ur",
+    filename: Optional[str] = None,
+    content_type: Optional[str] = None
+) -> Dict[str, Any]:
     """
     Transcribes Urdu / English speech to text using Groq Whisper-large-v3.
+    Pre-screened with Voice Activity Detection (VAD) to filter ambient flatline noise.
+    Supports WebM (from browser MediaRecorder), WAV, MP3, OGG, and M4A.
     """
     if not audio_bytes:
         return {"text": "", "language": language, "confidence": 0.0}
+
+    # 1. Voice Activity Detection (VAD) Early Guardrail
+    vad_res = analyze_audio_vad(audio_bytes)
+    if not vad_res["has_voice"]:
+        return {
+            "text": "",
+            "language": language,
+            "confidence": 0.0,
+            "format": filename.split(".")[-1] if filename else "unknown",
+            "is_silent": True,
+            "message": "کوئی واضح آواز سنائی نہیں دی (VAD: No speech detected in recording)"
+        }
 
     from groq import Groq
     if not GROQ_API_KEY:
         raise ValueError("GROQ_API_KEY is required for voice transcription")
 
     client = Groq(api_key=GROQ_API_KEY)
-    
-    # Send audio bytes as in-memory file tuple
-    file_tuple = ("input.mp3", io.BytesIO(audio_bytes), "audio/mp3")
-    
+
+    # Auto-detect audio format
+    detected_name, detected_mime = detect_audio_format(audio_bytes, filename)
+    file_tuple = (detected_name, io.BytesIO(audio_bytes), content_type or detected_mime)
+
     try:
         transcription = client.audio.transcriptions.create(
             file=file_tuple,
             model="whisper-large-v3",
             language=language if language != "auto" else None,
+            prompt=URDU_WHISPER_PROMPT if language == "ur" else None,
             temperature=0.0
         )
-        text = transcription.text.strip()
-        confidence = 0.95 if len(text) > 5 else 0.70
+        raw_text = transcription.text.strip()
+
+        # Check for silence or Whisper hallucinations on low/ambient room sound
+        clean_norm = re.sub(r"[^\w\s]", "", raw_text).strip()
+        is_silence = (
+            not raw_text
+            or raw_text.lower() in SILENCE_HALLUCINATIONS
+            or clean_norm in ("موسیقا", "موسیقی", "music")
+            or len(clean_norm) <= 1
+        )
+
+        if is_silence:
+            return {
+                "text": "",
+                "language": language,
+                "confidence": 0.0,
+                "format": detected_name.split(".")[-1],
+                "is_silent": True,
+                "message": "کوئی واضح آواز سنائی نہیں دی (No speech detected)"
+            }
+
+        confidence = 0.95 if len(raw_text) > 5 else 0.75
         return {
-            "text": text,
+            "text": raw_text,
             "language": language,
-            "confidence": confidence
+            "confidence": confidence,
+            "format": detected_name.split(".")[-1],
+            "is_silent": False,
+            "message": "کامیابی سے ٹرانسکرائب ہو گیا"
         }
     except Exception as e:
         return {
             "text": "",
             "language": language,
             "confidence": 0.0,
+            "is_silent": True,
             "error": str(e)
         }
 
@@ -80,13 +196,13 @@ def synthesize(text: str, lang: str = "ur") -> bytes:
     # MD5 caching
     cache_key = hashlib.md5(f"{lang}:{text}".encode("utf-8")).hexdigest()
     cache_file = CACHE_DIR / f"{cache_key}.mp3"
-    
+
     if cache_file.exists():
         with open(cache_file, "rb") as f:
             return f.read()
 
     voice = URDU_VOICE if lang == "ur" else ENGLISH_VOICE
-    
+
     try:
         # Run async in synchronous context
         return asyncio.run(_synthesize_async(text, voice, cache_file))

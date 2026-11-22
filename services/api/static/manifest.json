@@ -1,0 +1,22 @@
+{
+  "short_name": "Rahbar",
+  "name": "رہبر — The Last Mile AI on Public Rails",
+  "description": "Citizen-first Digital Public Infrastructure (DPI) offline-first PWA for cash transfers and public entitlements in Pakistan.",
+  "icons": [
+    {
+      "src": "/static/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/static/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/app",
+  "background_color": "#0f172a",
+  "theme_color": "#059669",
+  "display": "standalone",
+  "orientation": "portrait"
+}

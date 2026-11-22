@@ -95,3 +95,49 @@ def test_system_never_auto_rejects():
     # Route must be human_review, NOT a hard automated rejection
     assert decision.route == RouteDecision.HUMAN_REVIEW
     assert decision.route != "auto_reject"
+
+
+def test_scam_score_advisory_only_cannot_independently_reject_or_alter_eligibility():
+    """
+    Priority 4 Safety Requirement:
+    The scam classifier is strictly advisory-only.
+    A high scam score (scam_safety = 0.0) MUST NOT:
+    1. Alter or override deterministic eligibility rules.
+    2. Automatically reject or disenfranchise an eligible citizen.
+    3. Issue an auto-rejection.
+    Instead, it routes to HUMAN_REVIEW so a human caseworker reviews the case.
+    """
+    from services.api.engine.rules_engine import rules_engine
+    engine = DecisionEngine()
+
+    case_data = {
+        "monthly_income": 18000.0,
+        "requested_amount": 12000.0,
+        "household_size": 4
+    }
+
+    # Deterministic rules evaluation
+    rule_trace = rules_engine.evaluate(case_data)
+    assert rule_trace.passed_all is True, "Eligible citizen must pass deterministic rules"
+
+    # Component scores with worst possible scam score (0.0 safety / 100% scam suspicion)
+    scores = ComponentScores(
+        identity=0.98,
+        ocr=0.95,
+        authenticity=0.96,
+        rules_complete=1.0,
+        scam_safety=0.0  # Flagged by scam classifier!
+    )
+
+    decision = engine.evaluate_case("cas_scam_flagged_01", case_data, scores)
+
+    # Invariants:
+    # 1. Never auto-rejects
+    assert decision.route != "auto_reject"
+    assert decision.route != "reject"
+    # 2. Routes to Human Officer for adjudication
+    assert decision.route == RouteDecision.HUMAN_REVIEW
+    # 3. No auto-disbursement token issued
+    assert decision.approval_token is None
+    # 4. Underlying eligibility rules remain passed (not altered)
+    assert rule_trace.passed_all is True

@@ -1,0 +1,30 @@
+{
+  "benchmark_size": 300,
+  "confusion_matrix": {
+    "SCAM": {
+      "SCAM": 150,
+      "LEGIT": 0,
+      "UNSURE": 0
+    },
+    "LEGIT": {
+      "SCAM": 1,
+      "LEGIT": 111,
+      "UNSURE": 8
+    },
+    "UNSURE": {
+      "SCAM": 5,
+      "LEGIT": 16,
+      "UNSURE": 9
+    }
+  },
+  "metrics": {
+    "recall_scam": 100.0,
+    "precision_scam": 96.15,
+    "fnr": 0.0,
+    "fpr": 0.83,
+    "unsure_rate_scam": 0.0,
+    "unsure_rate_legit": 6.67,
+    "otp_recall": 100.0
+  },
+  "gate_status": "PASSED"
+}

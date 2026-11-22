@@ -27,20 +27,27 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy installed Python packages from builder
-COPY --from=builder /root/.local /root/.local
-ENV PATH=/root/.local/bin:$PATH
-ENV PYTHONPATH=/app
-ENV PYTHONUNBUFFERED=1
-
-# Create non-root application user
+# Create non-root application user first
 RUN groupadd -g 1001 rahbar && \
     useradd -u 1001 -g rahbar -s /bin/bash -m rahbar
 
-# Copy application code
+# Copy installed Python packages from builder into the rahbar user's home
+COPY --from=builder --chown=rahbar:rahbar /root/.local /home/rahbar/.local
+# **Set PATH to the user’s home before switching to the user**
+ENV PATH="/home/rahbar/.local/bin:${PATH}"
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+
+# Copy application code (owned by rahbar)
 COPY --chown=rahbar:rahbar services/ /app/services/
 COPY --chown=rahbar:rahbar mock/ /app/mock/
+COPY --chown=rahbar:rahbar db/ /app/db/
+COPY --chown=rahbar:rahbar alembic.ini /app/alembic.ini
+COPY --chown=rahbar:rahbar migrations/ /app/migrations/
+# Let the non-root user create runtime folders (e.g. /app/audio_cache)
+RUN mkdir -p /app/audio_cache && chown rahbar:rahbar /app /app/audio_cache
 
+# Drop privileges
 USER rahbar
 
 EXPOSE 8000
@@ -48,4 +55,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8000/api/v1/health || exit 1
 
-CMD ["uvicorn", "services.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+CMD ["/home/rahbar/.local/bin/uvicorn", "services.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]

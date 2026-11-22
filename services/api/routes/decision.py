@@ -7,11 +7,20 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 
 from services.api.engine.audit_log import audit_log
+from services.api.engine.consent_gateway import consent_gateway
 from services.api.engine.decision_engine import decision_engine
 from services.api.engine.explanation_builder import ExplanationBuilder
 from services.api.routes.cases import _CASES_DB
 from services.api.security.rbac import get_current_user
-from services.shared.schemas import CaseStatus, ComponentScores, DecisionResponse, RoleEnum, RouteDecision, UserResponse
+from services.shared.schemas import (
+    CaseStatus,
+    ComponentScores,
+    ConsentScope,
+    DecisionResponse,
+    RoleEnum,
+    RouteDecision,
+    UserResponse,
+)
 
 router = APIRouter(prefix="/decisions", tags=["Decision Engine & Explainability"])
 
@@ -33,6 +42,16 @@ async def evaluate_case_decision(
     case = _CASES_DB.get(case_id)
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
+
+    # Task 3: Point-of-use consent check when helper initiates case evaluation
+    if current_user.role == RoleEnum.HELPER and case.helper_id == current_user.id:
+        consent_gateway.read_gateway(
+            actor_id=current_user.id,
+            actor_role=current_user.role,
+            citizen_id=case.citizen_id,
+            scope=ConsentScope.HELPER_ACTING,
+            acting_helper_id=current_user.id
+        )
 
     if not component_scores:
         has_blurry = any(d.is_blurry for d in case.documents)
@@ -104,6 +123,18 @@ async def explain_decision(
     case = _CASES_DB.get(case_id)
     if not case or not case.decision:
         raise HTTPException(status_code=404, detail="Case or decision not found. Please evaluate first.")
+
+    # Task 3: Point-of-use consent check when helper accesses explanation
+    if current_user.role == RoleEnum.HELPER:
+        if case.helper_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Helper not assigned to this case")
+        consent_gateway.read_gateway(
+            actor_id=current_user.id,
+            actor_role=current_user.role,
+            citizen_id=case.citizen_id,
+            scope=ConsentScope.HELPER_ACTING,
+            acting_helper_id=current_user.id
+        )
 
     if view == "auditor" and current_user.role in [RoleEnum.CITIZEN, RoleEnum.HELPER]:
         raise HTTPException(

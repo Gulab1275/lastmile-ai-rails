@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    color: #0F172A;
+    background-color: #F8FAFC;
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+  input:focus,
+  textarea:focus,
+  select:focus {
+    @apply outline-none ring-2 ring-[#0B4F43] border-[#0B4F43];
+  }
+  button:focus-visible,
+  a:focus-visible {
+    @apply outline-none ring-2 ring-[#D97706];
+  }
+}
+
+@layer components {
+  .font-heading {
+    font-family: var(--font-naskh), var(--font-inter), sans-serif;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+  .font-body {
+    font-family: var(--font-naskh), var(--font-inter), sans-serif;
+    line-height: 1.6;
+  }
+  .pattern-dots {
+    background-image: radial-gradient(rgba(255, 255, 255, 0.2) 1.5px, transparent 1.5px);
+    background-size: 16px 16px;
+  }
+}
+
+/* ==================== LOW BANDWIDTH MODE ==================== */
+html.low-bandwidth,
+html.low-bandwidth body {
+  background-color: #FFFFFF !important;
+  background-image: none !important;
+  font-family: system-ui, -apple-system, sans-serif !important;
+}
+
+html.low-bandwidth * {
+  animation: none !important;
+  transition: none !important;
+  box-shadow: none !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html.low-bandwidth .shadow,
+html.low-bandwidth .shadow-sm,
+html.low-bandwidth .shadow-md,
+html.low-bandwidth .shadow-lg,
+html.low-bandwidth .shadow-lift {
+  box-shadow: none !important;
+  border: 1px solid #CBD5E1 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

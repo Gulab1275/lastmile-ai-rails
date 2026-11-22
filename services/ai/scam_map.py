@@ -6,9 +6,9 @@ temporal trends, and keyword intelligence across Sindh & Karachi districts.
 Provides data for Gulab's live interactive Scam Map PWA dashboard.
 """
 
+import random
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
-import random
 
 # District reference coordinates across Karachi and Sindh
 DISTRICT_HOTSPOTS = {
@@ -152,7 +152,7 @@ def generate_scam_map_feed(
         district_incidents = [i for i in all_incidents if i["district"] == district_name]
         count = len(district_incidents)
         intensity = min(1.0, (count * 0.25) + coords["base_risk"] * 0.4)
-        
+
         hotspots.append({
             "district": district_name,
             "latitude": coords["lat"],

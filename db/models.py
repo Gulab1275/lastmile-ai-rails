@@ -1,16 +1,27 @@
-import hashlib
-import json
 import uuid
 from datetime import datetime
-from sqlalchemy import (
-    Column, String, Integer, Float, Boolean, DateTime,
-    ForeignKey, Text, JSON, Enum as SQLEnum
-)
+
+from sqlalchemy import JSON, Boolean, CheckConstraint, Column, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import relationship
+
+from services.shared.schemas import CaseStatus, ConsentStatus, UserRole
+
 from .connection import Base
-from services.shared.schemas import (
-    UserRole, RouteDecision, CaseStatus, ConsentScope, ConsentStatus, ScamLabel
-)
+
+
+@compiles(CheckConstraint, "sqlite")
+def _compile_check_constraint_sqlite(element, compiler, **kw):
+    if element.name == "check_valid_cnic_format":
+        return (
+            "CONSTRAINT check_valid_cnic_format CHECK ("
+            "cnic GLOB '[0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]' "
+            "OR (length(cnic) = 13 AND cnic NOT GLOB '*[^0-9]*') "
+            "OR cnic GLOB '[0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9]-X'"
+            ")"
+        )
+    return compiler.visit_check_constraint(element, **kw)
+
 
 def generate_uuid() -> str:
     return str(uuid.uuid4())
@@ -36,6 +47,12 @@ class User(Base):
 
 class Citizen(Base):
     __tablename__ = "citizens"
+    __table_args__ = (
+        CheckConstraint(
+            "cnic ~ '^[0-9]{5}-[0-9]{7}-[0-9]{1}$' OR cnic ~ '^[0-9]{13}$'",
+            name="check_valid_cnic_format"
+        ),
+    )
 
     id = Column(String, primary_key=True, default=generate_uuid)
     cnic = Column(String(15), unique=True, index=True, nullable=False)
@@ -147,6 +164,33 @@ class Decision(Base):
 
     case = relationship("Case", back_populates="decision")
 
+
+# ============================================================================
+# API Keys (Security)
+# ============================================================================
+
+class ApiKey(Base):
+    __tablename__ = "api_keys"
+    id = Column(String, primary_key=True, default=generate_uuid)
+    name = Column(String, nullable=False)
+    # Store only the prefix (e.g., "rk_demo_") to display; the full key is never persisted.
+    key_prefix = Column(String(12), nullable=False, index=True)
+    # SHA‑256 hash of the full key (hex string).
+    key_hash = Column(String(64), nullable=False, unique=True, index=True)
+    # Owner (admin) user reference – stores user ID from JWT token (identity source is JWT, no FK)
+    owner_user_id = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_used_at = Column(DateTime, nullable=True)
+    revoked_at = Column(DateTime, nullable=True)
+
+    def is_active(self) -> bool:
+        return self.revoked_at is None
+
+# End of file
+# ============================================================================
+# Review Items (Officer Queue)
+# ============================================================================
+
 class ReviewItem(Base):
     __tablename__ = "review_items"
 
@@ -179,25 +223,47 @@ class AuditLog(Base):
     result = Column(String, nullable=False)
     request_id = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
+    details = Column(JSON, default=dict)
 
     @classmethod
-    def create_entry(cls, session, actor: str, action: str, target: str, result: str, request_id: str):
+    def create_entry(cls, session, actor: str, action: str, target: str, result: str, request_id: str, details: dict = None):
+        from sqlalchemy import text
+
+        from services.api.engine.audit_log import AUDIT_LOCK_ID, GENESIS_PREV_HASH, calculate_hash
+
+        # Advisory transaction lock guarantees strict sequential serialization across worker processes
+        if session.bind and session.bind.dialect.name == "postgresql":
+            session.execute(text(f"SELECT pg_advisory_xact_lock({AUDIT_LOCK_ID});"))
+
         last_entry = session.query(cls).order_by(cls.id.desc()).first()
-        prev_hash = last_entry.current_hash if last_entry else "0" * 64
-        
-        now = datetime.utcnow().isoformat()
-        payload = f"{prev_hash}|{actor}|{action}|{target}|{result}|{request_id}|{now}"
-        current_hash = hashlib.sha256(payload.encode()).hexdigest()
+        prev_hash = last_entry.current_hash if last_entry else GENESIS_PREV_HASH
+
+        now_dt = datetime.utcnow()
+        parts = actor.rsplit(":", 1)
+        actor_id = parts[0]
+        actor_role = parts[1] if len(parts) > 1 else "admin"
+        details_dict = details or {}
+
+        current_hash = calculate_hash(
+            prev_hash=prev_hash,
+            timestamp=now_dt.isoformat(),
+            actor_id=actor_id,
+            actor_role=actor_role,
+            action=action,
+            resource_id=target,
+            details=details_dict,
+        )
 
         entry = cls(
             prev_hash=prev_hash,
             current_hash=current_hash,
-            actor=actor,
+            actor=f"{actor_id}:{actor_role}",
             action=action,
             target=target,
             result=result,
             request_id=request_id,
-            timestamp=datetime.utcnow()
+            timestamp=now_dt,
+            details=details_dict,
         )
         session.add(entry)
         session.commit()
@@ -236,3 +302,31 @@ class EvalResult(Base):
     metric_value = Column(Float, nullable=False)
     metadata_json = Column(JSON, default=dict)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+# ============================================================================
+# Legacy CNIC Remediation Proposals (Maker-Checker Persistent Store)
+# ============================================================================
+
+class LegacyCnicProposal(Base):
+    """
+    Persistent Maker-Checker proposals for legacy CNIC remediation.
+    Replaces ephemeral in-memory dictionary to ensure multi-worker visibility,
+    restart resilience, and atomic concurrency control.
+    """
+    __tablename__ = "legacy_cnic_proposals"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    citizen_id = Column(String, ForeignKey("citizens.id"), nullable=False, index=True)
+    old_cnic = Column(String(15), nullable=False)
+    proposed_cnic = Column(String(15), nullable=False)
+    maker_officer_id = Column(String, nullable=False)
+    maker_notes = Column(Text, nullable=False)
+    physical_document_ref = Column(String, nullable=False, index=True)
+    status = Column(String(20), nullable=False, default="PENDING_APPROVAL", index=True)  # PENDING_APPROVAL, APPROVED, REJECTED
+    checker_supervisor_id = Column(String, nullable=True)
+    supervisor_notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    approved_at = Column(DateTime, nullable=True)
+
+    citizen = relationship("Citizen")
+
