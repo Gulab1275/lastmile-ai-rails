@@ -37,23 +37,36 @@ def test_complete_hackathon_demo_flow():
         ("auditor_iqbal", "password123", "auditor"),
     ]
     tokens = {}
+    user_ids = {}
     for user, pwd, role in creds:
         r = client.post("/api/v1/auth/login", json={"username": user, "password": pwd})
         assert r.status_code == 200
         tokens[user] = r.json()["access_token"]
+        user_ids[user] = r.json()["user_id"]
 
     # Verify citizen forbidden on officer endpoint
     r_forbid = client.get("/api/v1/review/queue", headers={"Authorization": f"Bearer {tokens['citizen_parveen']}"})
     assert r_forbid.status_code == 403
 
     # Step 3: Consent Grant
-    citizen_id = "cit_widow_test_demo"
+    citizen_id = user_ids["citizen_parveen"]
+    h_citizen = {"Authorization": f"Bearer {tokens['citizen_parveen']}"}
     h_helper = {"Authorization": f"Bearer {tokens['helper_shazia']}"}
+
+    # Verify helper is blocked from granting consent for citizen (403 Forbidden)
+    r_helper_blocked = client.post(
+        "/api/v1/consent/grant",
+        json={"citizen_id": citizen_id, "scope": "identity", "purpose": "Relief Application"},
+        headers=h_helper
+    )
+    assert r_helper_blocked.status_code == 403
+
+    # Authenticated citizen authorizes consent herself, delegating helper_acting to helper_shazia
     for sc in ["identity", "income", "bills", "helper_acting"]:
         r_c = client.post(
             "/api/v1/consent/grant",
-            json={"citizen_id": citizen_id, "scope": sc, "purpose": "Relief Application"},
-            headers=h_helper
+            json={"citizen_id": citizen_id, "scope": sc, "purpose": "Relief Application", "helper_id": user_ids["helper_shazia"]},
+            headers=h_citizen
         )
         assert r_c.status_code == 200
 
@@ -127,10 +140,19 @@ def test_complete_hackathon_demo_flow():
     assert r_sim.json()["total_cases_simulated"] == 15
 
     # Step 8: Consent Revocation
-    r_rev = client.post(
+    # Verify Helper cannot revoke citizen consent (403 Forbidden)
+    r_helper_rev_blocked = client.post(
         "/api/v1/consent/withdraw",
         json={"citizen_id": citizen_id, "scope": "income"},
         headers=h_helper
+    )
+    assert r_helper_rev_blocked.status_code == 403
+
+    # Authenticated citizen withdraws her own consent
+    r_rev = client.post(
+        "/api/v1/consent/withdraw",
+        json={"citizen_id": citizen_id, "scope": "income"},
+        headers=h_citizen
     )
     assert r_rev.status_code == 200
     r_stat2 = client.get(f"/api/v1/consent/status/{citizen_id}", headers=h_helper)

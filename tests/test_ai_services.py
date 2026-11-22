@@ -315,13 +315,32 @@ def test_ai_eval_summary_metrics_and_guarantees():
 
 def test_ai_offline_sync_batch_with_idempotency():
     """Verify offline batch sync processes cases and dedupes identical submissions."""
+    # Pre-register both citizens and grant HELPER_ACTING consent so identity verification passes.
+    # Citizen IDs are stable, deterministic identifiers used only within this test.
+    citizen_id_1 = "sync_test_citizen_zainab_001"
+    citizen_id_2 = "sync_test_citizen_khadija_002"
+    helper_id = "helper.fatima"
+
+    from services.api.engine.consent_gateway import consent_gateway
+    from services.shared.schemas import ConsentScope, RoleEnum
+
+    for cid in (citizen_id_1, citizen_id_2):
+        consent_gateway.grant_consent(
+            citizen_id=cid,
+            scope=ConsentScope.HELPER_ACTING,
+            helper_id=helper_id,
+            actor_id=cid,
+            actor_role=RoleEnum.CITIZEN,
+        )
+
     payload = {
         "batch_id": "batch_offline_991",
-        "helper_id": "helper.fatima",
+        "helper_id": helper_id,
         "client_timestamp": "2026-11-20T22:00:00Z",
         "queued_cases": [
             {
                 "idempotency_key": "idemp_k_001",
+                "citizen_id": citizen_id_1,
                 "voice_transcript": "میرا نام زینب بی بی ہے اور میرا شناختی کارڈ 42101-7788990-1 ہے۔ آمدنی 18000 ہے اور 4 بچے ہیں۔",
                 "citizen_data": {"requested_amount": 10000.0},
                 "documents": [
@@ -330,6 +349,7 @@ def test_ai_offline_sync_batch_with_idempotency():
             },
             {
                 "idempotency_key": "idemp_k_002",
+                "citizen_id": citizen_id_2,
                 "citizen_data": {
                     "full_name": "Khadija Bibi",
                     "cnic": "42101-5544332-9",
