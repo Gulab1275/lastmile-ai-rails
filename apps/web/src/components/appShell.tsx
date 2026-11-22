@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut, UserRound, Zap, Languages, Home, FilePlus, Folder, Shield, AlertTriangle } from "lucide-react";
-import { NAV, clearSession, getActiveCitizenName, getSession, type Session } from "@/lib/session";
+import { NAV, clearSession, getActiveCitizenName, getSession, saveSession, type Session } from "@/lib/session";
+import { login } from "@/lib/api";
 import { NAV_ICONS } from "@/lib/navIcons";
 import { flushQueue, queuedCount } from "@/lib/offlineQueue";
 import { useUI } from "@/lib/uiContext";
@@ -138,21 +139,57 @@ export default function AppShell({ children, title }: { children: React.ReactNod
 
         {/* User Role Strip */}
         <div className="bg-[#084137] border-t border-white/10">
-          <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between text-xs text-emerald-100">
+          <div className="max-w-4xl mx-auto px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs text-emerald-100">
             <div className="flex items-center gap-2">
               <span className="w-6 h-6 rounded-full bg-[#D97706] text-white font-bold flex items-center justify-center text-[10px]">
                 {initials}
               </span>
               <span className="font-semibold text-white">{session.username}</span>
               <span className="text-emerald-300">({ROLE_LABEL[session.role]?.ur})</span>
+              {session.role === "helper" && acting && (
+                <span className="bg-amber-400 text-slate-900 px-2 py-0.5 rounded-md font-bold text-[11px] flex items-center gap-1">
+                  <UserRound className="w-3 h-3" />
+                  <span>خاندان: {acting}</span>
+                </span>
+              )}
             </div>
 
-            {session.role === "helper" && acting && (
-              <span className="bg-amber-400 text-slate-900 px-2.5 py-0.5 rounded-md font-bold text-xs flex items-center gap-1">
-                <UserRound className="w-3 h-3" />
-                <span>خاندان: {acting}</span>
-              </span>
-            )}
+            {/* Quick Switch Persona Bar for Video Recording & Evaluation */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-emerald-200/80 hidden sm:inline">تبدیل رول · Switch:</span>
+              <div className="flex items-center gap-1">
+                {[
+                  { u: "citizen_parveen", label: "👵 پروین", title: "Parveen (Citizen)" },
+                  { u: "helper_shazia", label: "🤝 شازیہ", title: "Shazia (Helper)" },
+                  { u: "officer_aslam", label: "⚖️ اسلم", title: "Officer Aslam" },
+                  { u: "admin_ayesha", label: "⚙️ عائشہ", title: "Admin Ayesha" },
+                  { u: "auditor_iqbal", label: "📜 اقبال", title: "Auditor Iqbal" },
+                ].map((p) => (
+                  <button
+                    key={p.u}
+                    onClick={async () => {
+                      if (p.u === session.username) return;
+                      try {
+                        const data = await login(p.u, "password123");
+                        saveSession({ token: data.access_token, role: data.role, userId: data.user_id, username: data.username });
+                        window.location.href = "/dashboard";
+                      } catch {
+                        // ignore
+                      }
+                    }}
+                    title={p.title}
+                    type="button"
+                    className={`px-2 py-0.5 rounded text-[10px] transition ${
+                      session.username === p.u
+                        ? "bg-[#D97706] text-white font-bold shadow-xs ring-1 ring-white/30"
+                        : "bg-white/10 hover:bg-white/20 text-emerald-100"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </header>
