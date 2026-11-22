@@ -106,11 +106,10 @@ export default function AppShell({ children, title }: { children: React.ReactNod
             {/* Low-Bandwidth Mode */}
             <button
               onClick={toggleLowBandwidth}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition border ${
-                lowBandwidth
-                  ? "bg-[#D97706] text-white border-[#D97706]"
-                  : "bg-white/10 hover:bg-white/20 text-emerald-50 border-white/15"
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition border ${lowBandwidth
+                ? "bg-[#D97706] text-white border-[#D97706]"
+                : "bg-white/10 hover:bg-white/20 text-emerald-50 border-white/15"
+                }`}
               title="Toggle Low-Bandwidth Mode"
               type="button"
             >
@@ -168,11 +167,10 @@ export default function AppShell({ children, title }: { children: React.ReactNod
               <Link
                 key={item.href}
                 href={item.href}
-                className={`px-3.5 py-2 flex items-center gap-2 rounded-xl whitespace-nowrap text-xs font-semibold transition ${
-                  active
-                    ? "bg-[#0B4F43] text-white shadow-sm"
-                    : "text-slate-700 hover:bg-slate-100 border border-transparent hover:border-slate-200"
-                }`}
+                className={`px-3.5 py-2 flex items-center gap-2 rounded-xl whitespace-nowrap text-xs font-semibold transition ${active
+                  ? "bg-[#0B4F43] text-white shadow-sm"
+                  : "text-slate-700 hover:bg-slate-100 border border-transparent hover:border-slate-200"
+                  }`}
               >
                 {Icon && <Icon className="w-4 h-4 shrink-0" />}
                 <span>{item.ur}</span>
@@ -217,45 +215,40 @@ export default function AppShell({ children, title }: { children: React.ReactNod
         <div className="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur border-t border-slate-200 z-40 sm:hidden flex justify-around py-2 px-3 shadow-lg">
           <Link
             href="/dashboard"
-            className={`flex flex-col items-center justify-center p-1 rounded-lg text-xs font-medium ${
-              pathname === "/dashboard" ? "text-[#0B4F43] font-bold" : "text-slate-600"
-            }`}
+            className={`flex flex-col items-center justify-center p-1 rounded-lg text-xs font-medium ${pathname === "/dashboard" ? "text-[#0B4F43] font-bold" : "text-slate-600"
+              }`}
           >
             <Home className="w-5 h-5 mb-0.5" />
             <span className="text-[10px]">ہوم</span>
           </Link>
           <Link
             href="/apply"
-            className={`flex flex-col items-center justify-center p-1 rounded-lg text-xs font-medium ${
-              pathname === "/apply" ? "text-[#0B4F43] font-bold" : "text-slate-600"
-            }`}
+            className={`flex flex-col items-center justify-center p-1 rounded-lg text-xs font-medium ${pathname === "/apply" ? "text-[#0B4F43] font-bold" : "text-slate-600"
+              }`}
           >
             <FilePlus className="w-5 h-5 mb-0.5" />
             <span className="text-[10px]">درخواست</span>
           </Link>
           <Link
             href="/cases"
-            className={`flex flex-col items-center justify-center p-1 rounded-lg text-xs font-medium ${
-              pathname === "/cases" ? "text-[#0B4F43] font-bold" : "text-slate-600"
-            }`}
+            className={`flex flex-col items-center justify-center p-1 rounded-lg text-xs font-medium ${pathname === "/cases" ? "text-[#0B4F43] font-bold" : "text-slate-600"
+              }`}
           >
             <Folder className="w-5 h-5 mb-0.5" />
             <span className="text-[10px]">کیس</span>
           </Link>
           <Link
             href="/consent"
-            className={`flex flex-col items-center justify-center p-1 rounded-lg text-xs font-medium ${
-              pathname === "/consent" ? "text-[#0B4F43] font-bold" : "text-slate-600"
-            }`}
+            className={`flex flex-col items-center justify-center p-1 rounded-lg text-xs font-medium ${pathname === "/consent" ? "text-[#0B4F43] font-bold" : "text-slate-600"
+              }`}
           >
             <Shield className="w-5 h-5 mb-0.5" />
             <span className="text-[10px]">ڈیٹا</span>
           </Link>
           <Link
             href="/scam"
-            className={`flex flex-col items-center justify-center p-1 rounded-lg text-xs font-medium ${
-              pathname === "/scam" ? "text-[#0B4F43] font-bold" : "text-slate-600"
-            }`}
+            className={`flex flex-col items-center justify-center p-1 rounded-lg text-xs font-medium ${pathname === "/scam" ? "text-[#0B4F43] font-bold" : "text-slate-600"
+              }`}
           >
             <AlertTriangle className="w-5 h-5 mb-0.5" />
             <span className="text-[10px]">فراڈ چیک</span>

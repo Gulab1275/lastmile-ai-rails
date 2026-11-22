@@ -173,11 +173,10 @@ export default function FamiliesPage() {
             <Card
               key={f.id}
               onClick={() => choose(f)}
-              className={`p-4 text-start cursor-pointer transition border ${
-                isSelected
-                  ? "border-[#0B4F43] bg-emerald-50/40 ring-1 ring-[#0B4F43]"
-                  : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-              }`}
+              className={`p-4 text-start cursor-pointer transition border ${isSelected
+                ? "border-[#0B4F43] bg-emerald-50/40 ring-1 ring-[#0B4F43]"
+                : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                }`}
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">

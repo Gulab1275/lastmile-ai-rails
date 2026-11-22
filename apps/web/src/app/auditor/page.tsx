@@ -21,7 +21,7 @@ export default function AuditorPage() {
 
   useEffect(() => {
     api.getAuditLogs().then(setLogs).catch((e: ApiError) => setError(e.message_ur ?? e.message_en ?? "Could not load logs"));
-    api.verifyAuditChain().then(setChain).catch(() => {});
+    api.verifyAuditChain().then(setChain).catch(() => { });
   }, []);
 
   async function verify() {
@@ -65,17 +65,15 @@ export default function AuditorPage() {
       {/* Chain Health Banner */}
       {chain && (
         <div
-          className={`rounded-2xl p-5 border flex flex-wrap items-center justify-between gap-4 shadow-sm ${
-            chain.is_valid
-              ? "bg-emerald-50 border-emerald-300 text-emerald-950"
-              : "bg-rose-50 border-rose-300 text-rose-950"
-          }`}
+          className={`rounded-2xl p-5 border flex flex-wrap items-center justify-between gap-4 shadow-sm ${chain.is_valid
+            ? "bg-emerald-50 border-emerald-300 text-emerald-950"
+            : "bg-rose-50 border-rose-300 text-rose-950"
+            }`}
         >
           <div className="flex items-center gap-3">
             <div
-              className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
-                chain.is_valid ? "bg-emerald-600 text-white" : "bg-rose-600 text-white"
-              }`}
+              className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${chain.is_valid ? "bg-emerald-600 text-white" : "bg-rose-600 text-white"
+                }`}
             >
               {chain.is_valid ? <ShieldCheck className="w-6 h-6" /> : <ShieldAlert className="w-6 h-6" />}
             </div>
