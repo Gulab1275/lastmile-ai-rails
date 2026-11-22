@@ -1,8 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FlaskConical, Rocket, Key, Copy, Check, Trash2, AlertTriangle, ShieldCheck, SlidersHorizontal } from "lucide-react";
+import {
+  FlaskConical, Rocket, Key, Copy, Check, Trash2, AlertTriangle,
+  SlidersHorizontal, Code,
+} from "lucide-react";
 import AppShell from "@/components/appShell";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import api, {
   type ApiError, type RuleSet, type RuleVersion, type SimulationResult,
   type ApiKeyItem, type ApiKeyCreated,
@@ -10,6 +16,7 @@ import api, {
 
 export default function AdminPage() {
   const [tab, setTab] = useState<"rules" | "keys">("rules");
+  const [showJson, setShowJson] = useState(false);
 
   // Rules state
   const [active, setActive] = useState<RuleSet | null>(null);
@@ -127,16 +134,16 @@ export default function AdminPage() {
     }
   }
 
-  const num = "w-full min-h-[50px] border-2 border-[#E2DDD3] rounded-2xl px-4 text-base bg-white text-[#17302B] focus:border-[#0F6B5A]";
+  const num = "w-full min-h-[50px] border-2 border-[#E2DDD3] rounded-2xl px-4 text-base bg-white text-[#17302B] focus:border-[#0F6B5A] focus:outline-none";
 
   return (
     <AppShell title="ایڈمن پورٹل · Policy & Gateway Administration">
       {/* Tab Switcher */}
-      <div className="flex gap-2 p-1 bg-white rounded-2xl border border-[#E2DDD3] shadow-sm">
+      <div className="flex gap-2 p-1.5 bg-white rounded-2xl border border-[#E2DDD3] shadow-sm">
         <button
           onClick={() => { setTab("rules"); setError(""); }}
           type="button"
-          className={`flex-1 min-h-[44px] rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition ${
+          className={`flex-1 min-h-[44px] rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition ${
             tab === "rules" ? "bg-[#0B4F43] text-white shadow" : "text-[#5B6F6A] hover:bg-slate-100"
           }`}
         >
@@ -145,7 +152,7 @@ export default function AdminPage() {
         <button
           onClick={() => { setTab("keys"); setError(""); }}
           type="button"
-          className={`flex-1 min-h-[44px] rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition ${
+          className={`flex-1 min-h-[44px] rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition ${
             tab === "keys" ? "bg-[#0B4F43] text-white shadow" : "text-[#5B6F6A] hover:bg-slate-100"
           }`}
         >
@@ -153,135 +160,175 @@ export default function AdminPage() {
         </button>
       </div>
 
-      {msg && <p className="bg-[#DDEFE9] text-[#0B4F43] border border-[#1F8A5B] rounded-2xl p-4 font-bold text-sm">{msg}</p>}
-      {error && <p className="bg-[#FEE2E2] text-[#991B1B] border border-[#F87171] rounded-2xl p-4 font-bold text-sm">{error}</p>}
+      {msg && <p className="bg-[#DDEFE9] text-[#0B4F43] border border-[#1F8A5B] rounded-2xl p-4 font-bold text-sm shadow-sm">{msg}</p>}
+      {error && <p className="bg-[#FEE2E2] text-[#991B1B] border border-[#F87171] rounded-2xl p-4 font-bold text-sm shadow-sm">{error}</p>}
 
       {/* ==================== TAB 1: RULES & DIGITAL TWIN ==================== */}
       {tab === "rules" && (
         <div className="space-y-4 animate-fade-up">
-          <div className="bg-white rounded-3xl shadow p-5 space-y-4 border border-[#E2DDD3]">
+          <Card className="p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-[#E2DDD3] pb-3">
               <span className="font-bold text-[#0B4F43]">فعال پالیسی · Active Rule Set</span>
-              <span className="px-3 py-1 bg-[#DDEFE9] text-[#0B4F43] rounded-full text-xs font-bold">
-                Version v{active.version} ({active.name})
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowJson(!showJson)}
+                  type="button"
+                  className="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-mono font-bold text-[#5B6F6A] flex items-center gap-1"
+                >
+                  <Code className="w-3.5 h-3.5" /> {showJson ? "Form View" : "JSON"}
+                </button>
+                <span className="px-3 py-1 bg-[#DDEFE9] text-[#0B4F43] rounded-full text-xs font-bold">
+                  v{active.version} ({active.name})
+                </span>
+              </div>
             </div>
 
-            <label className="block">
-              <span className="font-bold text-sm text-[#17302B]">زیادہ سے زیادہ ماہانہ آمدنی · Max monthly income (PKR)</span>
-              <div className="flex gap-2 mt-1.5">
-                <button
-                  type="button"
-                  onClick={() => set("max_monthly_income", Math.max(0, draft.max_monthly_income - 1000))}
-                  className="min-h-[50px] w-14 rounded-2xl bg-[#DDEFE9] text-[#0B4F43] text-2xl font-bold hover:bg-[#cbe3da]"
-                >
-                  −
-                </button>
-                <input
-                  className={num}
-                  type="number"
-                  value={draft.max_monthly_income}
-                  onChange={(e) => set("max_monthly_income", Number(e.target.value))}
-                />
-                <button
-                  type="button"
-                  onClick={() => set("max_monthly_income", draft.max_monthly_income + 1000)}
-                  className="min-h-[50px] w-14 rounded-2xl bg-[#DDEFE9] text-[#0B4F43] text-2xl font-bold hover:bg-[#cbe3da]"
-                >
-                  +
-                </button>
-              </div>
-            </label>
+            {showJson ? (
+              <pre className="bg-[#17302B] text-emerald-300 p-4 rounded-2xl text-xs overflow-x-auto font-mono">
+                {JSON.stringify(draft, null, 2)}
+              </pre>
+            ) : (
+              <>
+                <label className="block">
+                  <span className="font-bold text-sm text-[#17302B]">زیادہ سے زیادہ ماہانہ آمدنی · Max monthly income (PKR)</span>
+                  <div className="flex gap-2 mt-1.5">
+                    <button
+                      type="button"
+                      onClick={() => set("max_monthly_income", Math.max(0, draft.max_monthly_income - 1000))}
+                      className="min-h-[50px] w-14 rounded-2xl bg-[#DDEFE9] text-[#0B4F43] text-2xl font-bold hover:bg-[#cbe3da] transition"
+                    >
+                      −
+                    </button>
+                    <input
+                      className={num}
+                      type="number"
+                      value={draft.max_monthly_income}
+                      onChange={(e) => set("max_monthly_income", Number(e.target.value))}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => set("max_monthly_income", draft.max_monthly_income + 1000)}
+                      className="min-h-[50px] w-14 rounded-2xl bg-[#DDEFE9] text-[#0B4F43] text-2xl font-bold hover:bg-[#cbe3da] transition"
+                    >
+                      +
+                    </button>
+                  </div>
+                </label>
 
-            <label className="block">
-              <span className="font-bold text-sm text-[#17302B]">خودکار منظوری کی حد · Auto-approve limit (PKR)</span>
-              <input
-                className={`${num} mt-1.5`}
-                type="number"
-                value={draft.max_auto_approve_amount}
-                onChange={(e) => set("max_auto_approve_amount", Number(e.target.value))}
-              />
-            </label>
+                <label className="block">
+                  <span className="font-bold text-sm text-[#17302B]">خودکار منظوری کی حد · Auto-approve limit (PKR)</span>
+                  <input
+                    className={`${num} mt-1.5`}
+                    type="number"
+                    value={draft.max_auto_approve_amount}
+                    onChange={(e) => set("max_auto_approve_amount", Number(e.target.value))}
+                  />
+                </label>
 
-            <label className="block">
-              <span className="font-bold text-sm text-[#17302B]">کم از کم افراد خانہ · Min household size</span>
-              <input
-                className={`${num} mt-1.5`}
-                type="number"
-                value={draft.min_household_size}
-                onChange={(e) => set("min_household_size", Number(e.target.value))}
-              />
-            </label>
+                <label className="block">
+                  <span className="font-bold text-sm text-[#17302B]">کم از کم افراد خانہ · Min household size</span>
+                  <input
+                    className={`${num} mt-1.5`}
+                    type="number"
+                    value={draft.min_household_size}
+                    onChange={(e) => set("min_household_size", Number(e.target.value))}
+                  />
+                </label>
 
-            <label className="flex items-center gap-3 font-bold text-sm text-[#17302B] pt-1">
-              <input
-                type="checkbox"
-                className="w-5 h-5 rounded text-[#0B4F43]"
-                checked={draft.requires_utility_bill}
-                onChange={(e) => set("requires_utility_bill", e.target.checked)}
-              />
-              بجلی کا بل لازمی شرط ہے · Utility bill verification required
-            </label>
-          </div>
+                <label className="flex items-center gap-3 font-bold text-sm text-[#17302B] pt-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-5 h-5 rounded text-[#0B4F43] accent-[#0B4F43]"
+                    checked={draft.requires_utility_bill}
+                    onChange={(e) => set("requires_utility_bill", e.target.checked)}
+                  />
+                  بجلی کا بل لازمی شرط ہے · Utility bill verification required
+                </label>
+              </>
+            )}
+          </Card>
 
           <div className="grid grid-cols-2 gap-3 font-bold">
-            <button
+            <Button
+              variant="secondary"
               onClick={simulate}
               disabled={busy || draftKey === JSON.stringify(active)}
-              type="button"
-              className="min-h-[50px] rounded-2xl bg-[#0284C7] text-white inline-flex items-center justify-center gap-2 disabled:opacity-40 hover:bg-[#0369a1] transition"
+              className="bg-[#0284C7] hover:bg-[#0369a1]"
             >
-              <FlaskConical className="w-5 h-5" /> Test on Digital Twin · آزمائیں
-            </button>
-            <button
+              <FlaskConical className="w-5 h-5" /> Test on Digital Twin
+            </Button>
+            <Button
+              variant="primary"
               onClick={publish}
               disabled={busy || !canPublish}
-              type="button"
-              className="min-h-[50px] rounded-2xl bg-[#0B4F43] text-white inline-flex items-center justify-center gap-2 disabled:opacity-40 hover:bg-[#093e34] transition"
             >
               <Rocket className="w-5 h-5" /> Publish Rule · شائع کریں
-            </button>
+            </Button>
           </div>
           {!canPublish && (
             <p className="text-xs text-[#5B6F6A] text-center">پالیسی شائع کرنے سے پہلے ڈیجیٹل ٹوئن پر ٹیسٹ چلانا لازمی ہے۔</p>
           )}
 
-          {/* Digital Twin Results */}
+          {/* Digital Twin Simulation Results with Visual SVG Bars */}
           {sim && (
-            <div className="bg-white rounded-3xl shadow p-5 space-y-3 border border-[#0284C7]">
+            <Card className="p-5 space-y-4 border-2 border-[#0284C7] bg-[#E0F2FE]/20 animate-fade-up">
               <p className="text-lg font-bold text-[#0C4A6E]">
                 ڈیجیٹل ٹوئن تجزیہ · Digital Twin Simulation (v{sim.previous_rule_version} → v{sim.draft_rule_version})
               </p>
-              {[["Before (پہلے)", sim.previous_approval_rate, "bg-gray-400"], ["After (بعد میں)", sim.projected_approval_rate, "bg-[#1F8A5B]"]].map(([label, val, color]) => (
-                <div key={label as string} className="space-y-1">
-                  <div className="flex justify-between text-xs">
-                    <span>{label as string} منظوری کا تناسب</span>
-                    <b>{pct(val as number)}</b>
+
+              {/* Handcrafted Visual Bars */}
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs font-bold text-[#17302B]">
+                    <span>پہلے (Before v{sim.previous_rule_version}) منظوری کا تناسب</span>
+                    <b>{pct(sim.previous_approval_rate)}</b>
                   </div>
                   <div className="h-4 bg-[#E2DDD3] rounded-full overflow-hidden">
-                    <div className={`h-full ${color}`} style={{ width: `${(val as number) * 100}%` }} />
+                    <div
+                      className="h-full bg-slate-400 transition-all duration-700"
+                      style={{ width: `${sim.previous_approval_rate * 100}%` }}
+                    />
                   </div>
                 </div>
-              ))}
-              <p className={`text-base font-bold ${sim.approval_rate_delta >= 0 ? "text-[#1F8A5B]" : "text-[#B3261E]"}`}>
-                متوقع تبدیلی · Impact: {sim.approval_rate_delta >= 0 ? "+" : ""}{pct(sim.approval_rate_delta)}
-              </p>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs font-bold text-[#17302B]">
+                    <span>بعد میں (Projected v{sim.draft_rule_version}) منظوری کا تناسب</span>
+                    <b className="text-[#1F8A5B]">{pct(sim.projected_approval_rate)}</b>
+                  </div>
+                  <div className="h-4 bg-[#E2DDD3] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[#1F8A5B] transition-all duration-700"
+                      style={{ width: `${sim.projected_approval_rate * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-[#BAE6FD] flex items-center justify-between">
+                <p className={`text-base font-bold ${sim.approval_rate_delta >= 0 ? "text-[#1F8A5B]" : "text-[#B3261E]"}`}>
+                  متوقع اثر · Delta: {sim.approval_rate_delta >= 0 ? "+" : ""}{pct(sim.approval_rate_delta)}
+                </p>
+                <span className="text-xs bg-[#E0F2FE] text-[#0369A1] font-mono font-bold px-2.5 py-1 rounded-lg">
+                  {sim.total_cases_simulated} Historical Cases
+                </span>
+              </div>
               <p className="text-xs text-[#5B6F6A]">{sim.impact_summary}</p>
-            </div>
+            </Card>
           )}
 
           {/* Version History */}
-          <div className="bg-white rounded-3xl shadow p-5 border border-[#E2DDD3]">
+          <Card className="p-5">
             <p className="font-bold text-sm text-[#0B4F43] mb-3">ورژن ہسٹری · Policy Version History</p>
             <div className="divide-y divide-[#E2DDD3] text-xs">
               {[...versions].reverse().map((v) => (
-                <div key={v.version} className="py-2 flex justify-between items-center">
+                <div key={v.version} className="py-2.5 flex justify-between items-center">
                   <span>v{v.version} · {v.name} (آمدنی حد: Rs {v.rule_set.max_monthly_income.toLocaleString()})</span>
-                  {v.is_active && <span className="px-2 py-0.5 rounded-full bg-[#DDEFE9] text-[#0B4F43] font-bold">ACTIVE</span>}
+                  {v.is_active && <StatusBadge status="approved" labelUr="فعال" labelEn="ACTIVE" />}
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
@@ -289,35 +336,34 @@ export default function AdminPage() {
       {tab === "keys" && (
         <div className="space-y-4 animate-fade-up">
           {/* Create New Key Card */}
-          <div className="bg-white rounded-3xl shadow p-5 space-y-4 border border-[#E2DDD3]">
+          <Card className="p-5 space-y-4">
             <div>
               <p className="font-bold text-[#0B4F43] text-base">نئی پارٹنر API چابی بنائیں · Issue Public Rails Key</p>
-              <p className="text-xs text-[#5B6F6A]">
+              <p className="text-xs text-[#5B6F6A] mt-0.5">
                 ریلیف پارٹنرز اور فلاحی اداروں کو پبلک ریلز (اسکیم چیک، ہیلتھ، آسک) تک براہ راست رسائی دینے کے لیے۔
               </p>
             </div>
 
             <div className="flex gap-2">
               <input
-                className="flex-1 min-h-[48px] border-2 border-[#E2DDD3] rounded-2xl px-4 text-sm bg-white text-[#17302B] focus:border-[#0F6B5A]"
+                className="flex-1 min-h-[48px] border-2 border-[#E2DDD3] rounded-2xl px-4 text-sm bg-white text-[#17302B] focus:border-[#0F6B5A] focus:outline-none"
                 placeholder="پارٹنر کا نام درج کریں e.g. edhi-foundation"
                 value={newKeyName}
                 onChange={(e) => setNewKeyName(e.target.value)}
               />
-              <button
+              <Button
+                variant="primary"
                 onClick={handleCreateKey}
                 disabled={keyBusy || !newKeyName.trim()}
-                type="button"
-                className="min-h-[48px] px-5 rounded-2xl bg-[#E8A33D] text-[#17302B] font-bold text-sm hover:bg-[#d9942e] transition disabled:opacity-50"
               >
-                {keyBusy ? "بن رہی ہے..." : "چابی بنائیں · Create Key"}
-              </button>
+                {keyBusy ? "بن رہی ہے..." : "چابی بنائیں · Create"}
+              </Button>
             </div>
-          </div>
+          </Card>
 
-          {/* Key Created Modal / Warning Card (SHOWN ONCE) */}
+          {/* Single-display API Key Warning Card */}
           {createdKey && (
-            <div className="bg-[#FFFBEB] border-2 border-[#E8A33D] rounded-3xl p-5 space-y-3 shadow-lg animate-fade-up">
+            <div className="bg-[#FFFBEB] border-2 border-[#E8A33D] rounded-3xl p-5 space-y-3 shadow-lift animate-fade-up">
               <div className="flex items-center gap-2 text-[#92400E]">
                 <AlertTriangle className="w-5 h-5 text-[#C77700] shrink-0" />
                 <p className="font-bold text-base">
@@ -328,32 +374,34 @@ export default function AdminPage() {
                 سیکیورٹی کی خاطر یہ چابی ڈیٹا بیس میں SHA-256 ہیش ہو چکی ہے اور دوبارہ کبھی نہیں دیکھی جا سکے گی۔ اسے ابھی کاپی کر لیں۔
               </p>
 
-              <div className="bg-white rounded-xl p-3 border border-[#FCD34D] flex items-center justify-between gap-2">
+              <div className="bg-white rounded-2xl p-3 border border-[#FCD34D] flex items-center justify-between gap-2 shadow-sm">
                 <span className="font-mono text-xs font-bold text-[#0B4F43] break-all select-all">
                   {createdKey.key}
                 </span>
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => copyKey(createdKey.key)}
-                  type="button"
-                  className="min-h-[36px] px-3 rounded-lg bg-[#0B4F43] text-white text-xs font-bold shrink-0 flex items-center gap-1"
+                  className="shrink-0"
                 >
                   {copied ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
                   {copied ? "کاپی ہو گئی!" : "Copy"}
-                </button>
+                </Button>
               </div>
 
-              <button
+              <Button
+                variant="neutral"
+                size="sm"
                 onClick={() => setCreatedKey(null)}
-                type="button"
-                className="w-full min-h-[40px] rounded-xl bg-white border border-[#E2DDD3] font-bold text-xs text-[#17302B]"
+                className="w-full"
               >
                 میں نے چابی محفوظ کر لی ہے · I have saved the key (Dismiss)
-              </button>
+              </Button>
             </div>
           )}
 
           {/* List of Existing Masked Keys */}
-          <div className="bg-white rounded-3xl shadow p-5 space-y-3 border border-[#E2DDD3]">
+          <Card className="p-5 space-y-3">
             <p className="font-bold text-[#0B4F43] text-sm">موجودہ پبلک ریلز چابیاں · Active Public Rails Keys</p>
             {keys.length === 0 ? (
               <p className="text-xs text-[#5B6F6A] text-center py-4">ابھی کوئی API چابی جاری نہیں کی گئی۔</p>
@@ -366,11 +414,11 @@ export default function AdminPage() {
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-sm text-[#17302B]">{k.name}</span>
-                          <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
-                            isRevoked ? "bg-slate-200 text-[#5B6F6A]" : "bg-[#DDEFE9] text-[#0B4F43]"
-                          }`}>
-                            {isRevoked ? "منسوخ · Revoked" : "فعال · Active"}
-                          </span>
+                          <StatusBadge
+                            status={isRevoked ? "revoked" : "active"}
+                            labelUr={isRevoked ? "منسوخ" : "فعال"}
+                            labelEn={isRevoked ? "Revoked" : "Active"}
+                          />
                         </div>
                         <p className="font-mono text-[#5B6F6A]">{k.masked_key}</p>
                         <p className="text-[10px] text-[#5B6F6A]">
@@ -380,21 +428,21 @@ export default function AdminPage() {
                       </div>
 
                       {!isRevoked && (
-                        <button
+                        <Button
+                          variant="danger"
+                          size="sm"
                           onClick={() => handleRevokeKey(k.id)}
                           disabled={keyBusy}
-                          type="button"
-                          className="min-h-[38px] px-3 rounded-xl border border-[#B3261E] text-[#B3261E] hover:bg-[#FEE2E2] font-bold transition flex items-center gap-1"
                         >
-                          <Trash2 className="w-3.5 h-3.5" /> منسوخ کریں · Revoke
-                        </button>
+                          <Trash2 className="w-3.5 h-3.5" /> منسوخ · Revoke
+                        </Button>
                       )}
                     </div>
                   );
                 })}
               </div>
             )}
-          </div>
+          </Card>
         </div>
       )}
     </AppShell>

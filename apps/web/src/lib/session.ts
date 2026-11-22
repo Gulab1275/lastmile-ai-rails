@@ -42,6 +42,9 @@ export function getActiveCitizenName(): string {
 export function setActiveCitizen(id: string, name: string) {
   localStorage.setItem("active_citizen", id);
   localStorage.setItem("active_citizen_name", name);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("active_citizen_changed"));
+  }
 }
 
 /** Menu per role (G3). */

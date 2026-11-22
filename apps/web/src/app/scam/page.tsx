@@ -1,18 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { ShieldAlert, ShieldCheck, HelpCircle, Volume2, AlertOctagon, CheckCircle2, Send, ArrowRight } from "lucide-react";
+import { ShieldAlert, ShieldCheck, HelpCircle, Volume2, AlertOctagon, CheckCircle2, ArrowRight } from "lucide-react";
 import AppShell from "@/components/appShell";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import api, { type ApiError, type ScamCheckResponse, type ScamLabel } from "@/lib/api";
 import { speak } from "@/lib/session";
 
-const LOOK: Record<ScamLabel, { bg: string; border: string; ur: string; en: string; icon: React.ReactNode }> = {
+const LOOK: Record<ScamLabel, { bg: string; border: string; ur: string; en: string; icon: React.ReactNode; statusBadge: "scam" | "approved" | "need_proof" }> = {
   scam: {
     bg: "bg-[#FEE2E2] text-[#7F1D1D]",
     border: "border-[#B3261E]",
     ur: "خبردار! یہ جعلی / فراڈ میسج ہے",
     en: "CONFIRMED SCAM — Do not reply or send money",
     icon: <ShieldAlert className="w-12 h-12 text-[#B3261E]" />,
+    statusBadge: "scam",
   },
   legit: {
     bg: "bg-[#DDEFE9] text-[#065F46]",
@@ -20,6 +24,7 @@ const LOOK: Record<ScamLabel, { bg: string; border: string; ur: string; en: stri
     ur: "یہ میسج محفوظ اور سرکاری لگتا ہے",
     en: "Official & Legitimate Communication",
     icon: <ShieldCheck className="w-12 h-12 text-[#1F8A5B]" />,
+    statusBadge: "approved",
   },
   unsure: {
     bg: "bg-[#FEF3C7] text-[#92400E]",
@@ -27,6 +32,7 @@ const LOOK: Record<ScamLabel, { bg: string; border: string; ur: string; en: stri
     ur: "سسٹم کو مکمل یقین نہیں — انسانی جانچ تجویز ہے",
     en: "Uncertain / Suspicious — Human review recommended",
     icon: <HelpCircle className="w-12 h-12 text-[#C77700]" />,
+    statusBadge: "need_proof",
   },
 };
 
@@ -95,16 +101,16 @@ export default function ScamPage() {
 
   return (
     <AppShell title="فراڈ چیکر · Relief Scam Guardian">
-      <div className="bg-white rounded-3xl p-5 border border-[#E2DDD3] shadow-sm space-y-1">
+      <Card className="p-5 space-y-1.5">
         <h2 className="text-xl font-bold text-[#0B4F43]">مشکوک میسج کی فوری جانچ · Check Suspicious SMS</h2>
         <p className="text-sm text-[#5B6F6A]">
           کوئی بھی SMS یا WhatsApp میسج یہاں پیسٹ کریں۔ AI ماڈل فوری تجزیہ کر کے بتائے گا کہ کیا یہ دھوکہ یا فراڈ ہے۔
         </p>
-      </div>
+      </Card>
 
-      <div className="space-y-3">
+      <Card className="p-5 space-y-3">
         <textarea
-          className="w-full min-h-[130px] border-2 border-[#E2DDD3] rounded-2xl p-4 text-base bg-white text-[#17302B] focus:border-[#0F6B5A]"
+          className="w-full min-h-[130px] border-2 border-[#E2DDD3] rounded-2xl p-4 text-base bg-white text-[#17302B] focus:border-[#0F6B5A] focus:outline-none transition"
           placeholder="میسج یہاں پیسٹ کریں... / Paste SMS or WhatsApp message here..."
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -126,16 +132,16 @@ export default function ScamPage() {
         </div>
 
         <div className="pt-1">
-          <button
+          <Button
+            variant="primary"
             onClick={check}
             disabled={loading || !text.trim()}
-            type="button"
-            className="w-full min-h-[52px] rounded-2xl bg-[#E8A33D] text-[#17302B] text-lg font-bold shadow hover:bg-[#d9942e] transition disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full text-base"
           >
             {loading ? "ماڈل جانچ کر رہا ہے..." : "فراڈ چیک کریں · Analyze Message"}
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
 
       {error && (
         <div className="bg-[#FEE2E2] border border-[#F87171] text-[#991B1B] rounded-2xl p-4 font-bold text-sm">
@@ -157,7 +163,7 @@ export default function ScamPage() {
             <button
               onClick={() => speak(look.ur, "ur-PK")}
               type="button"
-              className="min-h-[44px] min-w-[44px] rounded-2xl bg-white text-[#17302B] border border-[#E2DDD3] flex items-center justify-center shadow-sm"
+              className="min-h-[44px] min-w-[44px] rounded-2xl bg-white text-[#17302B] border border-[#E2DDD3] flex items-center justify-center shadow-sm hover:bg-slate-50 transition"
               aria-label="Listen verdict"
             >
               <Volume2 className="w-5 h-5" />
@@ -165,7 +171,7 @@ export default function ScamPage() {
           </div>
 
           {/* Highlighted text card */}
-          <div className="bg-white rounded-2xl p-4 border border-[#E2DDD3] text-[#17302B] space-y-1.5">
+          <div className="bg-white rounded-2xl p-4 border border-[#E2DDD3] text-[#17302B] space-y-1.5 shadow-sm">
             <p className="text-xs font-bold text-[#5B6F6A] uppercase">تجزیہ شدہ میسج · Analyzed Text (Risky terms highlighted):</p>
             <p className="text-sm leading-relaxed">{highlightRiskyText(text)}</p>
           </div>
@@ -200,7 +206,7 @@ export default function ScamPage() {
 
           {/* Unsure Verdict: Route to Human Officer */}
           {result.label === "unsure" && (
-            <div className="bg-white rounded-2xl p-4 border border-[#C77700] space-y-3">
+            <div className="bg-white rounded-2xl p-4 border border-[#C77700] space-y-3 shadow-sm">
               <p className="text-sm font-bold text-[#92400E]">
                 انسانی ریلیف افسر کو جانچ کے لیے بھیجیں · Forward to Human Review
               </p>
@@ -212,13 +218,13 @@ export default function ScamPage() {
                   <CheckCircle2 className="w-4 h-4 text-[#1F8A5B]" /> میسج ریلیف افسر کو بھیج دیا گیا ہے (Ticket #SCAM-894)
                 </div>
               ) : (
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => setEscalated(true)}
-                  type="button"
-                  className="min-h-[44px] px-4 rounded-xl bg-[#0B4F43] text-white text-xs font-bold inline-flex items-center gap-1.5 hover:bg-[#093e34]"
                 >
                   افسر کو بھیجیں · Forward to Officer <ArrowRight className="w-4 h-4" />
-                </button>
+                </Button>
               )}
             </div>
           )}
