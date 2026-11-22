@@ -6,11 +6,26 @@ partial batch fault tolerance, malformed payload isolation, and conflict resolut
 import uuid
 
 from services.ai.sync import process_offline_sync_batch
+from services.api.engine.consent_gateway import consent_gateway
+from services.shared.schemas import ConsentScope, RoleEnum
 
 
-def _sample_queued_item(idemp_key=None, income=20000.0, name="Khadija Bibi"):
+def _setup_sync_citizen(citizen_id: str = "cit_sync_khadija", helper_id: str = "helper_shazia"):
+    """Ensures verified citizen registration and active HELPER_ACTING consent prior to offline sync."""
+    consent_gateway.grant_consent(
+        citizen_id=citizen_id,
+        scope=ConsentScope.HELPER_ACTING,
+        helper_id=helper_id,
+        actor_id=citizen_id,
+        actor_role=RoleEnum.CITIZEN
+    )
+
+
+def _sample_queued_item(idemp_key=None, income=20000.0, name="Khadija Bibi", citizen_id="cit_sync_khadija"):
+    _setup_sync_citizen(citizen_id=citizen_id, helper_id="helper_shazia")
     return {
         "idempotency_key": idemp_key or f"off_idemp_{uuid.uuid4().hex[:8]}",
+        "citizen_id": citizen_id,
         "citizen_data": {
             "full_name": name,
             "cnic": "42101-5544332-1",
@@ -70,7 +85,7 @@ def test_j03_offline_and_online_data_preserves_idempotency_receipt():
 
 def test_j04_malformed_records_mixed_with_valid_do_not_abort_batch():
     """J06: Malformed records mixed with valid records: valid are processed, malformed captured in failed_count."""
-    valid_item = _sample_queued_item(name="Zahida Parveen")
+    valid_item = _sample_queued_item(name="Zahida Parveen", citizen_id="cit_sync_zahida")
     # Missing citizen_data or invalid type
     malformed_item = {
         "idempotency_key": f"off_mal_{uuid.uuid4().hex[:8]}",
