@@ -3,12 +3,16 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  UserCheck, Wallet, Receipt, Users, Volume2, ShieldX, ShieldCheck,
+  UserCheck, Wallet, Receipt, Users, Volume2, ShieldX,
   Building2, ExternalLink, CheckCircle2, Lock,
 } from "lucide-react";
 import AppShell from "@/components/appShell";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { BigToggle } from "@/components/ui/BigToggle";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import api, { type ApiError, type ConsentScope, type ConsentStatus, type ConsentRecord } from "@/lib/api";
-import { getActiveCitizenId, getSession, speak } from "@/lib/session";
+import { getActiveCitizenId, speak } from "@/lib/session";
 
 interface ScopeMeta {
   scope: ConsentScope;
@@ -22,7 +26,7 @@ interface ScopeMeta {
 const SCOPES: ScopeMeta[] = [
   {
     scope: "identity",
-    icon: <UserCheck className="w-8 h-8" />,
+    icon: <UserCheck className="w-7 h-7" />,
     ur: "شناخت کی تفصیلات",
     en: "Identity Verification",
     descUr: "نادرا اور سرکاری ڈیٹا سے آپ کے شناختی کارڈ اور نام کی تصدیق۔",
@@ -30,7 +34,7 @@ const SCOPES: ScopeMeta[] = [
   },
   {
     scope: "income",
-    icon: <Wallet className="w-8 h-8" />,
+    icon: <Wallet className="w-7 h-7" />,
     ur: "آمدنی و مالی حالات",
     en: "Household Income",
     descUr: "احساس/بی آئی ایس پی کی غربت جانچ اور کیش گرانٹ کی اہلیت۔",
@@ -38,7 +42,7 @@ const SCOPES: ScopeMeta[] = [
   },
   {
     scope: "bills",
-    icon: <Receipt className="w-8 h-8" />,
+    icon: <Receipt className="w-7 h-7" />,
     ur: "یوٹیلیٹی و بجلی کے بل",
     en: "Utility Bills & Address",
     descUr: "بجلی اور گیس کے بل سے پتے اور رہائش کی تصدیق۔",
@@ -46,7 +50,7 @@ const SCOPES: ScopeMeta[] = [
   },
   {
     scope: "helper_acting",
-    icon: <Users className="w-8 h-8" />,
+    icon: <Users className="w-7 h-7" />,
     ur: "مددگار ورکر کے اختیارات",
     en: "Field Helper Acting Access",
     descUr: "آپ کا مجاز فیلڈ ورکر آپ کی طرف سے فارم بھر اور جمع کرا سکتا ہے۔",
@@ -61,7 +65,6 @@ type Probe =
   | { kind: "error"; err: ApiError };
 
 export default function ConsentPage() {
-  const [role, setRole] = useState("");
   const [citizenId, setCitizenId] = useState("");
   const [status, setStatus] = useState<ConsentStatus | null>(null);
   const [busy, setBusy] = useState<string>("");
@@ -82,7 +85,6 @@ export default function ConsentPage() {
   useEffect(() => {
     const id = getActiveCitizenId();
     setCitizenId(id);
-    setRole(getSession()?.role ?? "");
     if (id) load(id);
   }, [load]);
 
@@ -131,24 +133,26 @@ export default function ConsentPage() {
 
   return (
     <AppShell title="رضامندی لیجر · Consent & Data Ledger">
-      <div className="bg-white rounded-3xl p-5 border border-[#E2DDD3] shadow-sm space-y-2">
+      <Card className="p-5 space-y-2">
         <h2 className="text-xl font-bold text-[#0B4F43]">میرا ڈیٹا کس کے پاس ہے؟ · Who Has My Data</h2>
         <p className="text-sm text-[#5B6F6A]">
           آپ کے ڈیٹا پر مکمل کنٹرول آپ کا ہے۔ آپ کسی بھی وقت کسی بھی ایجنسی یا مددگار کی رسائی منسوخ کر سکتے ہیں۔ منسوخی پر سرور فوری طور پر رسائی بلاک (HTTP 403) کرتا ہے۔
         </p>
-      </div>
+      </Card>
 
       {error && (
-        <div className="bg-[#FEE2E2] border border-[#F87171] text-[#991B1B] rounded-2xl p-3 font-bold text-sm">
+        <div className="bg-[#FEE2E2] border border-[#F87171] text-[#991B1B] rounded-2xl p-4 font-bold text-sm">
           {error}
         </div>
       )}
 
       {/* Immediate "Access Stopped" Confirmation with Audit Link */}
       {lastRevocation && (
-        <div className="bg-[#FEF3C7] border-2 border-[#C77700] rounded-3xl p-5 space-y-3 shadow-md animate-fade-up">
+        <div className="bg-[#FEF3C7] border-2 border-[#C77700] rounded-3xl p-5 space-y-3 shadow-soft animate-fade-up">
           <div className="flex items-center gap-3">
-            <Lock className="w-8 h-8 text-[#C77700] shrink-0" />
+            <div className="w-12 h-12 rounded-2xl bg-[#C77700]/10 text-[#C77700] flex items-center justify-center shrink-0">
+              <Lock className="w-7 h-7" />
+            </div>
             <div>
               <p className="text-xl font-bold text-[#92400E]">رسائی فوری طور پر روک دی گئی · Access Stopped</p>
               <p className="text-xs text-[#78350F]">
@@ -160,14 +164,14 @@ export default function ConsentPage() {
             سرور نے فوری طور پر اس ڈیٹا تک تمام بیرونی رسائی بلاک کر دی ہے۔ یہ منسوخی ڈیجیٹل آڈٹ ہیش چین میں محفوظ ہو چکی ہے۔
           </p>
           {lastRevocation.audit_hash && (
-            <div className="bg-white rounded-xl p-3 border border-[#FCD34D] text-xs space-y-1">
-              <span className="font-bold text-[#0B4F43]">آڈٹ لاگ ہیش · Cryptographic Audit Hash:</span>
+            <div className="bg-white rounded-2xl p-3 border border-[#FCD34D] text-xs space-y-1 shadow-sm">
+              <span className="font-bold text-[#0B4F43] block">آڈٹ لاگ ہیش · Cryptographic Audit Hash:</span>
               <p className="font-mono text-[11px] text-[#5B6F6A] break-all">{lastRevocation.audit_hash}</p>
               <Link
                 href="/auditor"
                 className="inline-flex items-center gap-1 font-bold text-[#0B4F43] hover:underline pt-1 text-xs"
               >
-                آڈٹ چین میں تصدیق دیکھیں · Verify in Audit Ledger <ExternalLink className="w-3 h-3" />
+                آڈٹ چین میں تصدیق دیکھیں · Verify in Audit Ledger <ExternalLink className="w-3.5 h-3.5" />
               </Link>
             </div>
           )}
@@ -177,13 +181,13 @@ export default function ConsentPage() {
       {/* "Who has my data" Grantee Cards */}
       <div className="space-y-4">
         {/* Card 1: Government Public Rails Grantee */}
-        <div className="bg-white rounded-3xl border border-[#E2DDD3] shadow p-5 space-y-3">
+        <Card className="p-5 space-y-4">
           <div className="flex items-center gap-3 border-b border-[#E2DDD3] pb-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#DDEFE9] text-[#0B4F43] flex items-center justify-center">
-              <Building2 className="w-5 h-5" />
+            <div className="w-12 h-12 rounded-2xl bg-[#DDEFE9] text-[#0B4F43] flex items-center justify-center shrink-0">
+              <Building2 className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <p className="font-bold text-[#17302B]">سرکاری ڈی پی آئی ریلز · Government DPI Rails (NADRA, BISP, Raast)</p>
+              <p className="font-bold text-[#17302B] text-base">سرکاری ڈی پی آئی ریلز · Government DPI Rails (NADRA, BISP, Raast)</p>
               <p className="text-xs text-[#5B6F6A]">اہلیت کی جانچ اور براہ راست رقم کی منتقلی کے لیے</p>
             </div>
           </div>
@@ -192,45 +196,39 @@ export default function ConsentPage() {
             {SCOPES.slice(0, 3).map((s) => {
               const isOn = !!status?.active_scopes.includes(s.scope);
               const record = status?.all_consents.find((c) => c.scope === s.scope);
+
               return (
-                <div key={s.scope} className="bg-[#F7F4EE] rounded-2xl p-4 border border-[#E2DDD3] space-y-2">
+                <div key={s.scope} className="bg-[#F7F4EE] rounded-2xl p-4 border border-[#E2DDD3] space-y-3">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className={isOn ? "text-[#1F8A5B]" : "text-[#5B6F6A]"}>{s.icon}</span>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                        isOn ? "bg-[#DDEFE9] text-[#1F8A5B]" : "bg-white text-[#5B6F6A] border border-[#E2DDD3]"
+                      }`}>
+                        {s.icon}
+                      </div>
                       <div>
                         <p className="font-bold text-sm text-[#17302B]">{s.ur} · {s.en}</p>
                         <p className="text-xs text-[#5B6F6A]">{s.descUr}</p>
                       </div>
                     </div>
                     <button
-                      onClick={() => speak(s.descUr)}
+                      onClick={() => speak(s.descUr, "ur-PK")}
                       type="button"
-                      className="min-h-[36px] min-w-[36px] rounded-xl bg-white text-[#0B4F43] flex items-center justify-center border border-[#E2DDD3]"
+                      className="min-h-[36px] min-w-[36px] rounded-xl bg-white text-[#0B4F43] flex items-center justify-center border border-[#E2DDD3] shadow-sm hover:bg-slate-50"
                       aria-label="Listen description"
                     >
                       <Volume2 className="w-4 h-4" />
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between pt-1">
-                    <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${
-                      isOn ? "bg-[#DDEFE9] text-[#0B4F43]" : "bg-slate-200 text-[#5B6F6A]"
-                    }`}>
-                      {isOn ? "✓ فعال (Active)" : "منسوخ (Revoked)"}
-                    </span>
-
-                    <button
-                      onClick={() => toggle(s.scope, isOn)}
+                  <div className="pt-1">
+                    <BigToggle
+                      checked={isOn}
+                      onChange={() => toggle(s.scope, isOn)}
                       disabled={busy === s.scope || !status}
-                      type="button"
-                      className={`min-h-[44px] px-5 rounded-xl font-bold text-sm transition ${
-                        isOn
-                          ? "bg-white border-2 border-[#B3261E] text-[#B3261E] hover:bg-[#FEE2E2]"
-                          : "bg-[#0B4F43] text-white hover:bg-[#093e34]"
-                      } disabled:opacity-50`}
-                    >
-                      {busy === s.scope ? "..." : isOn ? "واپس لیں · Withdraw" : "اجازت دیں · Grant"}
-                    </button>
+                      labelUr={isOn ? "رسائی فعال ہے (اجازت دی گئی ہے)" : "رسائی منسوخ ہے (بلاک شدہ)"}
+                      labelEn={isOn ? "Access Granted" : "Access Blocked"}
+                    />
                   </div>
 
                   {record && (
@@ -242,16 +240,16 @@ export default function ConsentPage() {
               );
             })}
           </div>
-        </div>
+        </Card>
 
         {/* Card 2: Field Helper Grantee */}
-        <div className="bg-white rounded-3xl border border-[#E2DDD3] shadow p-5 space-y-3">
+        <Card className="p-5 space-y-4">
           <div className="flex items-center gap-3 border-b border-[#E2DDD3] pb-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#FEF3C7] text-[#92400E] flex items-center justify-center">
-              <Users className="w-5 h-5" />
+            <div className="w-12 h-12 rounded-2xl bg-[#FEF3C7] text-[#92400E] flex items-center justify-center shrink-0">
+              <Users className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <p className="font-bold text-[#17302B]">مددگار ورکر · Field Helper (Shazia Khan)</p>
+              <p className="font-bold text-[#17302B] text-base">مددگار ورکر · Field Helper (Shazia Khan)</p>
               <p className="text-xs text-[#5B6F6A]">فیلڈ میں آپ کی جانب سے درخواستیں جمع کرانے کے اختیارات</p>
             </div>
           </div>
@@ -260,49 +258,42 @@ export default function ConsentPage() {
             const s = SCOPES[3]; // helper_acting
             const isOn = !!status?.active_scopes.includes(s.scope);
             return (
-              <div className="bg-[#F7F4EE] rounded-2xl p-4 border border-[#E2DDD3] space-y-2">
+              <div className="bg-[#F7F4EE] rounded-2xl p-4 border border-[#E2DDD3] space-y-3">
                 <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className={isOn ? "text-[#1F8A5B]" : "text-[#5B6F6A]"}>{s.icon}</span>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                      isOn ? "bg-[#DDEFE9] text-[#1F8A5B]" : "bg-white text-[#5B6F6A] border border-[#E2DDD3]"
+                    }`}>
+                      {s.icon}
+                    </div>
                     <div>
                       <p className="font-bold text-sm text-[#17302B]">{s.ur} · {s.en}</p>
                       <p className="text-xs text-[#5B6F6A]">{s.descUr}</p>
                     </div>
                   </div>
                   <button
-                    onClick={() => speak(s.descUr)}
+                    onClick={() => speak(s.descUr, "ur-PK")}
                     type="button"
-                    className="min-h-[36px] min-w-[36px] rounded-xl bg-white text-[#0B4F43] flex items-center justify-center border border-[#E2DDD3]"
+                    className="min-h-[36px] min-w-[36px] rounded-xl bg-white text-[#0B4F43] flex items-center justify-center border border-[#E2DDD3] shadow-sm hover:bg-slate-50"
                     aria-label="Listen description"
                   >
                     <Volume2 className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between pt-1">
-                  <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${
-                    isOn ? "bg-[#DDEFE9] text-[#0B4F43]" : "bg-slate-200 text-[#5B6F6A]"
-                  }`}>
-                    {isOn ? "✓ مجاز ہے (Authorized)" : "اختیار منسوخ (Revoked)"}
-                  </span>
-
-                  <button
-                    onClick={() => toggle(s.scope, isOn)}
+                <div className="pt-1">
+                  <BigToggle
+                    checked={isOn}
+                    onChange={() => toggle(s.scope, isOn)}
                     disabled={busy === s.scope || !status}
-                    type="button"
-                    className={`min-h-[44px] px-5 rounded-xl font-bold text-sm transition ${
-                      isOn
-                        ? "bg-white border-2 border-[#B3261E] text-[#B3261E] hover:bg-[#FEE2E2]"
-                        : "bg-[#0B4F43] text-white hover:bg-[#093e34]"
-                    } disabled:opacity-50`}
-                  >
-                    {busy === s.scope ? "..." : isOn ? "اختیار واپس لیں · Withdraw" : "اختیار دیں · Authorize"}
-                  </button>
+                    labelUr={isOn ? "مددگار مجاز ہے" : "اختیار منسوخ ہے"}
+                    labelEn={isOn ? "Helper Authorized" : "Permission Revoked"}
+                  />
                 </div>
               </div>
             );
           })()}
-        </div>
+        </Card>
       </div>
 
       {/* Realtime 403 Enforcement Probe for Judges & Testers */}
@@ -314,17 +305,17 @@ export default function ConsentPage() {
         <p className="text-xs text-[#5B6F6A]">
           اوپر سے رضامندی منسوخ کرنے کے بعد بٹن دبائیں۔ اگر رضامندی واپس لی گئی ہے تو سرور کیس ڈیٹا دینے سے انکار کر کے <b>HTTP 403 Forbidden</b> دے گا۔
         </p>
-        <button
+        <Button
+          variant="secondary"
           onClick={checkAccess}
           disabled={probing || !citizenId}
-          type="button"
-          className="w-full min-h-[48px] rounded-2xl bg-[#0284C7] text-white font-bold text-base hover:bg-[#0369A1] transition disabled:opacity-40"
+          className="w-full bg-[#0284C7] hover:bg-[#0369A1]"
         >
           {probing ? "سرور سے چیک ہو رہا ہے..." : "Try reading citizen's case as a third party"}
-        </button>
+        </Button>
 
         {probe?.kind === "blocked" && (
-          <div className="rounded-2xl bg-[#FEE2E2] border border-[#F87171] text-[#7F1D1D] p-4 flex gap-3">
+          <div className="rounded-2xl bg-[#FEE2E2] border border-[#F87171] text-[#7F1D1D] p-4 flex gap-3 animate-fade-up">
             <ShieldX className="w-10 h-10 shrink-0 text-[#B3261E]" />
             <div className="space-y-1">
               <p className="text-lg font-bold">HTTP {probe.err.status} — ACCESS BLOCKED</p>
@@ -336,7 +327,7 @@ export default function ConsentPage() {
         )}
 
         {probe?.kind === "allowed" && (
-          <div className="rounded-2xl bg-[#DDEFE9] border border-[#1F8A5B] text-[#065F46] p-4 flex gap-3 items-center">
+          <div className="rounded-2xl bg-[#DDEFE9] border border-[#1F8A5B] text-[#065F46] p-4 flex gap-3 items-center animate-fade-up">
             <CheckCircle2 className="w-8 h-8 shrink-0 text-[#1F8A5B]" />
             <div>
               <p className="font-bold text-sm">رسائی منظور ہے · Allowed</p>
