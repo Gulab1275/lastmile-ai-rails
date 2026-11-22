@@ -71,14 +71,27 @@ class ConsentGateway:
         citizen_id: str,
         scope: ConsentScope,
         helper_id: Optional[str] = None,
-        actor_id: str = "citizen",
+        actor_id: Optional[str] = None,
         actor_role: RoleEnum = RoleEnum.CITIZEN
     ) -> ConsentRecord:
         """
         Grants granular consent for a specific data scope.
         Persists to PostgreSQL authoritative store with database transaction.
         Logs change to the cryptographic audit trail.
+        Validates authorization at service layer (defense-in-depth):
+        - actor_role must be RoleEnum.CITIZEN
+        - effective_actor_id must equal citizen_id
         """
+        effective_actor_id = actor_id if actor_id is not None and actor_id != "citizen" else citizen_id
+        if actor_role != RoleEnum.CITIZEN:
+            raise PermissionError(
+                f"CONSENT_AUTHORIZATION_ERROR: Only citizens may authorize consent (got actor_role='{actor_role}')."
+            )
+        if effective_actor_id != citizen_id:
+            raise PermissionError(
+                f"CONSENT_AUTHORIZATION_ERROR: Cross-citizen consent grant prohibited (actor_id='{effective_actor_id}' != citizen_id='{citizen_id}')."
+            )
+
         with self._lock:
             record_id = f"cns_{uuid.uuid4().hex[:12]}"
             now = datetime.utcnow()
@@ -115,7 +128,7 @@ class ConsentGateway:
                 raise HTTPException(status_code=503, detail=f"Consent persistence failure: database unavailable ({str(e)})")
 
             audit_entry = audit_log.append(
-                actor_id=actor_id,
+                actor_id=effective_actor_id,
                 actor_role=actor_role,
                 action=f"CONSENT_GRANTED:{scope.value}",
                 resource_id=citizen_id,
@@ -143,14 +156,27 @@ class ConsentGateway:
         self,
         citizen_id: str,
         scope: ConsentScope,
-        actor_id: str = "citizen",
+        actor_id: Optional[str] = None,
         actor_role: RoleEnum = RoleEnum.CITIZEN
     ) -> ConsentRecord:
         """
         Withdraws consent for a specific scope.
         Persists revocation to PostgreSQL authoritative store with database transaction.
         Subsequent data access requests immediately fail across all API workers.
+        Validates authorization at service layer (defense-in-depth):
+        - actor_role must be RoleEnum.CITIZEN
+        - effective_actor_id must equal citizen_id
         """
+        effective_actor_id = actor_id if actor_id is not None and actor_id != "citizen" else citizen_id
+        if actor_role != RoleEnum.CITIZEN:
+            raise PermissionError(
+                f"CONSENT_AUTHORIZATION_ERROR: Only citizens may withdraw consent (got actor_role='{actor_role}')."
+            )
+        if effective_actor_id != citizen_id:
+            raise PermissionError(
+                f"CONSENT_AUTHORIZATION_ERROR: Cross-citizen consent withdrawal prohibited (actor_id='{effective_actor_id}' != citizen_id='{citizen_id}')."
+            )
+
         with self._lock:
             now = datetime.utcnow()
             record_id = f"cns_rev_{uuid.uuid4().hex[:12]}"
@@ -187,7 +213,7 @@ class ConsentGateway:
                 raise HTTPException(status_code=503, detail=f"Consent revocation failure: database unavailable ({str(e)})")
 
             audit_entry = audit_log.append(
-                actor_id=actor_id,
+                actor_id=effective_actor_id,
                 actor_role=actor_role,
                 action=f"CONSENT_WITHDRAWN:{scope.value}",
                 resource_id=citizen_id,
