@@ -65,36 +65,41 @@ Pakistan's Digital Public Infrastructure (NADRA, Raast, BISP, Citizen Portal) pr
 
 ```mermaid
 flowchart TD
+    classDef client fill:#EFF6FF,stroke:#3B82F6,stroke-width:2px,color:#1E40AF;
+    classDef gateway fill:#ECFDF5,stroke:#10B981,stroke-width:2px,color:#065F46;
+    classDef ai fill:#FFFBEB,stroke:#F59E0B,stroke-width:2px,color:#92400E;
+    classDef data fill:#FAF5FF,stroke:#A855F7,stroke-width:2px,color:#6B21A8;
+
     subgraph Client ["Client Presentation Tier (apps/web)"]
-        CitizenUI["Citizen Voice Intake (/apply)"]
-        HelperUI["Helper Multi-Family Hub (/families)"]
-        OfficerUI["Officer Review Queue (/officer)"]
-        AdminUI["Admin Rules & Digital Twin (/admin, /eval)"]
-        AuditorUI["Auditor Blockchain Timeline (/auditor)"]
-        ScamUI["Scam Threat Radar & Heatmap (/scam, /scam-map)"]
+        CitizenUI["Citizen Voice Intake (/apply)"]:::client
+        HelperUI["Helper Multi-Family Hub (/families)"]:::client
+        OfficerUI["Officer Review Queue (/officer)"]:::client
+        AdminUI["Admin Rules & Digital Twin (/admin, /eval)"]:::client
+        AuditorUI["Auditor Blockchain Timeline (/auditor)"]:::client
+        ScamUI["Scam Threat Radar & Heatmap (/scam, /scam-map)"]:::client
     end
 
     subgraph Gateway ["FastAPI Sovereign Gateway (services/api)"]
-        RBAC["RBAC & Session Validator (5 Roles)"]
-        RateLimit["Rate Limiter (SlowAPI)"]
-        ConsentGW["Consent Gateway (HTTP 403 Hard-Block)"]
-        AuditLedger["Audit Logger (HMAC-SHA256 Hash Chain)"]
+        RBAC["RBAC & Session Validator (5 Roles)"]:::gateway
+        RateLimit["Rate Limiter (SlowAPI)"]:::gateway
+        ConsentGW["Consent Gateway (HTTP 403 Hard-Block)"]:::gateway
+        AuditLedger["Audit Logger (HMAC-SHA256 Hash Chain)"]:::gateway
     end
 
     subgraph Engines ["Decision & Intelligence Rails (services/ai)"]
-        VoiceEngine["Urdu Speech Rails (Whisper large-v3 + Edge-TTS)"]
-        FormExtractor["Structured Output Parser (Pydantic / Heuristics)"]
-        ScamDetector["Scam Classifier (TF-IDF + Logistic Calibration)"]
-        RulesEngine["Versioned Eligibility Engine (Dynamic JSON)"]
-        DecisionEngine["Decision Engine (Weakest-Link Risk Calibration)"]
-        RAGPolicy["Semantic Policy RAG (pgvector 384-D Hybrid Search)"]
+        VoiceEngine["Urdu Speech Rails (Whisper large-v3 + Edge-TTS)"]:::ai
+        FormExtractor["Structured Output Parser (Pydantic / Heuristics)"]:::ai
+        ScamDetector["Scam Classifier (TF-IDF + Logistic Calibration)"]:::ai
+        RulesEngine["Versioned Eligibility Engine (Dynamic JSON)"]:::ai
+        DecisionEngine["Decision Engine (Weakest-Link Risk Calibration)"]:::ai
+        RAGPolicy["Semantic Policy RAG (pgvector 384-D Hybrid Search)"]:::ai
     end
 
     subgraph DataRails ["Data & Mock Infrastructure (db & mock)"]
-        PG[("PostgreSQL 16 (Append-Only Audit Trigger)")]
-        MockNADRA["Mock NADRA API (Fuzzy Name Transliteration)"]
-        MockRaast["Mock Raast P2P (HMAC-Gated Settlement)"]
-        MockPortal["Mock Grievance Portal"]
+        PG[("PostgreSQL 16 (Append-Only Audit Trigger)")]:::data
+        MockNADRA["Mock NADRA API (Fuzzy Name Transliteration)"]:::data
+        MockRaast["Mock Raast P2P (HMAC-Gated Settlement)"]:::data
+        MockPortal["Mock Grievance Portal"]:::data
     end
 
     Client -->|"HTTPS / JWT Bearer"| Gateway
@@ -108,6 +113,28 @@ flowchart TD
 ## 4. Verification Matrix: 8 Hackathon Challenges & 4 Creative Features
 
 Rahbar addresses **100% of all required challenges and creative features** outlined in the official Coder's Cup '26 specification:
+
+### Risk-Calibrated Tri-State Decision Flow
+
+```mermaid
+flowchart TD
+    classDef input fill:#EFF6FF,stroke:#3B82F6,stroke-width:2px,color:#1E40AF;
+    classDef engine fill:#FEF3C7,stroke:#D97706,stroke-width:2px,color:#92400E;
+    classDef approve fill:#DCFCE7,stroke:#16A34A,stroke-width:2px,color:#15803D;
+    classDef proof fill:#FEF9C3,stroke:#CA8A04,stroke-width:2px,color:#854D0E;
+    classDef review fill:#EEF2FF,stroke:#4F46E5,stroke-width:2px,color:#3730A3;
+    classDef audit fill:#FAF5FF,stroke:#9333EA,stroke-width:2px,color:#6B21A8;
+
+    Claim["Citizen Claim Intake<br/>• Urdu Speech Transcript<br/>• CNIC & Bill Images"]:::input --> Engine["Weakest-Link Decision Engine<br/>min(C_identity, C_income, C_ocr, C_rules)"]:::engine
+
+    Engine -->|"Score >= 0.85 (High Confidence)"| Approve["AUTO APPROVE<br/>• HMAC Raast Token Issued<br/>• Instant Cash Disbursement"]:::approve
+    Engine -->|"0.65 <= Score < 0.85 (Uncertain)"| Proof["ASK MORE PROOF<br/>• Request Utility Bill / ID<br/>• Re-verify via Citizen SMS"]:::proof
+    Engine -->|"Score < 0.65 (Low Confidence)"| Review["HUMAN OFFICER REVIEW<br/>• Route to Review Queue (/officer)<br/>• Weakest Link Highlighted"]:::review
+
+    Approve --> Audit[("Append-Only Audit Ledger<br/>• HMAC-SHA256 Chained<br/>• Legal Non-Repudiation")]:::audit
+    Proof --> Audit
+    Review --> Audit
+```
 
 | # | Challenge / Feature | Architectural Implementation | Verification Endpoint & Test |
 | :--- | :--- | :--- | :--- |
@@ -182,11 +209,16 @@ The Rahbar sovereign backend is deployed live on **AWS EC2** (`https://rahbar-ba
 
 ```mermaid
 flowchart LR
-    Client["Client Traffic (HTTPS :443)"] --> Caddy["Caddy Reverse Proxy (infra/Caddyfile)<br/>• Automated Let's Encrypt TLS<br/>• HSTS & Security Headers<br/>• Port 80/443 Ingress"]
-    Caddy -->|"Proxy :8000"| FastAPI["FastAPI Sovereign Engine (infra/Dockerfile)<br/>• Asynchronous API Gateway<br/>• Non-Root Container Execution<br/>• Tesseract OCR & Whisper Rails"]
-    FastAPI --> DB[("PostgreSQL 16 Storage<br/>• Append-Only Audit Triggers<br/>• Supavisor Connection Pooling")]
+    classDef client fill:#EFF6FF,stroke:#3B82F6,stroke-width:2px,color:#1E40AF;
+    classDef proxy fill:#FEF3C7,stroke:#D97706,stroke-width:2px,color:#92400E;
+    classDef engine fill:#ECFDF5,stroke:#10B981,stroke-width:2px,color:#065F46;
+    classDef storage fill:#FAF5FF,stroke:#A855F7,stroke-width:2px,color:#6B21A8;
 
-    subgraph AWSCloud ["AWS Infrastructure (t3.small EC2 Instance)"]
+    Client["Client Traffic (HTTPS :443)"]:::client --> Caddy["Caddy Edge Proxy (infra/Caddyfile)<br/>• Automated Let's Encrypt TLS<br/>• HSTS & Security Headers<br/>• Ports 80 & 443 Ingress"]:::proxy
+    Caddy -->|"Internal Proxy :8000"| FastAPI["FastAPI Sovereign Engine (infra/Dockerfile)<br/>• Asynchronous API Gateway<br/>• Non-Root Container Execution<br/>• Tesseract OCR & Whisper Rails"]:::engine
+    FastAPI --> DB[("PostgreSQL 16 Storage<br/>• Append-Only Audit Triggers<br/>• Supavisor Connection Pooling")]:::storage
+
+    subgraph AWSCloud ["AWS Cloud Infrastructure (t3.small EC2 Instance)"]
         Caddy
         FastAPI
         DB
