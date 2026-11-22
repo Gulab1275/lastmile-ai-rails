@@ -1,13 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, XCircle, FileQuestion } from "lucide-react";
+import { CheckCircle2, AlertOctagon, FileQuestion, AlertTriangle, ShieldCheck, ChevronDown, ChevronUp } from "lucide-react";
 import AppShell from "@/components/appShell";
 import api, { type ApiError, type ReviewQueueItem } from "@/lib/api";
 
-const LABELS: Record<string, string> = {
-  identity: "Identity", ocr: "Document reading", authenticity: "Authenticity",
-  rules_complete: "Rules complete", scam_safety: "Scam safety",
+const LABELS: Record<string, { ur: string; en: string }> = {
+  identity: { ur: "شناخت و نادرا", en: "Identity / NADRA" },
+  ocr: { ur: "دستاویز خوانی", en: "Document OCR" },
+  authenticity: { ur: "اصلیت و ٹیمپرنگ", en: "Authenticity" },
+  rules_complete: { ur: "پالیسی شرائط", en: "Policy Rules" },
+  scam_safety: { ur: "اسکیم سیفٹی", en: "Scam Safety" },
 };
 
 export default function OfficerPage() {
@@ -17,6 +20,7 @@ export default function OfficerPage() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
+  const [confirmRejectId, setConfirmRejectId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -26,15 +30,22 @@ export default function OfficerPage() {
       setError((e as ApiError).message_en ?? "Could not load the queue");
     }
   }, []);
+
   useEffect(() => { load(); }, [load]);
 
   async function decide(caseId: string, decision: string, approved: boolean) {
-    if (notes.trim().length < 10) { setError("Notes must be at least 10 characters (audit rule). نوٹ کم از کم 10 حروف"); return; }
-    setBusy(true); setError("");
+    if (notes.trim().length < 10) {
+      setError("لازمی آڈٹ نوٹ کم از کم 10 حروف ہونا چاہیے · Officer notes must be at least 10 characters.");
+      return;
+    }
+    setBusy(true);
+    setError("");
     try {
       await api.decideReview(caseId, decision, approved, notes.trim());
-      setMsg(`Case ${caseId}: decision saved and written to the audit log.`);
-      setNotes(""); setOpen("");
+      setMsg(`کیس ${caseId} کا فیصلہ محفوظ ہو گیا اور آڈٹ لاگ میں لکھ دیا گیا · Decision recorded in tamper-proof audit log.`);
+      setNotes("");
+      setOpen("");
+      setConfirmRejectId(null);
       await load();
     } catch (e) {
       setError((e as ApiError).message_en ?? "Could not save the decision");
@@ -44,61 +55,201 @@ export default function OfficerPage() {
   }
 
   return (
-    <AppShell title="ریویو قطار · Review Queue">
-      <p className="text-gray-600">Lowest-confidence and highest-priority cases are first. The system never rejects on its own.</p>
-      {msg && <p className="bg-emerald-100 text-emerald-800 rounded-2xl p-3 font-bold">{msg}</p>}
-      {error && <p className="bg-red-100 text-red-700 rounded-2xl p-3 font-bold">{error}</p>}
-      {items && items.length === 0 && <p className="bg-white rounded-3xl p-6 text-center text-xl font-bold">قطار خالی ہے · Queue is empty ✓</p>}
-
-      {items?.map((it) => (
-        <div key={it.case_id} className="bg-white rounded-3xl shadow p-5 space-y-3">
-          <button className="w-full text-start" onClick={() => { setOpen(open === it.case_id ? "" : it.case_id); setError(""); }}>
-            <div className="flex justify-between items-center gap-2">
-              <p className="text-lg font-bold">{it.citizen_name}</p>
-              <span className="px-3 rounded-full bg-amber-100 text-amber-900 font-bold">Priority {it.priority_score.toFixed(1)}</span>
-            </div>
-            <p className="text-sm text-gray-500">{it.cnic} · Rs {it.requested_amount} · Confidence {Math.round(it.confidence * 100)}%</p>
-          </button>
-
-          {open === it.case_id && (
-            <div className="border-t pt-3 space-y-3">
-              <div>
-                <p className="font-bold">Why it needs a human</p>
-                <ul className="list-disc ps-6">{it.handoff_packet.flags.map((f) => <li key={f}>{f}</li>)}</ul>
-              </div>
-              <p className="bg-emerald-50 rounded-xl p-3"><b>Suggested:</b> {it.handoff_packet.suggested_action}</p>
-              <div className="space-y-1">
-                {Object.entries(it.handoff_packet.component_breakdown).map(([k, v]) => (
-                  <div key={k} className="flex items-center gap-2 text-sm">
-                    <span className="w-36">{LABELS[k] ?? k}</span>
-                    <div className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
-                      <div className={`h-full ${v < 0.6 ? "bg-red-500" : "bg-emerald-500"}`} style={{ width: `${v * 100}%` }} />
-                    </div>
-                    <span className="w-10 text-end">{Math.round(v * 100)}</span>
-                  </div>
-                ))}
-              </div>
-              <textarea
-                className="w-full h-24 border-2 rounded-2xl p-3 bg-white"
-                placeholder="Mandatory notes (min 10 characters) / لازمی نوٹ"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-              <div className="grid grid-cols-3 gap-2 font-bold text-white">
-                <button disabled={busy} onClick={() => decide(it.case_id, "auto_approve", true)} className="h-14 rounded-2xl bg-emerald-600 inline-flex items-center justify-center gap-1 disabled:opacity-50">
-                  <CheckCircle2 className="w-5 h-5" /> Approve
-                </button>
-                <button disabled={busy} onClick={() => decide(it.case_id, "ask_more_proof", false)} className="h-14 rounded-2xl bg-amber-600 inline-flex items-center justify-center gap-1 disabled:opacity-50">
-                  <FileQuestion className="w-5 h-5" /> More proof
-                </button>
-                <button disabled={busy} onClick={() => decide(it.case_id, "human_review", false)} className="h-14 rounded-2xl bg-red-600 inline-flex items-center justify-center gap-1 disabled:opacity-50">
-                  <XCircle className="w-5 h-5" /> Reject
-                </button>
-              </div>
-            </div>
-          )}
+    <AppShell title="ریویو قطار · Officer Review Queue">
+      {/* Guiding Policy Banner */}
+      <div className="bg-white rounded-3xl p-5 border border-[#E2DDD3] shadow-sm flex items-center gap-3">
+        <ShieldCheck className="w-8 h-8 text-[#0B4F43] shrink-0" />
+        <div>
+          <p className="font-bold text-[#0B4F43]">زیرو خودکار مسترد پالیسی · Zero Auto-Reject Safety Invariant</p>
+          <p className="text-xs text-[#5B6F6A]">
+            سسٹم کبھی کسی شہری کو خودکار مسترد نہیں کرتا۔ کم اعتماد والے کیسز انسانی فیصلے کے لیے یہاں ترجیحی ترتیب میں آتے ہیں۔
+          </p>
         </div>
-      ))}
+      </div>
+
+      {msg && <p className="bg-[#DDEFE9] text-[#0B4F43] border border-[#1F8A5B] rounded-2xl p-4 font-bold text-sm">{msg}</p>}
+      {error && <p className="bg-[#FEE2E2] text-[#991B1B] border border-[#F87171] rounded-2xl p-4 font-bold text-sm">{error}</p>}
+
+      {items && items.length === 0 && (
+        <div className="bg-white rounded-3xl p-8 text-center space-y-2 border border-[#E2DDD3]">
+          <CheckCircle2 className="w-12 h-12 text-[#1F8A5B] mx-auto" />
+          <p className="text-xl font-bold text-[#17302B]">قطار مکمل خالی ہے · Queue is empty</p>
+          <p className="text-sm text-[#5B6F6A]">تمام ریلیف کیسز نمٹا دیے گئے ہیں۔</p>
+        </div>
+      )}
+
+      {items?.map((it) => {
+        const isOpen = open === it.case_id;
+        const breakdown = it.handoff_packet.component_breakdown || {};
+        const entries = Object.entries(breakdown);
+        // Find weakest component
+        const weakest = entries.length > 0
+          ? entries.reduce((min, cur) => cur[1] < min[1] ? cur : min, entries[0])
+          : null;
+
+        return (
+          <div key={it.case_id} className="bg-white rounded-3xl shadow border border-[#E2DDD3] p-5 space-y-4">
+            <button
+              className="w-full text-start flex items-center justify-between gap-3"
+              onClick={() => { setOpen(isOpen ? "" : it.case_id); setError(""); setConfirmRejectId(null); }}
+              type="button"
+            >
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-lg font-bold text-[#17302B]">{it.citizen_name}</p>
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] font-bold text-xs">
+                    Priority {it.priority_score.toFixed(1)}
+                  </span>
+                </div>
+                <p className="text-xs text-[#5B6F6A] font-mono">
+                  CNIC: {it.cnic} · Claim: Rs {it.requested_amount.toLocaleString()} · Overall Confidence: {Math.round(it.confidence * 100)}%
+                </p>
+              </div>
+              <div className="text-[#5B6F6A]">
+                {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+              </div>
+            </button>
+
+            {isOpen && (
+              <div className="border-t border-[#E2DDD3] pt-4 space-y-4 animate-fade-up">
+                {/* Weakest Confidence Component Callout */}
+                {weakest && (
+                  <div className="bg-[#FFFBEB] border-2 border-[#E8A33D] rounded-2xl p-3 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5 text-[#C77700] shrink-0" />
+                      <div>
+                        <span className="text-xs font-bold text-[#C77700] uppercase tracking-wider block">سب سے کمزور جزو · Weakest Link</span>
+                        <p className="font-bold text-sm text-[#17302B]">
+                          {LABELS[weakest[0]]?.ur ?? weakest[0]} ({LABELS[weakest[0]]?.en ?? weakest[0]}): <span className="text-[#C77700] font-mono">{Math.round(weakest[1] * 100)}%</span>
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold bg-[#FEF3C7] text-[#92400E] px-2 py-1 rounded-lg">
+                      Review Needed
+                    </span>
+                  </div>
+                )}
+
+                {/* Handoff Packet Flags */}
+                <div className="bg-[#F7F4EE] rounded-2xl p-4 border border-[#E2DDD3] space-y-2">
+                  <p className="font-bold text-sm text-[#0B4F43]">افسر کے لیے تفصیلات · Handoff Packet</p>
+                  <ul className="list-disc ps-5 text-xs text-[#17302B] space-y-1">
+                    {it.handoff_packet.flags.map((f) => (
+                      <li key={f}>{f}</li>
+                    ))}
+                  </ul>
+                  <p className="text-xs text-[#5B6F6A] pt-1">
+                    <b>تجویز کردہ اقدام · Suggested Action:</b> {it.handoff_packet.suggested_action}
+                  </p>
+                </div>
+
+                {/* All 5 Component Breakdown Bars */}
+                <div className="space-y-2 bg-[#F7F4EE]/60 rounded-2xl p-3 border border-[#E2DDD3]">
+                  <p className="text-xs font-bold text-[#5B6F6A] uppercase">تمام اعتمادی اجزاء · 5-Point Component Breakdown</p>
+                  {entries.map(([k, v]) => {
+                    const isWeak = weakest && weakest[0] === k;
+                    return (
+                      <div key={k} className="flex items-center gap-2 text-xs">
+                        <span className={`w-40 truncate ${isWeak ? "font-bold text-[#C77700]" : "text-[#17302B]"}`}>
+                          {LABELS[k]?.ur ?? k}
+                        </span>
+                        <div className="flex-1 h-3 bg-[#E2DDD3] rounded-full overflow-hidden">
+                          <div
+                            className={`h-full ${v < 0.6 ? "bg-[#C77700]" : "bg-[#1F8A5B]"}`}
+                            style={{ width: `${Math.round(v * 100)}%` }}
+                          />
+                        </div>
+                        <span className="w-10 text-end font-mono font-bold">{Math.round(v * 100)}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Mandatory Officer Notes */}
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-[#17302B]">
+                    لازمی افسر نوٹ (کم از کم 10 حروف) · Mandatory Written Reason (min 10 characters)
+                  </label>
+                  <textarea
+                    className="w-full min-h-[90px] border-2 border-[#E2DDD3] rounded-2xl p-3 text-sm bg-white text-[#17302B] focus:border-[#0F6B5A]"
+                    placeholder="فیصلے کی ٹھوس وجہ یہاں درج کریں... / Record official justification for audit..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                  />
+                </div>
+
+                {/* Rejection Confirmation Step */}
+                {confirmRejectId === it.case_id ? (
+                  <div className="bg-[#FFFBEB] border-2 border-[#5B6F6A] rounded-2xl p-4 space-y-3">
+                    <p className="font-bold text-sm text-[#17302B]">
+                      کیا آپ واقعی اس کیس کو مسترد کرنا چاہتے ہیں؟ · Confirm Rejection
+                    </p>
+                    <p className="text-xs text-[#5B6F6A]">
+                      مسترد کرنے پر تحریری وجہ آڈٹ لاگ میں محفوظ ہوگی اور شہری کو مطلع کیا جائے گا۔
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setConfirmRejectId(null)}
+                        type="button"
+                        className="min-h-[44px] flex-1 rounded-xl bg-white border border-[#E2DDD3] font-bold text-xs"
+                      >
+                        منسوخ کریں · Cancel
+                      </button>
+                      <button
+                        disabled={busy}
+                        onClick={() => decide(it.case_id, "human_review", false)}
+                        type="button"
+                        className="min-h-[44px] flex-1 rounded-xl bg-[#5B6F6A] text-white font-bold text-xs hover:bg-[#475753]"
+                      >
+                        {busy ? "محفوظ ہو رہا ہے..." : "ہاں، مسترد کریں · Confirm Reject"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* 3 Action Buttons */
+                  <div className="grid grid-cols-3 gap-2 font-bold text-sm pt-1">
+                    {/* 1. Approve (Positive Style: #1F8A5B) */}
+                    <button
+                      disabled={busy}
+                      onClick={() => decide(it.case_id, "auto_approve", true)}
+                      type="button"
+                      className="min-h-[48px] rounded-2xl bg-[#1F8A5B] text-white inline-flex items-center justify-center gap-1.5 hover:bg-[#187049] transition shadow disabled:opacity-50"
+                    >
+                      <CheckCircle2 className="w-4 h-4" /> منظور · Approve
+                    </button>
+
+                    {/* 2. Ask More Proof (Warm Accent Style: #E8A33D) */}
+                    <button
+                      disabled={busy}
+                      onClick={() => decide(it.case_id, "ask_more_proof", false)}
+                      type="button"
+                      className="min-h-[48px] rounded-2xl bg-[#E8A33D] text-[#17302B] inline-flex items-center justify-center gap-1.5 hover:bg-[#d9942e] transition shadow disabled:opacity-50"
+                    >
+                      <FileQuestion className="w-4 h-4" /> ثبوت · More Proof
+                    </button>
+
+                    {/* 3. Reject (Neutral Outlined Style: NOT RED) */}
+                    <button
+                      disabled={busy}
+                      onClick={() => {
+                        if (notes.trim().length < 10) {
+                          setError("مسترد کرنے سے پہلے تحریری نوٹ درج کرنا لازمی ہے۔");
+                          return;
+                        }
+                        setConfirmRejectId(it.case_id);
+                      }}
+                      type="button"
+                      className="min-h-[48px] rounded-2xl border-2 border-[#5B6F6A] bg-white text-[#17302B] inline-flex items-center justify-center gap-1.5 hover:bg-slate-100 transition disabled:opacity-50"
+                    >
+                      <AlertOctagon className="w-4 h-4 text-[#5B6F6A]" /> مسترد · Reject
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </AppShell>
   );
 }

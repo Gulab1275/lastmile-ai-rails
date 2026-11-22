@@ -4,14 +4,29 @@ const config: Config = {
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
+      colors: {
+        brand: {
+          700: "#0B4F43",
+          600: "#0F6B5A",
+          100: "#DDEFE9",
+        },
+        accent: "#E8A33D",
+        paper: "#F7F4EE",
+        surface: "#FFFFFF",
+        ink: "#17302B",
+        muted: "#5B6F6A",
+        line: "#E2DDD3",
+        ok: "#1F8A5B",
+        warn: "#C77700",
+        review: "#4C5FD5",
+        danger: "#B3261E",
+      },
       fontFamily: {
-        // Latin letters use Inter; Urdu falls through to Noto Nastaliq.
         sans: ["var(--font-inter)", "var(--font-urdu)", "system-ui", "sans-serif"],
       },
       boxShadow: {
-        // Every existing "shadow" card gets a softer, green-tinted shadow.
-        DEFAULT: "0 8px 24px -8px rgba(5,150,105,0.22), 0 2px 6px rgba(15,23,42,0.06)",
-        lift: "0 16px 40px -10px rgba(5,150,105,0.35)",
+        DEFAULT: "0 8px 24px -8px rgba(11,79,67,0.18), 0 2px 6px rgba(23,48,43,0.05)",
+        lift: "0 16px 40px -10px rgba(11,79,67,0.28)",
       },
       keyframes: {
         fadeUp: {
@@ -23,8 +38,8 @@ const config: Config = {
           "50%": { transform: "translateY(-8px)" },
         },
         pulseDot: {
-          "0%, 100%": { boxShadow: "0 0 0 0 rgba(52,211,153,0.7)" },
-          "50%": { boxShadow: "0 0 0 6px rgba(52,211,153,0)" },
+          "0%, 100%": { boxShadow: "0 0 0 0 rgba(232,163,61,0.7)" },
+          "50%": { boxShadow: "0 0 0 6px rgba(232,163,61,0)" },
         },
       },
       animation: {

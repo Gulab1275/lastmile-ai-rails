@@ -1,8 +1,11 @@
 import { mockRequest } from "./mock";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL = RAW_API_URL.replace(/\/api\/v1\/?$/, "").replace(/\/+$/, "");
 const API_PREFIX = "/api/v1";
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
+
+const ttsAudioCache = new Map<string, Blob>();
 
 // ---------- Types (match services/shared/schemas.py) ----------
 export type Role = "citizen" | "helper" | "officer" | "admin" | "auditor";
@@ -26,6 +29,22 @@ export interface TokenResponse {
   role: Role;
   user_id: string;
   username: string;
+}
+
+export interface ApiKeyItem {
+  id: string;
+  name: string;
+  prefix: string;
+  masked_key: string;
+  created_at: string;
+  revoked_at?: string | null;
+  last_used_at?: string | null;
+}
+
+export interface ApiKeyCreated {
+  id: string;
+  name: string;
+  key: string;
 }
 
 export interface CaseCreate {
@@ -53,6 +72,7 @@ export interface ConsentRecord {
   scope: ConsentScope;
   granted: boolean;
   granted_to_helper_id?: string | null;
+  grantee?: string | null;
   granted_at: string;
   revoked_at?: string | null;
   audit_hash?: string | null;
@@ -416,13 +436,40 @@ class RahbarApiClient {
     });
   }
   withdrawConsent(citizen_id: string, scope: ConsentScope, reason?: string) {
-    return this.request<Record<string, unknown>>("/consent/withdraw", {
+    return this.request<ConsentRecord>("/consent/withdraw", {
       method: "POST",
       body: JSON.stringify({ citizen_id, scope, reason }),
     });
   }
   getConsentStatus(citizenId: string) {
     return this.request<ConsentStatus>(`/consent/status/${citizenId}`);
+  }
+
+  // ---------- Voice & TTS ----------
+  async synthesizeSpeech(text: string, language = "ur"): Promise<Blob | null> {
+    const key = `${language}:${text}`;
+    if (ttsAudioCache.has(key)) return ttsAudioCache.get(key)!;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    try {
+      const res = await fetch(`${API_BASE_URL}${API_PREFIX}/ai/voice/tts`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...this.authHeaders(),
+        },
+        body: JSON.stringify({ text, language }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      if (!res.ok) return null;
+      const blob = await res.blob();
+      ttsAudioCache.set(key, blob);
+      return blob;
+    } catch {
+      clearTimeout(timeout);
+      return null;
+    }
   }
 
   // ---------- Officer queue ----------
@@ -454,6 +501,22 @@ class RahbarApiClient {
     return this.request<SimulationResult>("/digital-twin/simulate", {
       method: "POST",
       body: JSON.stringify({ draft_rule_set, sample_size }),
+    });
+  }
+
+  // Admin API Keys
+  getApiKeys() {
+    return this.request<ApiKeyItem[]>("/admin/api-keys");
+  }
+  createApiKey(name: string) {
+    return this.request<ApiKeyCreated>("/admin/api-keys", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    });
+  }
+  revokeApiKey(keyId: string) {
+    return this.request<{ status: string; message: string }>(`/admin/api-keys/${keyId}/revoke`, {
+      method: "POST",
     });
   }
 
