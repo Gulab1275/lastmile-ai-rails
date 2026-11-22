@@ -1,38 +1,54 @@
 "use client";
 
 import { useState } from "react";
+import { AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 
 const REAL = [
-  "Decision rules engine (fixed rules, no AI guessing)",
-  "Confidence and cost thresholds",
-  "Consent gateway (withdrawn consent = HTTP 403)",
-  "Tamper-proof hash-chained audit log",
-  "Scam classifier and document blur / tamper check",
-  "Urdu voice and form extraction",
+  "Deterministic rules engine (versioned rules, no hallucinations)",
+  "Weakest-link confidence & zero auto-reject invariant",
+  "Consent gateway (revoked consent = instant HTTP 403)",
+  "Tamper-proof cryptographic SHA-256 audit hash chain",
+  "AI scam classifier with Roman Urdu fee disambiguation",
+  "Document OCR blur gate and Urdu voice TTS/STT",
 ];
 const SIMULATED = [
-  "NADRA identity service (mock registry)",
-  "Raast payment rail (mock payouts)",
-  "Citizen complaints portal (mock)",
-  "All people, CNICs and phone numbers are fake",
+  "NADRA identity verification (sandbox mock registry)",
+  "Raast fast payment rails (mock cryptographic payouts)",
+  "All citizen profiles, CNICs and phone numbers are demo data",
 ];
 
 export default function PrototypeBanner() {
   const [open, setOpen] = useState(false);
   return (
-    <div className="bg-amber-400 text-amber-950 text-sm">
-      <button onClick={() => setOpen(!open)} className="w-full px-3 py-1 font-bold text-center" aria-expanded={open}>
-        ⚠ PROTOTYPE ONLY — not an official service · نمونہ، سرکاری سروس نہیں · What is real vs simulated? {open ? "▲" : "▼"}
+    <div className="bg-[#E8A33D] text-[#17302B] text-xs border-b border-[#C77700] z-50 relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full min-h-[34px] px-3 py-1.5 font-bold text-center flex items-center justify-center gap-1.5 hover:bg-[#d9942e] transition"
+        aria-expanded={open}
+        type="button"
+      >
+        <AlertTriangle className="w-4 h-4 shrink-0 text-[#17302B]" />
+        <span>PROTOTYPE — not an official government service · پروٹوٹائپ (سرکاری سروس نہیں)</span>
+        <span className="underline ml-1">تفصیل / What is real?</span>
+        {open ? <ChevronUp className="w-3.5 h-3.5 ml-1" /> : <ChevronDown className="w-3.5 h-3.5 ml-1" />}
       </button>
       {open && (
-        <div className="bg-white text-gray-800 p-4 grid gap-4 sm:grid-cols-2">
-          <div>
-            <p className="font-bold text-emerald-700">✅ REAL · اصلی</p>
-            <ul className="list-disc ps-5">{REAL.map((r) => <li key={r}>{r}</li>)}</ul>
+        <div className="bg-white text-[#17302B] p-4 grid gap-4 sm:grid-cols-2 border-b border-[#E2DDD3] text-xs animate-fade-up">
+          <div className="bg-[#DDEFE9] p-3 rounded-2xl border border-[#1F8A5B]/30 space-y-1">
+            <p className="font-bold text-[#0B4F43]">✅ REAL & PRODUCTION READY · اصلی</p>
+            <ul className="list-disc ps-5 space-y-1 text-[#065F46]">
+              {REAL.map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+            </ul>
           </div>
-          <div>
-            <p className="font-bold text-red-700">🧪 SIMULATED · نقلی</p>
-            <ul className="list-disc ps-5">{SIMULATED.map((r) => <li key={r}>{r}</li>)}</ul>
+          <div className="bg-[#FEF3C7] p-3 rounded-2xl border border-[#FCD34D] space-y-1">
+            <p className="font-bold text-[#92400E]">🧪 SANDBOX / SIMULATED · نقلی نمونہ</p>
+            <ul className="list-disc ps-5 space-y-1 text-[#78350F]">
+              {SIMULATED.map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+            </ul>
           </div>
         </div>
       )}

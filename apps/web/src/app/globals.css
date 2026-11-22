@@ -2,53 +2,72 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-brand-700: #0B4F43;
+  --color-brand-600: #0F6B5A;
+  --color-brand-100: #DDEFE9;
+  --color-accent: #E8A33D;
+  --color-bg: #F7F4EE;
+  --color-surface: #FFFFFF;
+  --color-ink: #17302B;
+  --color-muted: #5B6F6A;
+  --color-line: #E2DDD3;
+  --color-ok: #1F8A5B;
+  --color-warn: #C77700;
+  --color-review: #4C5FD5;
+  --color-danger: #B3261E;
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;
   }
   body {
-    @apply text-slate-800;
-    background:
-      radial-gradient(circle at 15% 0%, rgba(110, 231, 183, 0.35), transparent 40%),
-      radial-gradient(circle at 100% 30%, rgba(94, 234, 212, 0.25), transparent 35%),
-      linear-gradient(180deg, #ecfdf5 0%, #f0fdfa 60%, #ffffff 100%);
+    color: #17302B;
+    background-color: #F7F4EE;
+    background-image:
+      radial-gradient(circle at 15% 0%, rgba(221, 239, 233, 0.6), transparent 45%),
+      radial-gradient(circle at 100% 30%, rgba(232, 163, 61, 0.12), transparent 40%),
+      linear-gradient(180deg, #F7F4EE 0%, #FAF8F5 60%, #FFFFFF 100%);
     background-attachment: fixed;
+    min-height: 100vh;
   }
   ::selection {
-    background: #a7f3d0;
+    background: #DDEFE9;
+    color: #0B4F43;
   }
   button,
   a {
     -webkit-tap-highlight-color: transparent;
   }
   button {
-    transition: transform 0.12s ease, background-color 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.15s ease, background-color 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
   }
   button:not(:disabled):active {
-    transform: scale(0.97);
+    transform: scale(0.98);
   }
   button:not(:disabled):hover {
-    filter: brightness(1.05);
+    filter: brightness(1.03);
   }
   input:focus,
   textarea:focus,
   select:focus {
-    @apply outline-none ring-4 ring-emerald-300/60 border-emerald-500;
+    @apply outline-none ring-4 ring-emerald-200 border-[#0F6B5A];
   }
   button:focus-visible,
   a:focus-visible {
-    @apply outline-none ring-4 ring-emerald-400/70;
+    @apply outline-none ring-4 ring-[#E8A33D];
   }
 }
 
 @layer components {
-  /* Subtle dotted pattern used on green hero areas */
+  /* Subtle dotted pattern used on brand hero areas */
   .pattern-dots {
-    background-image: radial-gradient(rgba(255, 255, 255, 0.18) 1.5px, transparent 1.5px);
+    background-image: radial-gradient(rgba(255, 255, 255, 0.22) 1.5px, transparent 1.5px);
     background-size: 18px 18px;
   }
   .glass {
-    background: rgba(255, 255, 255, 0.78);
+    background: rgba(255, 255, 255, 0.88);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
   }
@@ -58,16 +77,16 @@
   .scrollbar-none::-webkit-scrollbar {
     display: none;
   }
-  /* Children of .stagger fade in one after another */
+  /* Stagger fade in */
   .stagger > * {
-    animation: fadeUp 0.5s ease-out both;
+    animation: fadeUp 0.4s ease-out both;
   }
-  .stagger > *:nth-child(2) { animation-delay: 0.06s; }
-  .stagger > *:nth-child(3) { animation-delay: 0.12s; }
-  .stagger > *:nth-child(4) { animation-delay: 0.18s; }
-  .stagger > *:nth-child(5) { animation-delay: 0.24s; }
-  .stagger > *:nth-child(6) { animation-delay: 0.3s; }
-  .stagger > *:nth-child(n + 7) { animation-delay: 0.36s; }
+  .stagger > *:nth-child(2) { animation-delay: 0.05s; }
+  .stagger > *:nth-child(3) { animation-delay: 0.1s; }
+  .stagger > *:nth-child(4) { animation-delay: 0.15s; }
+  .stagger > *:nth-child(5) { animation-delay: 0.2s; }
+  .stagger > *:nth-child(6) { animation-delay: 0.25s; }
+  .stagger > *:nth-child(n + 7) { animation-delay: 0.3s; }
 }
 
 @media (prefers-reduced-motion: reduce) {

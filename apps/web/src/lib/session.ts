@@ -1,4 +1,4 @@
-import type { Role } from "./api";
+import api, { type Role } from "./api";
 
 export interface Session {
   token: string;
@@ -76,16 +76,53 @@ export const NAV: Record<Role, NavItem[]> = {
     MAP,
   ],
   officer: [HOME, { href: "/officer", en: "Review Queue", ur: "ریویو قطار" }, IDCHK, DOCS, MAP, EVAL],
-  admin: [HOME, { href: "/admin", en: "Rules", ur: "قواعد" }, EVAL, MAP],
+  admin: [HOME, { href: "/admin", en: "Rules & API Keys", ur: "قواعد و چابیاں" }, EVAL, MAP],
   auditor: [HOME, { href: "/auditor", en: "Audit Log", ur: "آڈٹ لاگ" }, EVAL],
 };
 
+let currentAudio: HTMLAudioElement | null = null;
 
-/** Read text aloud with the phone's built-in voice (works offline). */
-export function speak(text: string, lang: "ur-PK" | "en-US" = "ur-PK") {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = lang;
-  window.speechSynthesis.speak(u);
+/**
+ * Read text aloud with server TTS first (under 3s), falling back to browser speechSynthesis.
+ * Cached per text and language. Never blocks user actions.
+ */
+export async function speak(text: string, lang: "ur-PK" | "en-US" = "ur-PK") {
+  if (typeof window === "undefined" || !text.trim()) return;
+
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio = null;
+  }
+  if ("speechSynthesis" in window) {
+    window.speechSynthesis.cancel();
+  }
+
+  try {
+    const isUrdu = lang.startsWith("ur");
+    const blob = await api.synthesizeSpeech(text, isUrdu ? "ur" : "en");
+    if (blob) {
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      currentAudio = audio;
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        if (currentAudio === audio) currentAudio = null;
+      };
+      await audio.play();
+      return;
+    }
+  } catch {
+    // fallback below
+  }
+
+  if ("speechSynthesis" in window) {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = lang;
+    const voices = window.speechSynthesis.getVoices();
+    const urduVoice = voices.find((v) => v.lang.startsWith("ur"));
+    if (urduVoice) {
+      u.voice = urduVoice;
+    }
+    window.speechSynthesis.speak(u);
+  }
 }

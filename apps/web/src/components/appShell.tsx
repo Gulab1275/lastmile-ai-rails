@@ -62,43 +62,43 @@ export default function AppShell({ children, title }: { children: React.ReactNod
   const initials = session.username.split("_").map((p) => p[0]?.toUpperCase()).join("").slice(0, 2);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#F7F4EE] text-[#17302B]">
       {/* ---------- Header ---------- */}
-      <header className="relative overflow-hidden bg-gradient-to-br from-emerald-900 via-emerald-700 to-teal-600 text-white rounded-b-[2rem] shadow-lift">
-        <div className="pattern-dots absolute inset-0 opacity-60" aria-hidden="true" />
-        <div className="relative max-w-3xl mx-auto px-4 pt-4 pb-5 flex items-center gap-3">
-          <Logo size={46} />
+      <header className="relative overflow-hidden bg-gradient-to-br from-[#0B4F43] via-[#0F6B5A] to-[#0B4F43] text-white rounded-b-[2rem] shadow-lift">
+        <div className="pattern-dots absolute inset-0 opacity-40" aria-hidden="true" />
+        <div className="relative max-w-3xl mx-auto px-4 pt-4 pb-4 flex items-center gap-3">
+          <Logo size={44} />
           <div className="flex-1 min-w-0">
             <p className="text-2xl font-bold leading-tight">رہبر · Rahbar</p>
-            <p className="text-xs text-emerald-100 truncate">Relief that finds its way to those who need it</p>
+            <p className="text-xs text-[#DDEFE9] truncate">The Last Mile AI on Public Rails</p>
           </div>
           <div className="flex items-center gap-2">
             <span className="flex items-center gap-1.5 bg-white/15 rounded-full ps-2 pe-3 py-1 text-xs font-bold">
-              <span className={`w-2.5 h-2.5 rounded-full ${online ? "bg-emerald-300 animate-pulse-dot" : "bg-amber-400"}`} />
+              <span className={`w-2.5 h-2.5 rounded-full ${online ? "bg-[#34D399] animate-pulse-dot" : "bg-[#E8A33D]"}`} />
               {online ? "Online" : "Offline"}
             </span>
             <button
               onClick={() => { clearSession(); router.replace("/"); }}
-              className="h-11 w-11 flex items-center justify-center rounded-2xl bg-white/15 hover:bg-white/25"
+              className="min-h-[48px] min-w-[48px] flex items-center justify-center rounded-2xl bg-white/15 hover:bg-white/25"
               aria-label="Logout"
             >
               <LogOut className="w-5 h-5" />
             </button>
           </div>
         </div>
-        <div className="relative max-w-3xl mx-auto px-4 pb-4 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-300 to-amber-500 text-amber-950 font-bold flex items-center justify-center shadow">
+        <div className="relative max-w-3xl mx-auto px-4 pb-4 flex items-center gap-3 border-t border-white/10 pt-3">
+          <div className="h-10 w-10 rounded-full bg-[#E8A33D] text-[#17302B] font-bold flex items-center justify-center shadow">
             {initials}
           </div>
           <div className="leading-tight">
             <p className="font-bold">{session.username}</p>
-            <p className="text-xs text-emerald-100">{ROLE_LABEL[session.role]}</p>
+            <p className="text-xs text-[#DDEFE9]">{ROLE_LABEL[session.role]}</p>
           </div>
         </div>
       </header>
 
       {/* ---------- Sticky menu ---------- */}
-      <nav className="sticky top-0 z-30 glass border-b border-emerald-100 mt-3">
+      <nav className="sticky top-0 z-30 bg-[#F7F4EE]/95 backdrop-blur border-b border-[#E2DDD3] mt-2 shadow-sm">
         <div className="max-w-3xl mx-auto px-3 py-2 flex gap-2 overflow-x-auto scrollbar-none">
           {NAV[session.role].map((item) => {
             const Icon = NAV_ICONS[item.href];
@@ -107,10 +107,10 @@ export default function AppShell({ children, title }: { children: React.ReactNod
               <Link
                 key={item.href}
                 href={item.href}
-                className={`h-11 px-4 flex items-center gap-2 rounded-full whitespace-nowrap font-bold text-sm transition ${
+                className={`min-h-[44px] px-4 flex items-center gap-2 rounded-2xl whitespace-nowrap font-bold text-sm transition ${
                   active
-                    ? "bg-gradient-to-br from-emerald-600 to-teal-600 text-white shadow-lift"
-                    : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                    ? "bg-[#0B4F43] text-white shadow-lift"
+                    : "bg-white text-[#17302B] hover:bg-[#DDEFE9] border border-[#E2DDD3]"
                 }`}
               >
                 {Icon && <Icon className="w-4 h-4" />}
@@ -123,29 +123,29 @@ export default function AppShell({ children, title }: { children: React.ReactNod
 
       {/* ---------- Status strips ---------- */}
       {!online && (
-        <div className="bg-amber-100 text-amber-900 text-center py-2 font-bold">
-          انٹرنیٹ بند ہے · You are offline — forms are saved on this phone
+        <div className="bg-[#FEF3C7] text-[#92400E] border-b border-[#FCD34D] text-center py-2.5 font-bold text-sm">
+          انٹرنیٹ بند ہے · Offline mode active — forms saved safely on device
         </div>
       )}
       {pending > 0 && (
-        <div className="bg-sky-100 text-sky-900 text-center py-2 font-bold">
+        <div className="bg-[#E0F2FE] text-[#075985] text-center py-2.5 font-bold text-sm">
           {pending} فارم بھیجنے کے منتظر · {pending} form(s) waiting to sync
         </div>
       )}
-      {syncMsg && <div className="bg-emerald-200 text-emerald-900 text-center py-2 font-bold">{syncMsg}</div>}
+      {syncMsg && <div className="bg-[#D1FAE5] text-[#065F46] text-center py-2.5 font-bold text-sm">{syncMsg}</div>}
       {session.role === "helper" && acting && (
-        <div className="bg-amber-50 border-b border-amber-200 text-center py-2 font-bold text-amber-900 flex items-center justify-center gap-2">
-          <UserRound className="w-5 h-5" /> آپ کام کر رہے ہیں · Acting for: {acting}
+        <div className="bg-[#FFFBEB] border-b border-[#FDE68A] text-center py-2.5 font-bold text-[#92400E] flex items-center justify-center gap-2">
+          <UserRound className="w-5 h-5 text-[#E8A33D]" /> آپ کام کر رہے ہیں · Acting for: <span className="underline">{acting}</span>
         </div>
       )}
 
       {/* ---------- Page content ---------- */}
-      <main className="max-w-3xl mx-auto p-4 pb-16 space-y-4 stagger">
-        {title && <h1 className="text-2xl font-bold text-emerald-900">{title}</h1>}
+      <main className={`max-w-3xl mx-auto p-4 pb-16 space-y-4 stagger ${session.role === "citizen" || session.role === "helper" ? "text-[18px]" : ""}`}>
+        {title && <h1 className="text-2xl font-bold text-[#0B4F43]">{title}</h1>}
         {children}
       </main>
 
-      <footer className="text-center text-xs text-emerald-800/60 pb-6">
+      <footer className="text-center text-xs text-[#5B6F6A] pb-6">
         Rahbar · The Last Mile AI on Public Rails · Prototype
       </footer>
     </div>
